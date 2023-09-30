@@ -1,18 +1,10 @@
 use crate::ui::*;
-use bevy::{prelude::*, sprite::MaterialMesh2dBundle, render::{
-        mesh::{MeshVertexBufferLayout, PrimitiveTopology},
-        render_resource::{
-            AsBindGroup, PolygonMode, RenderPipelineDescriptor, ShaderRef,
-            SpecializedMeshPipelineError,
-        },
-    },};
+use bevy::{prelude::*, sprite::MaterialMesh2dBundle, render::mesh::PrimitiveTopology};
 use bevy_tweening::{*, lens::*};
 use rand::Rng;
 use std::collections::HashMap;
-use rustpython_vm::Interpreter as py_interpreter;
 use std::time::*;
 
-type NodeDepsMap = HashMap::<String, Vec<String>>;
 #[derive(Component, Debug)]
 pub struct Node {
   node_text: String,
@@ -20,15 +12,15 @@ pub struct Node {
 
 #[derive(Component, Debug)]
 pub struct Connector {
-  conn_text: String,
+  _conn_text: String,
 }
 
 impl Default for Node {
-    fn default() -> Self {
-        Node {
-          node_text: "ANODE".to_string()
-        }
+  fn default() -> Self {
+    Node {
+      node_text: "ANODE".to_string()
     }
+  }
 }
 
 #[derive(Bundle, Debug, Default)]
@@ -47,7 +39,6 @@ pub struct NodeBundle {
 
 pub fn update_nodes(
   mut commands: Commands,
-  mut gizmos: Gizmos,
   mut meshes: ResMut<Assets<Mesh>>,
   mut materials: ResMut<Assets<ColorMaterial>>,
   asset_server: Res<AssetServer>,
@@ -102,7 +93,7 @@ fn spawn_node(node_name: &String,
 
   let parent = commands.spawn((
     SpatialBundle {
-      transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
+      transform: Transform::from_translation(Vec3::new(0., 0., 100.)),
       ..Default::default()
     },
     Node {node_text: node_name.to_string()},
@@ -110,15 +101,15 @@ fn spawn_node(node_name: &String,
   )).id();
   let icon_child = commands.spawn(
     MaterialMesh2dBundle {
-        mesh: meshes.add(shape::Circle::new(25.).into()).into(),
-        material: materials.add(ColorMaterial::from(Color::PURPLE)),
-        transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
-        ..default()
+      mesh: meshes.add(shape::Circle::new(25.).into()).into(),
+      material: materials.add(ColorMaterial::from(Color::Rgba { red: 0.7, green: 0.5, blue: 0.7, alpha: 1.0 })),
+      transform: Transform::from_translation(Vec3::new(0., 0., 100.)),
+      ..default()
     }).id();
 
   let text_child = commands.spawn(Text2dBundle {
     text: Text::from_section(node_name, text_style).with_alignment(text_alignment),
-    transform: Transform::from_translation(Vec3::new(0.0, -35., 0.)),
+    transform: Transform::from_translation(Vec3::new(0.0, -35., 100.)),
     ..default()
   }).id();
 
@@ -131,42 +122,46 @@ pub fn update_connectors(graph_defn: Res<GraphDefinition>,
                          mut commands: Commands,
                          mut meshes: ResMut<Assets<Mesh>>,
                          mut materials: ResMut<Assets<ColorMaterial>>,
-                         query: Query<(&Node, &Transform), (Changed<Transform>)>,
+                         query: Query<(&Node, &Transform), Changed<Transform>>,
                          query_conn: Query<(Entity, &Connector)>
 ) {
   if !query.is_empty() {
     let mut node_loc = HashMap::<String, Vec3>::new();
+    //despawn all connectors,
+    //TODO we should despawn only required
     for (entity, _conn) in query_conn.iter() {
       commands.entity(entity).despawn_recursive();
     }
-    for (node, transform) in query.iter() {
 
-      let pos: Vec3 = transform.translation;
+    //insert in hash map location of each node
+    for (node, transform) in query.iter() {
+      let mut pos: Vec3 = transform.translation;
+      pos.z = 50.;
       node_loc.insert(node.node_text.clone(), pos);
     }
-    for nodea in graph_defn.graph.keys() {
-      if node_loc.get(nodea) == None {
-        //TODO???
-      } else {
-        let nodea_loc = node_loc.get(nodea).unwrap();
 
-        for nodeb in graph_defn.graph.get(nodea).unwrap() {
-          let nodeb_loc = node_loc.get(nodeb).unwrap();
-          commands.spawn((
-            MaterialMesh2dBundle {
-              mesh: meshes.add(Mesh::from(LineStrip {
-                points: vec![
-                  *nodea_loc,
-                  *nodeb_loc,
-                ]
-              })).into(),
-              material: materials.add(ColorMaterial::from(Color::GREEN)),
-              ..Default::default()
-            }, Connector {
-              conn_text: "".to_string(),
-            }
-          ));
-        }
+    // for each node seach its connecting entities
+    // and make a line between current node and that node
+    for nodea in graph_defn.graph.keys() {
+
+      let nodea_loc = node_loc.get(nodea).unwrap();
+
+      for nodeb in graph_defn.graph.get(nodea).unwrap() {
+        let nodeb_loc = node_loc.get(nodeb).unwrap();
+        commands.spawn((
+          MaterialMesh2dBundle {
+            mesh: meshes.add(Mesh::from(LineStrip {
+              points: vec![
+                *nodea_loc,
+                *nodeb_loc,
+              ]
+            })).into(),
+            material: materials.add(ColorMaterial::from(Color::GREEN)),
+            ..Default::default()
+          }, Connector {
+            _conn_text: "".to_string(),
+          }
+        ));
       }
     }
   }
@@ -174,14 +169,14 @@ pub fn update_connectors(graph_defn: Res<GraphDefinition>,
 
 #[derive(Debug, Clone)]
 pub struct LineStrip {
-    pub points: Vec<Vec3>,
+  pub points: Vec<Vec3>,
 }
 
 impl From<LineStrip> for Mesh {
-    fn from(line: LineStrip) -> Self {
-        let mut mesh = Mesh::new(PrimitiveTopology::LineStrip);
+  fn from(line: LineStrip) -> Self {
+    let mut mesh = Mesh::new(PrimitiveTopology::LineStrip);
 
-        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, line.points);
-        mesh
-    }
+    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, line.points);
+    mesh
+  }
 }

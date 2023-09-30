@@ -29,7 +29,7 @@ fn main() {
     })
     //.add_plugins(EguiPlugin)
     .add_systems(Startup, setup_camera)
-    .add_systems(Update, (ui::setup_ui, node::update_nodes, node::update_connectors))
+    .add_systems(Update, (ui::setup_ui, node::update_connectors, node::update_nodes.after(node::update_connectors)))
     .run();
 }
 
