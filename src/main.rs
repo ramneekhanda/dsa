@@ -1,10 +1,10 @@
 mod node;
 mod ui;
 use std::collections::HashMap;
+use bevy_tweening::TweeningPlugin;
 
 use bevy::{prelude::*, window::WindowMode};
-//use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use bevy_egui::EguiPlugin;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use ui::{CodeStorage, GraphDefinition};
 
 fn main() {
@@ -17,7 +17,8 @@ fn main() {
       }),
       ..default()
     }))
-  //.add_plugins(WorldInspectorPlugin::new())
+    .add_plugins(WorldInspectorPlugin::new())
+    .add_plugins(TweeningPlugin)
     .insert_resource(CodeStorage{
       code: String::new(),
       graph_code: String::new(),
@@ -26,9 +27,9 @@ fn main() {
     .insert_resource(GraphDefinition {
       graph: HashMap::new(),
     })
-    .add_plugins(EguiPlugin)
+    //.add_plugins(EguiPlugin)
     .add_systems(Startup, setup_camera)
-    .add_systems(Update, (ui::setup_ui, node::layout_changed))
+    .add_systems(Update, (ui::setup_ui, node::update_nodes, node::update_connectors))
     .run();
 }
 
