@@ -1,8 +1,11 @@
 mod node;
 mod ui;
-use std::collections::HashMap;
-use bevy_tweening::TweeningPlugin;
+mod actors;
 
+use std::collections::HashMap;
+use actors::say_hello;
+use bevy_tweening::TweeningPlugin;
+use web_sys::console::log_1;
 use bevy::{prelude::*, window::WindowMode};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use ui::{CodeStorage, GraphDefinition};
@@ -39,4 +42,11 @@ fn setup_camera(
   commands.spawn(Camera2dBundle{
     ..Default::default()
   });
+  let x = say_hello();
+  if x.is_ok() {
+    log_1(&"Done running python".into());
+  } else {
+    let e = x.err();
+    log_1(&"Failed running python".into());
+  }
 }

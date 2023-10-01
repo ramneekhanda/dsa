@@ -17,6 +17,11 @@ pub struct CodeStorage {
   pub console: String,
 }
 
+#[derive(Resource)]
+pub struct Speed {
+  pub speed: f32,
+}
+
 //TODO write this as a actual string parser
 fn parse_graph(graph_code: &String) -> Result<NodeDepsMap, String>{
   let lines = graph_code.lines();

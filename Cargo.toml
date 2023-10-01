@@ -15,8 +15,9 @@ rfd = "0.12"
 wasm-bindgen-futures = "0.4.37"
 egui_code_editor = "0.1.7"
 rustpython-vm = "0.3.0"
-egui_tiles = "0.3.1"
 bevy_tweening = "0.8.0"
+web-sys = "0.3.64"
+
 [profile.dev]
 opt-level = 1
 

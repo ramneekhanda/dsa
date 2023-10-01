@@ -1,4 +1,6 @@
 use crate::ui::*;
+use crate::actors::*;
+
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle, render::mesh::PrimitiveTopology};
 use bevy_tweening::{*, lens::*};
 use rand::Rng;
@@ -63,6 +65,7 @@ fn spawn_node(node_name: &String,
               meshes: &mut ResMut<Assets<Mesh>>,
               materials: &mut ResMut<Assets<ColorMaterial>>,
 ) {
+  //TODO move this to setup
   let font = asset_server.load("fonts/FiraSans-Bold.ttf");
   let text_style = TextStyle {
     font: font.clone(),
@@ -126,6 +129,7 @@ pub fn update_connectors(graph_defn: Res<GraphDefinition>,
                          query_conn: Query<(Entity, &Connector)>
 ) {
   if !query.is_empty() {
+    say_hello();
     let mut node_loc = HashMap::<String, Vec3>::new();
     //despawn all connectors,
     //TODO we should despawn only required
@@ -164,6 +168,8 @@ pub fn update_connectors(graph_defn: Res<GraphDefinition>,
         ));
       }
     }
+  } else {
+
   }
 }
 
