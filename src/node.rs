@@ -1,5 +1,4 @@
 use crate::ui::*;
-use crate::actors::*;
 
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle, render::mesh::PrimitiveTopology};
 use bevy_tweening::{*, lens::*};
@@ -129,7 +128,6 @@ pub fn update_connectors(graph_defn: Res<GraphDefinition>,
                          query_conn: Query<(Entity, &Connector)>
 ) {
   if !query.is_empty() {
-    say_hello();
     let mut node_loc = HashMap::<String, Vec3>::new();
     //despawn all connectors,
     //TODO we should despawn only required

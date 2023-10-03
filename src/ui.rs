@@ -1,109 +1,157 @@
-use bevy_egui::{egui, EguiContexts};
-use bevy::prelude::*;
 use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
 use std::collections::HashMap;
+use bevy_egui::{egui::{self, TextEdit}, EguiContexts, EguiContext};
+use egui_dock::{Tree, NodeIndex, DockArea, Style};
+use bevy::{prelude::*, window::PrimaryWindow};
 
-type NodeDepsMap = HashMap::<String, Vec<String>>;
+use crate::actors::parse_graph;
 
-#[derive(Resource)]
+pub type NodeDepsMap = HashMap::<String, Vec<String>>;
+
+#[derive(Debug)]
+pub enum EguiWindow {
+  ActionPane,
+  CodeViewer,
+  LogsWindow,
+}
+
+#[derive(Resource, Default)]
 pub struct GraphDefinition {
   pub graph: NodeDepsMap,
 }
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct CodeStorage {
   pub code: String,
-  pub graph_code: String,
   pub console: String,
 }
 
+//global state of the UI
 #[derive(Resource)]
-pub struct Speed {
-  pub speed: f32,
+pub struct UiState {
+  tree: Tree<EguiWindow>,
+  viewport_rect: egui::Rect,
 }
 
-//TODO write this as a actual string parser
-fn parse_graph(graph_code: &String) -> Result<NodeDepsMap, String>{
-  let lines = graph_code.lines();
-  let mut nodes = NodeDepsMap::new();
-
-  for (i, line) in lines.enumerate() {
-    if line.len() > 0 {
-      let splits: Vec<_> = line.split(":").collect();
-      if splits.len() != 2 {
-        return Err("ill format line ".to_string() + &i.to_string());
-      } else {
-        // cleanup all data
-        let deps: Vec<String> = splits.get(1).unwrap().split(' ').map(|x| x.to_string()).collect();
-        let mut deps_clean : Vec<String> = deps.iter().map(|x| x.trim().to_string()).filter(|x| x.len() > 0).collect();
-        let key = splits.get(0).unwrap().trim().to_string();
-        deps_clean.sort();
-        deps_clean.dedup();
-
-        // now build hashmap
-        for s in deps_clean.iter() {
-          if *s != key {
-            if nodes.contains_key(s) {
-              nodes.get_mut(s).unwrap().push(key.clone());
-            } else {
-              nodes.insert(s.clone(), Vec::<String>::new());
-            }
-          }
-        }
-        nodes.insert(key, deps_clean);
-      }
+impl UiState {
+  pub fn new() -> Self {
+    let mut tree = Tree::new(vec![EguiWindow::ActionPane]);
+    let [actionpane, logs] =
+      tree.split_below(NodeIndex::root(), 0.75, vec![EguiWindow::LogsWindow, EguiWindow::CodeViewer]);
+    Self {
+      tree,
+      viewport_rect: egui::Rect::NOTHING,
     }
   }
-  return Ok(nodes);
+
+  fn ui(&mut self, world: &mut World, ctx: &mut egui::Context) {
+    let mut tab_viewer = TabViewer {
+      world,
+      viewport_rect: &mut self.viewport_rect,
+    };
+
+    DockArea::new(&mut self.tree)
+      .style(Style::from_egui(ctx.style().as_ref()))
+      .show(ctx, &mut tab_viewer);
+  }
 }
 
-pub fn setup_ui(
-  mut contexts: EguiContexts,
-  mut code_store: ResMut<CodeStorage>,
-  mut graph_def:  ResMut<GraphDefinition>,
-) {
-  egui::Window::new("Graph Specification").show(contexts.ctx_mut(), |ui| {
-    CodeEditor::default()
-      .id_source("graphspec")
-      .with_rows(12)
-      .with_fontsize(14.0)
-      .with_theme(ColorTheme::GRUVBOX)
-      .with_syntax(Syntax::rust())
-      .with_numlines(true)
-      .show(ui, &mut code_store.graph_code);
-  });
 
-  egui::Window::new("Node Console").show(contexts.ctx_mut(), |ui| {
-    if ui.button("compile").clicked() {
-      let res = parse_graph(&code_store.graph_code);
-      if res.is_err() {
-        code_store.console = res.err().unwrap() + "\n" + &code_store.console;
-      } else {
-        let nodedeps : NodeDepsMap = res.ok().unwrap();
-        let len = nodedeps.len();
-        code_store.console = format!("Compilation succeeded. {} nodes found!\n {}", len, code_store.console);
-        for key in nodedeps.keys() {
-          code_store.console = format!("node discovered {}\n {}", key, code_store.console);
+struct TabViewer<'a> {
+  world: &'a mut World,
+  viewport_rect: &'a mut egui::Rect,
+}
+
+fn draw_codeviewer(w: &mut World, ui: &mut egui::Ui) {
+  w.resource_scope::<CodeStorage, _>(|w, mut code_store| {
+    egui::ScrollArea::vertical().show(ui, |ui| {
+      ui.vertical_centered(|ui| {
+        if ui.button("compile").clicked() {
+          let res = parse_graph(&code_store.code);
+          if res.is_err() {
+            code_store.console = res.err().unwrap() + "\n" + &code_store.console;
+          } else {
+            let nodedeps : NodeDepsMap = res.ok().unwrap();
+            let len = nodedeps.len();
+            code_store.console = format!("Compilation succeeded. {} nodes found!\n {}", len, code_store.console);
+            for key in nodedeps.keys() {
+              code_store.console = format!("node discovered {}\n {}", key, code_store.console);
+            }
+            w.resource_scope::<GraphDefinition, _>(|w, mut graph_defn| {
+              graph_defn.graph = nodedeps;
+            });
+          }
         }
-        graph_def.graph = nodedeps;
-      }
-    }
+      });
+      CodeEditor::default()
+        .with_rows(100)
+        .with_fontsize(14.0)
+        .with_theme(ColorTheme::GRUVBOX)
+        .with_syntax(Syntax::lua())
+        .with_numlines(true)
+        .show(ui, &mut code_store.code);
+    });
+  });
+}
+
+
+fn draw_logviewer(w: &mut World, ui: &mut egui::Ui) {
+  w.resource_scope::<CodeStorage, _>(|_, mut code_store| {
     if ui.button("clear").clicked() {
       code_store.console.clear();
     }
+    egui::ScrollArea::vertical().show(ui, |ui| {
+      ui.add_sized(ui.available_size(), egui::TextEdit::multiline(&mut code_store.console));
+    });
 
-    CodeEditor::default()
-      .id_source("Node Console")
-      .with_rows(12)
-      .with_fontsize(14.0)
-      .with_theme(ColorTheme::GRUVBOX)
-      .with_syntax(Syntax::rust())
-      .with_numlines(true)
-      .show(ui, &mut code_store.console);
   });
 }
 
-use std::future::Future;
-fn execute<F: Future<Output = ()> + 'static>(f: F) {
-  wasm_bindgen_futures::spawn_local(f);
+impl egui_dock::TabViewer for TabViewer<'_> {
+  type Tab = EguiWindow;
+
+  fn ui(&mut self, ui: &mut egui_dock::egui::Ui, window: &mut Self::Tab) {
+
+    match window {
+      EguiWindow::CodeViewer => {
+        draw_codeviewer(self.world, ui);
+      }
+      EguiWindow::LogsWindow => {
+        draw_logviewer(self.world, ui);
+      }
+      EguiWindow::ActionPane => {
+        *self.viewport_rect = ui.clip_rect();
+      }
+    }
+  }
+
+
+
+  fn title(&mut self, window: &mut Self::Tab) -> egui_dock::egui::WidgetText {
+    format!("{window:?}").into()
+  }
+
+  fn clear_background(&self, window: &Self::Tab) -> bool {
+    !matches!(window, EguiWindow::ActionPane)
+  }
+}
+
+pub fn show_ui_system(world: &mut World) {
+  let Ok(egui_context) = world
+    .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
+    .get_single(world)
+  else {
+    return;
+  };
+  let mut egui_context = egui_context.clone();
+  egui::TopBottomPanel::top("main menu").show(egui_context.get_mut(), |ui| {
+    if ui.button("Wat the fuck??").clicked() {
+
+    };
+  });
+
+
+  world.resource_scope::<UiState, _>(|world, mut ui_state| {
+    ui_state.ui(world, egui_context.get_mut())
+  });
 }
