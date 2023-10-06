@@ -1,9 +1,14 @@
+use py_vm::VirtualMachine;
+use py_vm::builtins::{PyIntRef, PyInt};
+use py_vm::convert::ToPyObject;
 use rustpython_vm as py_vm;
 use rustpython_vm::{
     pymodule, pyclass, compiler::parser as parser
 };
 
+use crate::python_interp::interpreter;
 use crate::shimmer::*;
+
 use crate::ui::NodeDepsMap;
 
 #[pyclass(name = "NodeImpl", module = false)]
@@ -38,7 +43,7 @@ pub fn parse_graph(graph_code: &String) -> Result<NodeDepsMap, String>{
             if nodes.contains_key(s) {
               nodes.get_mut(s).unwrap().push(key.clone());
             } else {
-              nodes.insert(s.clone(), Vec::<String>::new());
+              nodes.insert(s.clone(), vec![key.clone()]);
             }
           }
         }
@@ -107,50 +112,4 @@ pub fn compile_source(code: &String) {
     }
   }
 
-}
-
-#[test]
-fn test() {
-  let code = r#"
-graph = '''
-something is funny
-''';
-
-def my_fun():
-  send_something()
-
-g = 10
-
-def _fun():
-  test()
-  "#;
-
-  let result = parser::parse(&code, parser::Mode::Module, "<embedded>")
-                .map_err(|e| e.to_string());
-  match result {
-    Ok(val) => {
-      log("compilation successful".into());
-      let b = &val.as_module().unwrap().body;
-      for s in b.iter() {
-        if s.is_function_def_stmt() {
-          log("function found - ".to_owned() + s.as_function_def_stmt().unwrap().name.as_str());
-        } else {
-          if s.is_assign_stmt() {
-            log("ass statements found!".into());
-            let vt = &s.as_assign_stmt().unwrap().targets;
-            if vt.len() == 1 {
-              if vt[0].is_name_expr() {
-                log("name found ".to_owned() + vt[0].as_name_expr().unwrap().id.as_str());
-              }
-            }
-          } else {
-            log("found non graph, non function".into())
-          }
-        }
-      }
-    },
-    Err(e) => {
-      log("compilation failed".into());
-    }
-  }
 }

@@ -2,25 +2,25 @@ mod node;
 mod ui;
 mod actors;
 mod shimmer;
+mod python_interp;
 
 use std::collections::HashMap;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_tweening::TweeningPlugin;
-use bevy_egui::EguiPlugin;
-use bevy::{prelude::*, window::WindowMode};
+use bevy::prelude::*;
+use bevy_prototype_lyon::prelude::*;
+use bevy_mod_picking::prelude::*;
+
+
 use ui::{CodeStorage, GraphDefinition};
-use shimmer::*;
 
 fn main() {
   App::new()
-    .add_plugins(DefaultPlugins.set(WindowPlugin {
-      primary_window: Some(Window {
-        mode: WindowMode::BorderlessFullscreen,
-        fit_canvas_to_parent: true,
-        ..default()
-      }),
-      ..default()
-    }))
-    .add_plugins(bevy_screen_diags::ScreenDiagsTextPlugin)
+    .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
+    .add_plugins(WorldInspectorPlugin::default())
+    .insert_resource(Msaa::Sample8)
+    .add_plugins(DefaultPickingPlugins)
+    .add_plugins(ShapePlugin)
     .add_plugins(TweeningPlugin)
     .insert_resource(ui::UiState::new())
     .insert_resource(CodeStorage{
@@ -30,14 +30,13 @@ fn main() {
     .insert_resource(GraphDefinition {
       graph: HashMap::new(),
     })
-    .add_plugins(EguiPlugin)
     .add_systems(Startup, setup_camera)
-    .add_systems(Update, (ui::show_ui_system, node::update_connectors, node::update_nodes.after(node::update_connectors)))
+    .add_systems(Update, (ui::show_ui_system, node::update_connectors, node::update_nodes))
     .run();
 }
 
 fn setup_camera(
-  mut commands: Commands
+  mut commands: Commands,
 ) {
   commands.spawn(Camera2dBundle{
     ..Default::default()
