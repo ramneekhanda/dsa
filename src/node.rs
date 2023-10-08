@@ -18,6 +18,24 @@ pub struct Connector {
   _conn_text: String,
 }
 
+#[derive(Component, Debug, Clone)]
+pub struct NodeTimers {
+  timers: Vec<(Timer, String)>
+}
+
+#[derive(Component, Debug, Clone)]
+pub struct Dashboard {
+
+}
+
+impl Default for NodeTimers {
+  fn default() -> Self {
+    NodeTimers {
+      timers: vec![]
+    }
+  }
+}
+
 impl Default for Node {
   fn default() -> Self {
     Node {
@@ -65,11 +83,6 @@ fn spawn_node(z: f32,
     ..shapes::RegularPolygon::default()
   };
 
-  let shape_outer = shapes::RegularPolygon {
-    sides: 4,
-    feature: shapes::RegularPolygonFeature::Radius(70.0),
-    ..shapes::RegularPolygon::default()
-  };
   let text_alignment = TextAlignment::Center;
 
   let mut rng = rand::thread_rng();
@@ -90,7 +103,6 @@ fn spawn_node(z: f32,
       transform: Transform::from_translation(Vec3::new(0., 0., 100.)),
       ..Default::default()
     },
-    PickableBundle::default(),
     Node {node_text: node_name.to_string()},
     Animator::new(tween),
   )).id();
@@ -100,24 +112,67 @@ fn spawn_node(z: f32,
       path: GeometryBuilder::build_as(&shape),
       ..default()
     },
-    On::<Pointer<Drag>>::target_component_mut::<Parent>(|drag, p| {
-      println!("got parent {}", p.index());
-
-      // parent.transform.translation.x = transform.translation.x + drag.delta.x;
-      // transform.translation.y = transform.translation.y - drag.delta.y;
-    }),
+    On::<Pointer<DragStart>>::target_insert(Pickable::IGNORE),
+    On::<Pointer<DragEnd>>::target_insert(Pickable::default()),
+    On::<Pointer<Drag>>::run(drag),
+    On::<Pointer<Over>>::target_insert(NodeTimers{..default()}),
+    On::<Pointer<Out>>::target_remove::<NodeTimers>(),
     Fill::color(Color::YELLOW),
     Stroke::new(Color::BLACK, 3.0),
-    PickableBundle::default(),
   )).id();
 
   let text_child = commands.spawn((Text2dBundle {
     text: Text::from_section(node_name, text_style).with_alignment(text_alignment),
     transform: Transform::from_translation(Vec3::new(0.0, -35., 100.)),
     ..default()
-  }, PickableBundle::default())).id();
+  }, Pickable::IGNORE)).id();
 
   commands.entity(parent).push_children(&[icon_child, text_child]);
+}
+
+//TODO should be improvable.. does search over the entire set sequentially
+fn drag(e: Listener<Pointer<Drag>>,
+        mut q: Query<(&mut Transform, &mut Children, With<Node>)>) {
+
+  for (mut transform, children, _) in q.iter_mut() {
+    for child in children.iter() {
+      if *child == e.target {
+        transform.translation.x += e.event.delta.x;
+        transform.translation.y -= e.event.delta.y;
+        return;
+      }
+    }
+  }
+}
+
+pub fn show_dashboard(graph_defn: Res<GraphDefinition>,
+                      mut commands: Commands,
+                      query_dash: Query<Entity, With<Dashboard>>,
+                      query: Query<(&Transform, Entity, With<NodeTimers>)>) {
+
+  let shape = shapes::RegularPolygon {
+    sides: 4,
+    feature: shapes::RegularPolygonFeature::Radius(10.0),
+    ..shapes::RegularPolygon::default()
+  };
+  for e in query_dash.iter() {
+    commands.entity(e).despawn_recursive();
+  }
+  for (transform, entity, node_timers) in query.iter() {
+    let dashboard = commands.spawn((
+      Dashboard{},
+      ShapeBundle {
+        path: GeometryBuilder::build_as(&shape),
+        ..default()
+      },
+      On::<Pointer<DragStart>>::target_insert(Pickable::IGNORE),
+      On::<Pointer<DragEnd>>::target_insert(Pickable::default()),
+      On::<Pointer<Drag>>::run(drag),
+      Fill::color(Color::BLUE),
+      Stroke::new(Color::BLACK, 3.0),
+    )).id();
+    commands.entity(entity).add_child(dashboard);
+  }
 }
 
 pub fn update_connectors(graph_defn: Res<GraphDefinition>,

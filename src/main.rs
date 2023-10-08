@@ -5,6 +5,7 @@ mod shimmer;
 mod python_interp;
 
 use std::collections::HashMap;
+use bevy_egui::EguiPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_tweening::TweeningPlugin;
 use bevy::prelude::*;
@@ -17,7 +18,8 @@ use ui::{CodeStorage, GraphDefinition};
 fn main() {
   App::new()
     .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
-    .add_plugins(WorldInspectorPlugin::default())
+    //.add_plugins(WorldInspectorPlugin::default())
+    .add_plugins(EguiPlugin)
     .insert_resource(Msaa::Sample8)
     .add_plugins(DefaultPickingPlugins)
     .add_plugins(ShapePlugin)
@@ -31,7 +33,7 @@ fn main() {
       graph: HashMap::new(),
     })
     .add_systems(Startup, setup_camera)
-    .add_systems(Update, (ui::show_ui_system, node::update_connectors, node::update_nodes))
+    .add_systems(Update, (ui::show_ui_system, node::update_connectors, node::update_nodes, node::show_dashboard))
     .run();
 }
 
