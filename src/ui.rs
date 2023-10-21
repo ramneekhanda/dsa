@@ -1,12 +1,12 @@
 use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use bevy_egui::{egui::{self, TextEdit}, EguiContexts, EguiContext};
 use egui_dock::{Tree, NodeIndex, DockArea, Style};
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::actors::parse_graph;
+use crate::parser::graph::parse_graph;
 
-pub type NodeDepsMap = HashMap::<String, Vec<String>>;
+pub type NodeDepsMap = HashMap::<String, HashSet<String>>;
 
 #[derive(Debug)]
 pub enum EguiWindow {
