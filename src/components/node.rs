@@ -9,7 +9,7 @@ pub struct Node {
 
 #[derive(Component, Debug, Clone)]
 pub struct NodeTimers {
-  timers: Vec<(Timer, String)>
+  pub timers: Vec<(Timer, String)>
 }
 
 impl Default for Node {

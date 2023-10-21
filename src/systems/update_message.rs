@@ -35,7 +35,7 @@ pub fn update_message_path(mut query_conn: Query<(Entity, &mut Message, &NodeCon
                            time: Res<Time>,
                            mut commands: Commands,
 ) {
-  for (entity, parent, hotspot) in query_hs.iter_mut() {
+  for (entity, parent, _hotspot) in query_hs.iter_mut() {
     commands.entity(parent.get()).remove_children(&[entity]);
     commands.entity(entity).despawn_recursive();
   }

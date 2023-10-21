@@ -1,6 +1,6 @@
 use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
 use std::collections::{HashMap, HashSet};
-use bevy_egui::{egui::{self, TextEdit}, EguiContexts, EguiContext};
+use bevy_egui::{egui::{self}, EguiContext};
 use egui_dock::{Tree, NodeIndex, DockArea, Style};
 use bevy::{prelude::*, window::PrimaryWindow};
 
@@ -36,7 +36,7 @@ pub struct UiState {
 impl UiState {
   pub fn new() -> Self {
     let mut tree = Tree::new(vec![EguiWindow::ActionPane]);
-    let [actionpane, logs] =
+    let [_, _] =
       tree.split_below(NodeIndex::root(), 0.75, vec![EguiWindow::LogsWindow, EguiWindow::CodeViewer]);
     Self {
       tree,

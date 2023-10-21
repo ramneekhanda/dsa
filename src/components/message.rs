@@ -4,8 +4,8 @@ use bevy::prelude::*;
 pub struct Message {
   pub timer: Timer,
   pub str: String,
-  pub nodeFrom: String,
-  pub nodeTo: String,
+  pub node_from: String,
+  pub node_to: String,
 }
 
 #[derive(Component, Debug, Clone)]

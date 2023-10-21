@@ -1,5 +1,4 @@
 mod ui;
-mod actors;
 mod shimmer;
 mod python_interp;
 
@@ -8,7 +7,7 @@ mod systems;
 mod parser;
 use std::collections::HashMap;
 use bevy_egui::EguiPlugin;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
+//use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_tweening::TweeningPlugin;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
@@ -20,8 +19,8 @@ use ui::{CodeStorage, GraphDefinition};
 fn main() {
   App::new()
     .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
-    .add_plugins(WorldInspectorPlugin::default())
-    //.add_plugins(EguiPlugin)
+    //.add_plugins(WorldInspectorPlugin::default())
+    .add_plugins(EguiPlugin)
     .insert_resource(Msaa::Sample8)
     .add_plugins(DefaultPickingPlugins)
     .add_plugins(ShapePlugin)
