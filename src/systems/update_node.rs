@@ -116,9 +116,12 @@ fn did_spawn_node() {
   app.insert_resource(AssetServer::new(FileAssetIo::new("./assets", &None)));
   app.add_systems(Update, update_nodes);
   app.update();
+
   assert_eq!(app.world.query::<&Node>().iter(&app.world).count(), 2); // check all the keys have been spawned
+  assert_eq!(app.world.query::<Entity>().iter(&app.world).count(), 6); // check that three entities are created per node
   app.world.resource_mut::<GraphDefinition>().graph.clear();
   app.update();
   assert_eq!(app.world.query::<&Node>().iter(&app.world).count(), 0); // check if we change the graph the response is acceptable
+  assert_eq!(app.world.query::<Entity>().iter(&app.world).count(), 0); // check that entities are deleted as expected
 
 }

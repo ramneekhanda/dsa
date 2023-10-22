@@ -1,22 +1,20 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, ecs::archetype::{self, Archetype}};
 use crate::components::node_connector::*;
 use crate::components::node::Node;
 use std::collections::{HashMap, HashSet};
 use bevy_prototype_lyon::prelude::*;
 use bevy_mod_picking::prelude::*;
-use crate::ui::CodeStorage;
 use crate::ui::GraphDefinition;
 
 pub fn update_connectors(graph_defn: Res<GraphDefinition>,
-                         mut _code_store: ResMut<CodeStorage>,
                          mut commands: Commands,
                          query_changed: Query<(&Node, &Transform), Changed<Transform>>,
-                         query_added: Query<(&Node, &Transform), Added<Transform>>,
+                         query_added: Query<(&Node, &Transform), Added<Node>>,
                          query_all: Query<(&Node, &Transform)>,
                          mut query_conn: Query<(Entity, &mut Path, &mut NodeConnector)>
 ) {
-  if !query_added.is_empty() {
-    println!("added {} nodes", query_added.iter().count());
+
+  if !query_added.is_empty() && graph_defn.graph.iter().len() != 0 {
     let mut all_node_loc = HashMap::<String, Vec3>::new();
 
     for (entity, _path,  _conn) in query_conn.iter_mut() {
@@ -35,12 +33,12 @@ pub fn update_connectors(graph_defn: Res<GraphDefinition>,
     // for each node search its connecting entities
     // and make a line between current node and that node
     for (nodea_name, nodea_loc) in all_node_loc.iter() {
-      for nodeb in graph_defn.graph.get(nodea_name).unwrap() {
-        if !done.contains(&(nodea_name.clone() + nodeb)) {
-          let nodeb_loc = all_node_loc.get(nodeb).unwrap();
-          done.insert(nodea_name.clone() + nodeb);
-          done.insert(nodeb.clone() + nodea_name);
-          let _ = generate_line(nodea_loc, nodeb_loc, &nodea_name, &nodeb, &mut commands);
+      for nodeb_name in graph_defn.graph.get(nodea_name).unwrap() {
+        if !done.contains(&(nodea_name.clone() + nodeb_name)) {
+          let nodeb_loc = all_node_loc.get(nodeb_name).unwrap();
+          done.insert(nodea_name.clone() + nodeb_name);
+          done.insert(nodeb_name.clone() + nodea_name);
+          let _ = generate_line(nodea_loc, nodeb_loc, &nodea_name, &nodeb_name, &mut commands);
         }
       }
     }
@@ -114,4 +112,44 @@ fn generate_line(a: &Vec3,
       s.color = Color::BLACK;
     }),
   )).id()
+}
+
+#[test]
+fn did_spawn_connectors() {
+  use std::collections::HashSet;
+  use crate::ui::*;
+  use crate::systems::update_node::update_nodes;
+  use bevy::asset::AssetServer;
+  use bevy::asset::FileAssetIo;
+  use bevy::tasks::IoTaskPool;
+  let mut app = App::new();
+  let mut graph = NodeDepsMap::new();
+  let mut hs = HashSet::new();
+  let mut hs1 = HashSet::new();
+
+  hs.insert("b".to_string());
+  hs1.insert("a".to_string());
+  hs1.insert("c".to_string());
+
+  graph.insert("a".to_string(), hs.clone());
+  graph.insert("b".to_string(), hs1.clone());
+  graph.insert("c".to_string(), hs.clone());
+
+  app.insert_resource(GraphDefinition {
+    graph
+  });
+  IoTaskPool::init(Default::default);
+  app.insert_resource(AssetServer::new(FileAssetIo::new("./assets", &None)));
+  app.add_systems(Update, (update_nodes, update_connectors));
+  app.update();
+  app.update();
+  assert_eq!(app.world.query::<&Node>().iter(&app.world).count(), 3); // check all the keys have been spawned
+  assert_eq!(app.world.query::<&NodeConnector>().iter(&app.world).count(), 2);
+
+  assert_eq!(app.world.query::<Entity>().iter(&app.world).count(), 11); //check entity count = 3 * nodes + connectors
+  app.world.resource_mut::<GraphDefinition>().graph.clear();
+  app.update();
+  app.update();
+  assert_eq!(app.world.query::<&Node>().iter(&app.world).count(), 0); // check if we change the graph the response is acceptable
+  //assert_eq!(app.world.query::<&NodeConnector>().iter(&app.world).count(), 0);
 }
