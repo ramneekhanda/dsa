@@ -94,3 +94,31 @@ fn spawn_node(z: f32,
 
   commands.entity(parent).push_children(&[icon_child, text_child]);
 }
+
+
+#[test]
+fn did_spawn_node() {
+  use std::collections::HashSet;
+  use bevy::asset::AssetServer;
+  use bevy::asset::FileAssetIo;
+  use bevy::tasks::IoTaskPool;
+  let mut app = App::new();
+  let mut graph = NodeDepsMap::new();
+  let mut hs = HashSet::new();
+  hs.insert("b".to_string());
+  graph.insert("a".to_string(), hs.clone());
+  graph.insert("b".to_string(), hs);
+
+  app.insert_resource(GraphDefinition {
+    graph
+  });
+  IoTaskPool::init(Default::default);
+  app.insert_resource(AssetServer::new(FileAssetIo::new("./assets", &None)));
+  app.add_systems(Update, update_nodes);
+  app.update();
+  assert_eq!(app.world.query::<&Node>().iter(&app.world).count(), 2); // check all the keys have been spawned
+  app.world.resource_mut::<GraphDefinition>().graph.clear();
+  app.update();
+  assert_eq!(app.world.query::<&Node>().iter(&app.world).count(), 0); // check if we change the graph the response is acceptable
+
+}
