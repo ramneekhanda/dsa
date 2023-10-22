@@ -31,12 +31,22 @@ fn walk_message(path: &lyon_algorithms::path::Path) -> Vec<[f32; 2]> {
 }
 
 pub fn update_message_path(mut query_conn: Query<(Entity, &mut Message, &NodeConnector)>,
-                           mut query_hs: Query<(Entity, &Parent, &HotSpot)>,
+                           mut query_hs: Query<(Entity, &HotSpot)>,
+                           asset_server: Res<AssetServer>,
                            time: Res<Time>,
                            mut commands: Commands,
 ) {
-  for (entity, parent, _hotspot) in query_hs.iter_mut() {
-    commands.entity(parent.get()).remove_children(&[entity]);
+  let font = asset_server.load("fonts/FiraSans-Bold.ttf");
+  let text_alignment = TextAlignment::Center;
+
+  let text_style = TextStyle {
+    font: font.clone(),
+    font_size: 16.0,
+    color: Color::WHITE
+  };
+
+  for (entity, _hotspot) in query_hs.iter_mut() {
+    //commands.entity(parent.get()).remove_children(&[entity]);
     commands.entity(entity).despawn_recursive();
   }
 
@@ -48,23 +58,39 @@ pub fn update_message_path(mut query_conn: Query<(Entity, &mut Message, &NodeCon
     let loc_int = loc.round() as usize;
     if loc_int == v_points.len() as usize {
       //remove message
+      commands.entity(entity).remove::<Message>();
     } else {
+
+      let parent = commands.spawn((
+        HotSpot{},
+        SpatialBundle {
+          transform: Transform::from_translation(Vec3::new(v_points[loc_int][0], v_points[loc_int][1], 100.)),
+          ..Default::default()
+        },
+      )).id();
 
       let shape = shapes::RegularPolygon {
         sides: 4,
         feature: shapes::RegularPolygonFeature::Radius(4.0),
         ..shapes::RegularPolygon::default()
       };
-      let ch_en = commands.spawn((
-        HotSpot{},
+      let icon_child = commands.spawn((
         ShapeBundle {
           path: GeometryBuilder::build_as(&shape),
-          transform: Transform::from_xyz(v_points[loc_int][0], v_points[loc_int][1], -10.0),
+          transform: Transform::from_xyz(0., 0., 100.0),
           ..default()
         },
         Stroke::new(Color::BLACK, 3.0),
       )).id();
-      commands.entity(entity).add_child(ch_en);
+
+      let text_child = commands.spawn(Text2dBundle {
+        text: Text::from_section("Hello!", text_style.clone()).with_alignment(text_alignment),
+        transform: Transform::from_translation(Vec3::new(0.0, -20., 100.)),
+        ..default()
+      }).id();
+
+
+      commands.entity(parent).push_children(&[icon_child, text_child]);
     }
   }
 }

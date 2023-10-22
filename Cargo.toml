@@ -23,6 +23,7 @@ egui_dock = "0.6.0"
 bevy_prototype_lyon = "0.9.0"
 #bevy_mod_picking = {version = "0.15.0", features=["all"]}
 bevy_mod_picking = {git = "https://github.com/aevyrie/bevy_mod_picking/"}
+lyon_algorithms = "1"
 [profile.dev]
 opt-level = 1
 

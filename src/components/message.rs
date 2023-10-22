@@ -10,3 +10,6 @@ pub struct Message {
 
 #[derive(Component, Debug, Clone)]
 pub struct HotSpot {}
+
+#[derive(Component)]
+pub struct ColorText;

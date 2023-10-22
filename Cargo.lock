@@ -1879,6 +1879,7 @@ dependencies = [
  "bevy_tweening",
  "egui_code_editor",
  "egui_dock",
+ "lyon_algorithms",
  "rand 0.8.5",
  "rfd",
  "rustpython-vm",
