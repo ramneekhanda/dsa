@@ -84,7 +84,7 @@ pub fn update_message_path(mut query_conn: Query<(Entity, &mut Message, &NodeCon
       )).id();
 
       let text_child = commands.spawn(Text2dBundle {
-        text: Text::from_section("Hello!", text_style.clone()).with_alignment(text_alignment),
+        text: Text::from_section(mesg.str.clone(), text_style.clone()).with_alignment(text_alignment),
         transform: Transform::from_translation(Vec3::new(0.0, -20., 100.)),
         ..default()
       }).id();
