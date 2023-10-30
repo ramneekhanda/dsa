@@ -19,9 +19,6 @@ pub struct NodeImpl {
     state: String,
 }
 
-
-
-
 #[pymodule]
 mod test_mod {
   #[pyfunction]
@@ -37,19 +34,6 @@ pub fn parse_source(code: &String) {
   match result {
     Ok(val) => {
       log("compilation successful".into());
-
-      // let b = val.as_module().unwrap().body;
-      // for s in b.iter() {
-      //   if s.is_global_stmt() && s.is_assert_stmt() {
-      //      for j in s.as_assign_stmt().iter() {
-      //        let k = j.clone();
-      //        for i in k.targets {
-      //          if (i.is_name_expr();
-      //          i.is_constant_expr().to_string();
-      //        }
-      //      }
-      //   }
-      // }
     },
     Err(e) => {
       log("compilation failed".into());

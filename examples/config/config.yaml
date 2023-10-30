@@ -1,0 +1,25 @@
+fns:
+  - &server_fn |
+      def fn():
+        log("hello server")
+
+  - &client_fn |
+      def fn():
+        log("hello client")
+
+graph_defn:
+  name: "test graph"
+  nodes:
+    - name: server
+      fn: *server_fn
+      attrs:
+        tick_timer: 5s
+        color: "yellow"
+    - name: client1
+      fn: *client_fn
+    - name: client2
+      fn: *client_fn
+  allowed_connections:
+    server: [client1, client2]
+  graph:
+    - server: [client1, client2]

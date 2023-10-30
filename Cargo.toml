@@ -10,8 +10,8 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.11" }
-bevy-inspector-egui = "0.19"
-bevy_egui = "0.21"
+bevy-inspector-egui = "0.20"
+bevy_egui = "0.22.0"
 rand = "0.8.5"
 rfd = "0.12"
 wasm-bindgen-futures = "0.4.37"
@@ -19,11 +19,12 @@ egui_code_editor = "0.1.7"
 rustpython-vm = "0.3.0"
 bevy_tweening = "0.8.0"
 web-sys = "0.3.64"
-egui_dock = "0.6.0"
 bevy_prototype_lyon = "0.9.0"
-#bevy_mod_picking = {version = "0.15.0", features=["all"]}
 bevy_mod_picking = {git = "https://github.com/aevyrie/bevy_mod_picking/"}
 lyon_algorithms = "1"
+serde = "1.0"
+serde_yaml = "0.9"
+
 [profile.dev]
 opt-level = 1
 

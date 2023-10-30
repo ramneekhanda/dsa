@@ -42,8 +42,6 @@ pub fn parse_graph(graph_code: &String) -> Result<GraphType, String>{
   return Ok(nodes);
 }
 
-
-
 #[test]
 fn parse_graph_test() {
   let code = String::from("a: b c d e f

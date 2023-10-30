@@ -13,6 +13,12 @@ pub fn update_connectors(graph_defn: Res<GraphDefinition>,
                          query_all: Query<(&Node, &Transform)>,
                          mut query_conn: Query<(Entity, &mut Path, &mut NodeConnector)>
 ) {
+  if graph_defn.graph.iter().len() == 0 {
+    for (entity, _path,  _conn) in query_conn.iter_mut() {
+      commands.entity(entity).despawn_recursive();
+    }
+    return;
+  }
 
   if !query_added.is_empty() && graph_defn.graph.iter().len() != 0 {
     let mut all_node_loc = HashMap::<String, Vec3>::new();
@@ -151,5 +157,5 @@ fn did_spawn_connectors() {
   app.update();
   app.update();
   assert_eq!(app.world.query::<&Node>().iter(&app.world).count(), 0); // check if we change the graph the response is acceptable
-  //assert_eq!(app.world.query::<&NodeConnector>().iter(&app.world).count(), 0);
+  assert_eq!(app.world.query::<&NodeConnector>().iter(&app.world).count(), 0);
 }
