@@ -1,16 +1,16 @@
 
 
-pub struct Interpreter {
+pub struct PyInterpreter {
   code: String,
   vm: rustpython_vm::Interpreter
 }
 
-impl Interpreter {
-  pub fn compile_code(self: &mut Interpreter, code: String) -> Result<&mut Interpreter, String> {
+impl PyInterpreter {
+  pub fn compile_code(self: &mut PyInterpreter, code: String) -> Result<&mut PyInterpreter, String> {
     Ok(self)
   }
 
-  pub fn add_function(self: &mut Interpreter, code: String)  -> Result<&mut Interpreter, String> {
+  pub fn add_function(self: &mut PyInterpreter, code: String)  -> Result<&mut PyInterpreter, String> {
     Ok(self)
   }
 }

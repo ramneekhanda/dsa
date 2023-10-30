@@ -5,6 +5,7 @@ mod python_interp;
 mod components;
 mod systems;
 mod parser;
+mod python;
 use bevy_egui::EguiPlugin;
 //use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_tweening::TweeningPlugin;

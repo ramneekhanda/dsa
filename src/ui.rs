@@ -42,7 +42,11 @@ pub fn draw_codeviewer(mut contexts: EguiContexts,
             },
             Err(e) => {
               println!("{e}");
+              return;
             }
+          }
+          for node in graph_defn.graph_defn.nodes.iter() {
+            //node.func
           }
         }
       });

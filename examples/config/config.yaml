@@ -1,10 +1,10 @@
 fns:
   - &server_fn |
-      def fn():
+      def handle_event(context):
         log("hello server")
 
   - &client_fn |
-      def fn():
+      def handle_event(context):
         log("hello client")
 
 graph_defn:

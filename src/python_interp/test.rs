@@ -7,11 +7,10 @@ use rustpython_vm::{
 };
 
 use crate::shimmer::*;
+use std::mem::size_of_val;
 
 
 
-
-#[test]
 fn test_rustpy_parser() {
   let code = r#"
 graph = '''
@@ -57,12 +56,6 @@ def _fun():
   }
 }
 
-
-struct MessageStruct {
-
-}
-
-#[test]
 fn test_rustpy_vm() {
   let code = r#"
 
@@ -75,11 +68,14 @@ def my_fun():
 
 def _fun():
   return(2)
+
 "#;
 
   let interpreter = py_vm::Interpreter::with_init(Default::default(), |vm| {
     log("Entered Python VM".into());
   });
+
+  println!("The useful size of `interpreter` is {}", size_of_val(&interpreter));
 
   interpreter.enter(|vm| {
     let code_obj_res = vm.compile(code, py_vm::compiler::Mode::Exec, "<embedded>".to_owned());
@@ -87,6 +83,8 @@ def _fun():
     match code_obj_res {
       Ok(code_obj) => {
         let scope = vm.new_scope_with_builtins();
+        println!("The useful size of `scope` is {}", size_of_val(&scope));
+
         let myscope = scope.clone();
         let a = vm.run_code_obj(code_obj, scope);
         println!("Leng of scope {}", myscope.globals.len());
