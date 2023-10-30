@@ -3,7 +3,8 @@ use std::collections::{HashMap, HashSet};
 use bevy_egui::{egui::{self}, EguiContexts};
 use bevy::{prelude::*};
 
-use crate::parser::graph::parse_graph;
+use crate::parser::graphv2::parse_graph2;
+use crate::parser::graphv2::GraphDefinition;
 
 pub type NodeDepsMap = HashMap::<String, HashSet<String>>;
 
@@ -14,9 +15,9 @@ pub enum EguiWindow {
   LogsWindow,
 }
 
-#[derive(Resource, Default)]
-pub struct GraphDefinition {
-  pub graph: NodeDepsMap,
+#[derive(Resource, Default, Debug)]
+pub struct GraphDefinitionRes {
+  pub graph_defn: GraphDefinition,
 }
 
 #[derive(Resource, Default)]
@@ -27,23 +28,21 @@ pub struct CodeStorage {
 
 pub fn draw_codeviewer(mut contexts: EguiContexts,
                        mut code_store: ResMut<CodeStorage>,
-                       mut graph_defn: ResMut<GraphDefinition>) {
+                       mut graph_defn: ResMut<GraphDefinitionRes>) {
 
   egui::Window::new("Hello").show(contexts.ctx_mut(), |ui| {
 
       ui.vertical_centered(|ui| {
         if ui.button("compile").clicked() {
-          let res = parse_graph(&code_store.code);
-          if res.is_err() {
-            code_store.console = res.err().unwrap() + "\n" + &code_store.console;
-          } else {
-            let nodedeps : NodeDepsMap = res.ok().unwrap();
-            let len = nodedeps.len();
-            code_store.console = format!("Compilation succeeded. {} nodes found!\n {}", len, code_store.console);
-            for key in nodedeps.keys() {
-              code_store.console = format!("node discovered {}\n {}", key, code_store.console);
+          let res = parse_graph2(&code_store.code);
+
+          match res {
+            Ok(file) => {
+              graph_defn.graph_defn = file.graph_defn;
+            },
+            Err(e) => {
+              println!("{e}");
             }
-            graph_defn.graph = nodedeps;
           }
         }
       });

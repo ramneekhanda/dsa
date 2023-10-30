@@ -5,7 +5,6 @@ mod python_interp;
 mod components;
 mod systems;
 mod parser;
-use std::collections::HashMap;
 use bevy_egui::EguiPlugin;
 //use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_tweening::TweeningPlugin;
@@ -13,8 +12,8 @@ use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 use bevy_mod_picking::prelude::*;
 use std::time::Duration;
-
-use ui::{CodeStorage, GraphDefinition};
+use parser::graphv2::GraphDefinition;
+use ui::{CodeStorage, GraphDefinitionRes};
 
 fn main() {
   App::new()
@@ -33,8 +32,8 @@ fn main() {
       code: String::new(),
       console: String::new(),
     })
-    .insert_resource(GraphDefinition {
-      graph: HashMap::new(),
+    .insert_resource(GraphDefinitionRes {
+        graph_defn: GraphDefinition::default()
     })
     .add_systems(Startup, setup_camera)
     .add_systems(Update, (systems::demo_message::demo_send_message,

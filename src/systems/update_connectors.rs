@@ -1,26 +1,32 @@
 use bevy::{prelude::*, ecs::archetype::{self, Archetype}};
-use crate::components::node_connector::*;
+use crate::{components::node_connector::*, parser::graphv2::{GraphDefinition, GraphAttrs}};
 use crate::components::node::Node;
 use std::collections::{HashMap, HashSet};
 use bevy_prototype_lyon::prelude::*;
 use bevy_mod_picking::prelude::*;
-use crate::ui::GraphDefinition;
+use crate::ui::GraphDefinitionRes;
 
-pub fn update_connectors(graph_defn: Res<GraphDefinition>,
+pub fn update_connectors(g: Res<GraphDefinitionRes>,
                          mut commands: Commands,
                          query_changed: Query<(&Node, &Transform), Changed<Transform>>,
                          query_added: Query<(&Node, &Transform), Added<Node>>,
                          query_all: Query<(&Node, &Transform)>,
                          mut query_conn: Query<(Entity, &mut Path, &mut NodeConnector)>
 ) {
-  if graph_defn.graph.iter().len() == 0 {
+  if g.graph_defn.graph.iter().len() == 0 {
     for (entity, _path,  _conn) in query_conn.iter_mut() {
       commands.entity(entity).despawn_recursive();
     }
     return;
   }
+  let oga = &g.graph_defn.graph_attrs;
+  let mut ga: &GraphAttrs = &GraphAttrs {..Default::default() };
+  let _ = oga.as_ref().is_some_and(|attrs| {
+    ga = attrs;
+    true
+  });
 
-  if !query_added.is_empty() && graph_defn.graph.iter().len() != 0 {
+  if !query_added.is_empty() && g.graph_defn.graph.iter().len() != 0 {
     let mut all_node_loc = HashMap::<String, Vec3>::new();
 
     for (entity, _path,  _conn) in query_conn.iter_mut() {
@@ -29,6 +35,7 @@ pub fn update_connectors(graph_defn: Res<GraphDefinition>,
 
     //insert in hash map location of all nodes
     for (node, transform) in query_all.iter() {
+      println!("{:?}", node);
       let mut pos: Vec3 = transform.translation;
       pos.z = 50.;
       all_node_loc.insert(node.node_text.clone(), pos);
@@ -39,13 +46,19 @@ pub fn update_connectors(graph_defn: Res<GraphDefinition>,
     // for each node search its connecting entities
     // and make a line between current node and that node
     for (nodea_name, nodea_loc) in all_node_loc.iter() {
-      for nodeb_name in graph_defn.graph.get(nodea_name).unwrap() {
-        if !done.contains(&(nodea_name.clone() + nodeb_name)) {
-          let nodeb_loc = all_node_loc.get(nodeb_name).unwrap();
-          done.insert(nodea_name.clone() + nodeb_name);
-          done.insert(nodeb_name.clone() + nodea_name);
-          let _ = generate_line(nodea_loc, nodeb_loc, &nodea_name, &nodeb_name, &mut commands);
-        }
+      let node_links = g.graph_defn.graph.get(nodea_name);
+      match node_links {
+        Some (nl) => {
+          for nodeb_name in nl.iter() {
+            if !done.contains(&(nodea_name.clone() + nodeb_name)) {
+              let nodeb_loc = all_node_loc.get(nodeb_name).unwrap();
+              done.insert(nodea_name.clone() + nodeb_name);
+              done.insert(nodeb_name.clone() + nodea_name);
+              let _ = generate_line(nodea_loc, nodeb_loc, ga, &nodea_name, &nodeb_name, &mut commands);
+            }
+          }
+        },
+        None => {}
       }
     }
   } else if !query_changed.is_empty() {
@@ -81,6 +94,7 @@ pub fn update_connectors(graph_defn: Res<GraphDefinition>,
 
 fn generate_line(a: &Vec3,
                  b: &Vec3,
+                 ga: &GraphAttrs,
                  node1: &String,
                  node2: &String,
                  commands: &mut Commands
@@ -99,23 +113,30 @@ fn generate_line(a: &Vec3,
 
   let path = path_builder.build();
   let walking_path = path.0.clone();
+  let occ = &ga.connection_color;
+  let mut cc: &[f32;4] = &Color::BLACK.as_rgba_f32();
+  let _ = occ.as_ref().is_some_and(|color| {
+    cc = color;
+    true
+  });
+  println!("color {:?}", cc);
   commands.spawn((
     ShapeBundle {
       path,
       transform: Transform::from_xyz(0., 0., -50.),
       ..default()
     },
-    Stroke::new(Color::BLACK, 3.0),
+    Stroke::new(Color::Rgba { red: cc[0], green: cc[1], blue: cc[2], alpha: cc[3] }, 3.0),
     NodeConnector {
       node1: node1.clone(),
       node2: node2.clone(),
       path: walking_path
     },
     On::<Pointer<Over>>::target_component_mut::<Stroke>(|_, s| {
-      s.color = Color::BEIGE;
+      s.options.line_width = 7.;
     }),
     On::<Pointer<Out>>::target_component_mut::<Stroke>(|_, s| {
-      s.color = Color::BLACK;
+      s.options.line_width = 3.;
     }),
   )).id()
 }
@@ -123,6 +144,7 @@ fn generate_line(a: &Vec3,
 #[test]
 fn did_spawn_connectors() {
   use std::collections::HashSet;
+  use crate::parser::graphv2::Node as NodeData;
   use crate::ui::*;
   use crate::systems::update_node::update_nodes;
   use bevy::asset::AssetServer;
@@ -131,18 +153,25 @@ fn did_spawn_connectors() {
   let mut app = App::new();
   let mut graph = NodeDepsMap::new();
   let mut hs = HashSet::new();
-  let mut hs1 = HashSet::new();
 
   hs.insert("b".to_string());
-  hs1.insert("a".to_string());
-  hs1.insert("c".to_string());
+  hs.insert("c".to_string());
 
   graph.insert("a".to_string(), hs.clone());
-  graph.insert("b".to_string(), hs1.clone());
-  graph.insert("c".to_string(), hs.clone());
-
-  app.insert_resource(GraphDefinition {
-    graph
+  let mut graph_defn = GraphDefinition::default();
+  graph_defn.graph = graph;
+  graph_defn.nodes = vec!(NodeData {
+    name: "a".to_string(),
+    ..Default::default()
+  }, NodeData {
+    name: "b".to_string(),
+    ..Default::default()
+  }, NodeData {
+    name: "c".to_string(),
+    ..Default::default()
+  });
+  app.insert_resource(GraphDefinitionRes {
+    graph_defn
   });
   IoTaskPool::init(Default::default);
   app.insert_resource(AssetServer::new(FileAssetIo::new("./assets", &None)));
@@ -153,7 +182,7 @@ fn did_spawn_connectors() {
   assert_eq!(app.world.query::<&NodeConnector>().iter(&app.world).count(), 2);
 
   assert_eq!(app.world.query::<Entity>().iter(&app.world).count(), 11); //check entity count = 3 * nodes + connectors
-  app.world.resource_mut::<GraphDefinition>().graph.clear();
+  app.world.resource_mut::<GraphDefinitionRes>().graph_defn.graph.clear();
   app.update();
   app.update();
   assert_eq!(app.world.query::<&Node>().iter(&app.world).count(), 0); // check if we change the graph the response is acceptable

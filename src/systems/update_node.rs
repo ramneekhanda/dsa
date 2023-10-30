@@ -1,28 +1,54 @@
 use bevy::prelude::*;
 use crate::ui::*;
-use crate::components::node::Node;
-use crate::components::node::NodeTimers;
 use bevy_prototype_lyon::prelude::*;
 use bevy_tweening::{*, lens::*};
 use rand::Rng;
 use std::time::Duration;
-use crate::systems::drag;
 use bevy_mod_picking::prelude::*;
+use std::collections::HashSet;
+use crate::systems::drag;
+use crate::components::node::Node;
+use crate::components::node::NodeTimers;
+use crate::parser::graphv2::Attrs;
 
 pub fn update_nodes(
   mut commands: Commands,
   asset_server: Res<AssetServer>,
-  graph_defn: Res<GraphDefinition>,
+  g: Res<GraphDefinitionRes>,
   query: Query<Entity, With<Node>>,
 ) {
-  if graph_defn.is_changed() {
+  if g.is_changed() {
     for entity in query.iter() {
       commands.entity(entity).despawn_recursive();
     }
     let mut z = 0.;
-    for node in graph_defn.graph.keys() {
-      spawn_node(z, node.clone(), &mut commands, &asset_server);
-      z += 1.;
+    let mut node_set = HashSet::<String>::new();
+    for node in g.graph_defn.graph.keys() {
+      node_set.insert(node.clone());
+      let v = g.graph_defn.graph.get(node);
+      match v {
+        Some(val) => {
+          for conn_node in val.iter() {
+            node_set.insert(conn_node.clone());
+          }
+        },
+        None => {}
+      }
+    }
+
+    for node in node_set.iter() {
+      let mut drawn = false;
+      for node_d in g.graph_defn.nodes.iter() {
+        if node_d.name == *node {
+          spawn_node(z, node.clone(), &mut commands, &asset_server, node_d.attrs.clone());
+          z += 1.;
+          drawn = true;
+        }
+      }
+      if !drawn {
+        spawn_node(z, node.clone(), &mut commands, &asset_server, None);
+        z += 1.;
+      }
     }
   } else {
 
@@ -33,7 +59,9 @@ fn spawn_node(z: f32,
               node_name: String,
               commands: &mut Commands,
               asset_server: &Res<AssetServer>,
+              o_attrs: Option<Attrs>
 ) {
+
   //TODO move this to setup
   let font = asset_server.load("fonts/FiraSans-Bold.ttf");
   let text_style = TextStyle {
@@ -41,6 +69,13 @@ fn spawn_node(z: f32,
     font_size: 16.0,
     color: Color::WHITE
   };
+  let mut color: [f32;4] = [1.0, 0.0, 0.5, 1.0];
+  o_attrs.is_some_and(|a| {
+    a.color.is_some_and(|c| {
+      color.clone_from(&c);
+      true
+    })
+  });
 
   let shape = shapes::RegularPolygon {
     sides: 4,
@@ -82,7 +117,7 @@ fn spawn_node(z: f32,
     On::<Pointer<DragEnd>>::target_insert(Pickable::default()),
     On::<Pointer<Drag>>::run(drag::drag),
     On::<Pointer<Out>>::target_remove::<NodeTimers>(),
-    Fill::color(Color::YELLOW),
+    Fill::color(Color::Rgba { red: (color[0]), green: (color[1]), blue: (color[2]), alpha: (color[3]) }),
     Stroke::new(Color::BLACK, 3.0),
   )).id();
 
@@ -102,24 +137,36 @@ fn did_spawn_node() {
   use bevy::asset::AssetServer;
   use bevy::asset::FileAssetIo;
   use bevy::tasks::IoTaskPool;
+  use crate::parser::graphv2::Node as NodeData;
+
+
   let mut app = App::new();
   let mut graph = NodeDepsMap::new();
   let mut hs = HashSet::new();
-  hs.insert("b".to_string());
-  graph.insert("a".to_string(), hs.clone());
-  graph.insert("b".to_string(), hs);
 
-  app.insert_resource(GraphDefinition {
-    graph
-  });
+  hs.insert("b".to_string());
+  graph.insert("a".to_string(), hs);
+
+
+  let mut graph_defn = GraphDefinitionRes::default();
+  graph_defn.graph_defn.graph = graph;
+  // graph_defn.graph_defn.nodes = vec!(NodeData {
+  //   name: "a".to_string(),
+  //   ..Default::default()
+  // }, NodeData {
+  //   name: "b".to_string(),
+  //   ..Default::default()
+  // });
+  // println!("{:?}", graph_defn);
+
+  app.insert_resource(graph_defn);
   IoTaskPool::init(Default::default);
   app.insert_resource(AssetServer::new(FileAssetIo::new("./assets", &None)));
   app.add_systems(Update, update_nodes);
   app.update();
-
-  assert_eq!(app.world.query::<&Node>().iter(&app.world).count(), 2); // check all the keys have been spawned
+  assert_eq!(app.world.query::<&Node>().iter(&app.world).count(), 2); // check all the nodes have been spawned
   assert_eq!(app.world.query::<Entity>().iter(&app.world).count(), 6); // check that three entities are created per node
-  app.world.resource_mut::<GraphDefinition>().graph.clear();
+  app.world.resource_mut::<GraphDefinitionRes>().graph_defn.graph.clear();
   app.update();
   assert_eq!(app.world.query::<&Node>().iter(&app.world).count(), 0); // check if we change the graph the response is acceptable
   assert_eq!(app.world.query::<Entity>().iter(&app.world).count(), 0); // check that entities are deleted as expected

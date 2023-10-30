@@ -5,28 +5,45 @@ use serde_yaml::{Error};
 type GraphType = HashMap::<String, HashSet<String>>;
 
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, PartialEq, Serialize, Deserialize, Clone)]
+pub struct GraphAttrs {
+  pub background: Option<[f32;4]>,
+  pub connection_color: Option<[f32; 4]>,
+  pub title: Option<String>,
+  pub text_color: Option<[f32; 4]>,
+}
+
+
+#[derive(Debug, Default, PartialEq, Serialize, Deserialize, Clone)]
+pub struct Attrs {
+  pub ticks: Option<String>,
+  pub color: Option<[f32; 4]>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Node {
-  name: String,
+  pub name: String,
   #[serde(rename = "fn")]
-  func: String,
-  attrs: Option<HashMap<String, String>>,
+  pub func: Option<String>,
+  pub attrs: Option<Attrs>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GraphDefinition {
-  name: String,
-  nodes: Vec<Node>,
-  allowed_connections: HashMap<String, HashSet<String>>,
-  graph: GraphType
+  pub name: String,
+  pub nodes: Vec<Node>,
+  pub allowed_connections: HashMap<String, HashSet<String>>,
+  pub graph: GraphType,
+  pub graph_attrs: Option<GraphAttrs>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+
+#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct File {
   #[serde(skip)]
   #[serde(rename = "fns")]
   func: Option<String>,
-  graph_defn: GraphDefinition,
+  pub graph_defn: GraphDefinition,
 }
 
 pub fn parse_graph2(graph_code: &String) -> Result<File, Error> {
@@ -60,17 +77,24 @@ graph_defn:
     - name: server
       fn: *server_fn
       attrs:
-        tick_timer: 5s
-        color: "yellow"
+        tick: 5s
+        color: [1., 0., 1., 0.5]
     - name: client1
       fn: *client_fn
+      attrs:
+        ticks: 10s
+        color: [1., 1., 0., 0.5]
     - name: client2
       fn: *client_fn
   allowed_connections:
     server: [client1, client2]
   graph:
-    server: [client1, client2]
-    client1: [client2, server]
+    server: [client1, client2, client4]
+  graph_attrs:
+      title: "A Sample Graph!"
+      background: [0.1, 0.1, 0.1, 1.]
+      connection_color: [0.9, 0.9, 0.9, 1.]
+      text_color: [0.5, 0.5, 0.5, 1.0]
 "#;
 
   let res = parse_graph(&code.to_string());
