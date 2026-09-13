@@ -56,6 +56,12 @@ export const tutorialChapters: TutorialChapter[] = [
         markdown: "06_putting_it_together.md",
         yaml: "06_putting_it_together.yml",
       },
+      {
+        id: "1.7",
+        title: "1.7 Multilevel Routing",
+        markdown: "07_multilevel_routing.md",
+        yaml: "07_multilevel_routing.yml",
+      },
     ],
   },
   {
