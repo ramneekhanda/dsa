@@ -148,6 +148,12 @@ export const tutorialChapters: TutorialChapter[] = [
         markdown: "06_remote_imports.md",
         yaml: "06_remote_imports.yml",
       },
+      {
+        id: "3.7",
+        title: "3.7 Remote Theme Packages",
+        markdown: "07_remote_theme_imports.md",
+        yaml: "07_remote_theme_imports.yml",
+      },
     ],
   },
 ];

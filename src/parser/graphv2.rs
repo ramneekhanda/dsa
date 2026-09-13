@@ -1509,6 +1509,7 @@ graph_defn:
             "web/static/tutorial/ch3/04_capsule_pills.yml",
             "web/static/tutorial/ch3/05_layered_theming.yml",
             "web/static/tutorial/ch3/06_remote_imports.yml",
+            "web/static/tutorial/ch3/07_remote_theme_imports.yml",
         ];
 
         for path in tutorial_files {

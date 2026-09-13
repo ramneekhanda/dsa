@@ -88,6 +88,14 @@ const EXAMPLES: &[(&str, &str)] = &[
         "3.5 Layered & Composed Themes",
         include_str!("../../web/static/tutorial/ch3/05_layered_theming.yml"),
     ),
+    (
+        "3.6 Remote Imports & Presets",
+        include_str!("../../web/static/tutorial/ch3/06_remote_imports.yml"),
+    ),
+    (
+        "3.7 Remote Theme Packages",
+        include_str!("../../web/static/tutorial/ch3/07_remote_theme_imports.yml"),
+    ),
 ];
 
 /// Same list `load_native_demo_on_startup` seeds `E_CODE` with at `Startup`
