@@ -18,16 +18,8 @@
   let data: Array<Panels.LogMessageType> = [];
   let remoteSourcesCache: Record<string, string> = {};
 
-  $: {
-    console.log("code changed");
-    code = code;
-    schema = schema;
-    if (codeEditor) {
-      codeEditor.$set({ schema });
-      codeEditor.setCode(code);
-      codeEditor.setFocus();
-    }
-    code = '';
+  $: if (schema && codeEditor) {
+    codeEditor.$set({ schema });
   }
 
   function onLogEvent(e: Event) {
@@ -133,7 +125,10 @@
     fetch(`tutorial/${filename}`)
       .then((response) => response.text())
       .then(async (data) => {
-        code = data;
+        if (codeEditor) {
+          codeEditor.setCode(data);
+          codeEditor.setFocus();
+        }
         await resolveAndCompile(data);
       })
       .catch((error) => {

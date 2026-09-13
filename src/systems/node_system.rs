@@ -484,7 +484,7 @@ fn spawn_node(
     // the lyon shapes a template is usually made of aren't pickable, see
     // `node_overlay`'s module doc) even before the overlay renders, and
     // regardless of whether the template includes its own icon shape at all.
-    let has_template = node_attrs.template.is_some();
+    let has_template = node_attrs.template.is_some() && !node.overlay.is_empty();
 
     let icon_child = commands
         .spawn((SpriteBundle {
