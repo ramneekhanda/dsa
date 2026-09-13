@@ -1,5 +1,8 @@
 use crate::{
-    parser::graphv2::{parse_graph2, File},
+    parser::{
+        graphv2::{parse_graph2_with_sources, File},
+        imports::scan_import_urls,
+    },
     resources::{
         common_assets::{LoadingState, LoadingStateOpt},
         graph_def::GraphDefinitionRes,
@@ -12,11 +15,13 @@ use bevy::prelude::*;
 use lazy_static::lazy_static;
 use schemars::schema_for;
 use serde_json;
+use std::collections::HashMap;
 use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
 
 lazy_static! {
     static ref E_CODE: Mutex<String> = Mutex::new(String::new());
+    static ref E_SOURCES: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
 }
 
 #[wasm_bindgen]
@@ -45,26 +50,59 @@ pub fn get_code_schema() -> String {
 }
 
 #[wasm_bindgen]
+pub fn get_import_urls(yaml: String) -> String {
+    let urls = scan_import_urls(&yaml);
+    serde_json::to_string(&urls).unwrap_or_else(|_| "[]".to_string())
+}
+
+#[wasm_bindgen]
 #[allow(dead_code)]
-pub fn compile_code(s: String) -> CompileResult {
-    let ret = parse_graph2(&s);
+pub fn compile_code_with_sources(s: String, sources_json: String) -> CompileResult {
+    let sources: HashMap<String, String> = serde_json::from_str(&sources_json).unwrap_or_default();
+    {
+        let mut e_sources = E_SOURCES.lock().unwrap();
+        for (k, v) in sources.iter() {
+            e_sources.insert(k.clone(), v.clone());
+        }
+    }
+    let current_sources = E_SOURCES.lock().unwrap().clone();
+    let ret = parse_graph2_with_sources(&s, &current_sources);
     match ret {
         Ok(_file) => {
             let mut code = E_CODE.lock().unwrap();
             *code = s;
-            return CompileResult {
+            CompileResult {
                 result: true,
                 error_log: "".to_string(),
-            };
+            }
         }
-        Err(e) => {
-            return CompileResult {
-                result: false,
-                error_log: e.to_string(),
-            };
-        }
+        Err(e) => CompileResult {
+            result: false,
+            error_log: e.to_string(),
+        },
     }
-} //
+}
+
+#[wasm_bindgen]
+#[allow(dead_code)]
+pub fn compile_code(s: String) -> CompileResult {
+    let current_sources = E_SOURCES.lock().unwrap().clone();
+    let ret = parse_graph2_with_sources(&s, &current_sources);
+    match ret {
+        Ok(_file) => {
+            let mut code = E_CODE.lock().unwrap();
+            *code = s;
+            CompileResult {
+                result: true,
+                error_log: "".to_string(),
+            }
+        }
+        Err(e) => CompileResult {
+            result: false,
+            error_log: e.to_string(),
+        },
+    }
+}
 
 /// Native-only: `compile_code`/`get_code_schema` only ever get called from the
 /// SvelteKit frontend's JS, through wasm-bindgen - there's no browser (and no
@@ -94,7 +132,8 @@ pub fn ingest_codechange(
     if code_store.code != *code {
         // TODO: can improve performance by checking a boolean instead
         code_store.code = (*code).clone();
-        let res = parse_graph2(&code_store.code);
+        let current_sources = E_SOURCES.lock().unwrap().clone();
+        let res = parse_graph2_with_sources(&code_store.code, &current_sources);
         match res {
             Ok(file) => {
                 ls.state = LoadingStateOpt::Loading;

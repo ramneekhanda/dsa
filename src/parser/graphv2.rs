@@ -341,7 +341,7 @@ pub enum TemplateShape {
     /// `0.0`, so `shape: roundedrect` alone (no `radius` given) still reads
     /// as rounded. `radius: 0` on a `roundedrect` is a valid (if pointless)
     /// way to square it back off.
-    #[serde(rename = "roundedrect")]
+    #[serde(rename = "roundedrect", alias = "rounded_rect")]
     RoundedRect {
         x: f32,
         y: f32,
@@ -997,7 +997,13 @@ pub struct IconDef {
 
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct GraphDefinition {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub theme: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub imports: Vec<crate::parser::imports::ImportDef>,
+    #[serde(default)]
     pub node_types: Vec<NodeType>,
+    #[serde(default)]
     pub graph: Vec<NodeConnection>,
     #[serde(default)]
     pub graph_attrs: GraphAttrs,
@@ -1015,6 +1021,10 @@ pub struct GraphDefinition {
 
 #[derive(Debug, Default, PartialEq, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct File {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub theme: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub imports: Vec<crate::parser::imports::ImportDef>,
     #[serde(default)]
     pub graph_defn: GraphDefinition,
 
@@ -1023,13 +1033,20 @@ pub struct File {
 }
 
 pub fn parse_graph2(graph_code: &String) -> Result<File, serde_yaml::Error> {
+    parse_graph2_with_sources(graph_code, &HashMap::new())
+}
+
+pub fn parse_graph2_with_sources(
+    graph_code: &String,
+    external_sources: &HashMap<String, String>,
+) -> Result<File, serde_yaml::Error> {
     let mut engine = rhai::Engine::new();
     // Rhai's default nesting limit inside a function is only 32 levels, which a
     // realistic handler (a map literal with an inline `if`, say) can trip. Raise
     // it well clear of hand-written scripts while still bounding pathological input.
     engine.set_max_expr_depths(256, 256);
 
-    let data: Result<File, serde_yaml::Error> = serde_yaml::from_str(&graph_code);
+    let data = crate::parser::imports::resolve_file_imports(graph_code, external_sources);
     if let Ok(mut m_data) = data {
         for node_type in m_data.graph_defn.node_types.iter_mut() {
             let res = compile_ast(&engine, node_type);
@@ -1344,6 +1361,7 @@ graph_defn:
             "web/static/tutorial/ch3/03_cyberpunk_hud.yml",
             "web/static/tutorial/ch3/04_capsule_pills.yml",
             "web/static/tutorial/ch3/05_layered_theming.yml",
+            "web/static/tutorial/ch3/06_remote_imports.yml",
         ];
 
         for path in tutorial_files {

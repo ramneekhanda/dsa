@@ -1,7 +1,7 @@
 <script lang="ts">
   import Monaco from "./Monaco.svelte";
   import Menubar from "$lib/components/menubar/menubar.svelte";
-  import init, { compile_code, get_code_schema } from "./dsa";
+  import init, { compile_code, compile_code_with_sources, get_import_urls, get_code_schema } from "./dsa";
   import { onMount } from "svelte";
   import type { IDockviewPanel } from "dockview-core";
   import "dockview-core/dist/styles/dockview.css";
@@ -16,6 +16,8 @@
   let dockView: HTMLElement;
   let log_event_listener: HTMLDivElement;
   let data: Array<Panels.LogMessageType> = [];
+  let remoteSourcesCache: Record<string, string> = {};
+
   $: {
     console.log("code changed");
     code = code;
@@ -70,10 +72,45 @@
     }
   }
 
-  function compileCode() {
-    let b = compile_code(codeEditor.getCode());
+  async function resolveAndCompile(sourceCode: string) {
+    let urls: string[] = [];
+    try {
+      if (typeof get_import_urls === "function") {
+        urls = get_import_urls(sourceCode) || [];
+      }
+    } catch (e) {
+      console.warn("Failed to scan import urls:", e);
+    }
+
+    const missingUrls = urls.filter((u) => !remoteSourcesCache[u]);
+    if (missingUrls.length > 0) {
+      await Promise.all(
+        missingUrls.map(async (url) => {
+          try {
+            const resp = await fetch(url);
+            if (resp.ok) {
+              remoteSourcesCache[url] = await resp.text();
+            } else {
+              console.error(`Failed to fetch remote import from ${url}: ${resp.statusText}`);
+            }
+          } catch (err) {
+            console.error(`Error fetching remote import from ${url}:`, err);
+          }
+        })
+      );
+    }
+
+    let b = typeof compile_code_with_sources === "function"
+      ? compile_code_with_sources(sourceCode, JSON.stringify(remoteSourcesCache))
+      : compile_code(sourceCode);
     if (b.error_log && b.error_log.length > 0) {
       console.log(b.error_log);
+    }
+  }
+
+  async function compileCode() {
+    if (codeEditor) {
+      await resolveAndCompile(codeEditor.getCode());
     }
   }
 
@@ -83,12 +120,9 @@
   function loadExample(filename: string) {
     fetch(`tutorial/${filename}`)
       .then((response) => response.text())
-      .then((data) => {
+      .then(async (data) => {
         code = data;
-        let b = compile_code(data);
-        if (b.error_log && b.error_log.length > 0) {
-          console.log(b.error_log);
-        }
+        await resolveAndCompile(data);
       })
       .catch((error) => {
         console.error("Error:", error);
