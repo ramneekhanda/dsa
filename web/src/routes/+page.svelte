@@ -42,9 +42,20 @@
 
   onMount(async () => {
     let returnVal = {} as Panels.DockviewReturn;
-    Panels.createDockviewInternal(dockView, schema, data, returnVal, loadExample);
+    Panels.createDockviewInternal(
+      dockView,
+      schema,
+      data,
+      returnVal,
+      loadExample,
+      (newCode) => resolveAndCompile(newCode)
+    );
     codeEditor = returnVal.codeEditor;
     viewPanel = returnVal.viewPanel;
+    // @ts-ignore
+    window.__procsimCodeEditor = codeEditor;
+    // @ts-ignore
+    window.__procsimCompile = resolveAndCompile;
     log_event_listener.addEventListener("dsa-log-event", onLogEvent);
     init()
       .catch((error) => {

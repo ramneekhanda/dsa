@@ -60,6 +60,121 @@ graph_defn:
           text: "{{node_name}}"
           size: 13.0
           color: "#00f0ff"
+    - id: card
+      shapes:
+        - shape: rounded_rect
+          x: 0.0
+          y: 0.0
+          w: 130.0
+          h: 56.0
+          radius: 4.0
+          fill: "#0c1527"
+          stroke: "#00f0ff"
+          stroke_width: 2.0
+        - shape: icon
+          x: -38.0
+          y: 0.0
+          w: 22.0
+          h: 22.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 10.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#00f0ff"
+    - id: default
+      shapes:
+        - shape: rounded_rect
+          x: 0.0
+          y: 0.0
+          w: 130.0
+          h: 56.0
+          radius: 4.0
+          fill: "#0c1527"
+          stroke: "#00f0ff"
+          stroke_width: 2.0
+        - shape: icon
+          x: -38.0
+          y: 0.0
+          w: 22.0
+          h: 22.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 10.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#00f0ff"
+    - id: cloud_card
+      shapes:
+        - shape: rounded_rect
+          x: 0.0
+          y: 0.0
+          w: 130.0
+          h: 56.0
+          radius: 4.0
+          fill: "#0c1527"
+          stroke: "#00f0ff"
+          stroke_width: 2.0
+        - shape: icon
+          x: -38.0
+          y: 0.0
+          w: 22.0
+          h: 22.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 10.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#00f0ff"
+    - id: rack_blade
+      shapes:
+        - shape: rounded_rect
+          x: 0.0
+          y: 0.0
+          w: 130.0
+          h: 56.0
+          radius: 4.0
+          fill: "#0c1527"
+          stroke: "#00f0ff"
+          stroke_width: 2.0
+        - shape: icon
+          x: -38.0
+          y: 0.0
+          w: 22.0
+          h: 22.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 10.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#00f0ff"
+    - id: minimal_pill
+      shapes:
+        - shape: rounded_rect
+          x: 0.0
+          y: 0.0
+          w: 130.0
+          h: 56.0
+          radius: 4.0
+          fill: "#0c1527"
+          stroke: "#00f0ff"
+          stroke_width: 2.0
+        - shape: icon
+          x: -38.0
+          y: 0.0
+          w: 22.0
+          h: 22.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 10.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#00f0ff"
 "##;
 
 pub const PRESET_THEME_CLOUD: &str = r##"
@@ -77,6 +192,121 @@ graph_defn:
       font_size: 14.0
   node_templates:
     - id: cloud_card
+      shapes:
+        - shape: rounded_rect
+          x: 0.0
+          y: 0.0
+          w: 140.0
+          h: 56.0
+          radius: 10.0
+          fill: "#ffffff"
+          stroke: "#cbd5e1"
+          stroke_width: 2.0
+        - shape: icon
+          x: -42.0
+          y: 0.0
+          w: 24.0
+          h: 24.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 10.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#1e293b"
+    - id: card
+      shapes:
+        - shape: rounded_rect
+          x: 0.0
+          y: 0.0
+          w: 140.0
+          h: 56.0
+          radius: 10.0
+          fill: "#ffffff"
+          stroke: "#cbd5e1"
+          stroke_width: 2.0
+        - shape: icon
+          x: -42.0
+          y: 0.0
+          w: 24.0
+          h: 24.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 10.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#1e293b"
+    - id: default
+      shapes:
+        - shape: rounded_rect
+          x: 0.0
+          y: 0.0
+          w: 140.0
+          h: 56.0
+          radius: 10.0
+          fill: "#ffffff"
+          stroke: "#cbd5e1"
+          stroke_width: 2.0
+        - shape: icon
+          x: -42.0
+          y: 0.0
+          w: 24.0
+          h: 24.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 10.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#1e293b"
+    - id: cyber_hud
+      shapes:
+        - shape: rounded_rect
+          x: 0.0
+          y: 0.0
+          w: 140.0
+          h: 56.0
+          radius: 10.0
+          fill: "#ffffff"
+          stroke: "#cbd5e1"
+          stroke_width: 2.0
+        - shape: icon
+          x: -42.0
+          y: 0.0
+          w: 24.0
+          h: 24.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 10.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#1e293b"
+    - id: rack_blade
+      shapes:
+        - shape: rounded_rect
+          x: 0.0
+          y: 0.0
+          w: 140.0
+          h: 56.0
+          radius: 10.0
+          fill: "#ffffff"
+          stroke: "#cbd5e1"
+          stroke_width: 2.0
+        - shape: icon
+          x: -42.0
+          y: 0.0
+          w: 24.0
+          h: 24.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 10.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#1e293b"
+    - id: minimal_pill
       shapes:
         - shape: rounded_rect
           x: 0.0
@@ -142,6 +372,141 @@ graph_defn:
           text: "{{node_name}}"
           size: 13.0
           color: "#f4f4f5"
+    - id: card
+      shapes:
+        - shape: rect
+          x: 0.0
+          y: 0.0
+          w: 150.0
+          h: 46.0
+          fill: "#27272a"
+          stroke: "#3f3f46"
+          stroke_width: 2.0
+        - shape: circle
+          x: -60.0
+          y: 0.0
+          r: 4.0
+          fill: "#22c55e"
+        - shape: icon
+          x: -36.0
+          y: 0.0
+          w: 20.0
+          h: 20.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 14.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#f4f4f5"
+    - id: default
+      shapes:
+        - shape: rect
+          x: 0.0
+          y: 0.0
+          w: 150.0
+          h: 46.0
+          fill: "#27272a"
+          stroke: "#3f3f46"
+          stroke_width: 2.0
+        - shape: circle
+          x: -60.0
+          y: 0.0
+          r: 4.0
+          fill: "#22c55e"
+        - shape: icon
+          x: -36.0
+          y: 0.0
+          w: 20.0
+          h: 20.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 14.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#f4f4f5"
+    - id: cyber_hud
+      shapes:
+        - shape: rect
+          x: 0.0
+          y: 0.0
+          w: 150.0
+          h: 46.0
+          fill: "#27272a"
+          stroke: "#3f3f46"
+          stroke_width: 2.0
+        - shape: circle
+          x: -60.0
+          y: 0.0
+          r: 4.0
+          fill: "#22c55e"
+        - shape: icon
+          x: -36.0
+          y: 0.0
+          w: 20.0
+          h: 20.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 14.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#f4f4f5"
+    - id: cloud_card
+      shapes:
+        - shape: rect
+          x: 0.0
+          y: 0.0
+          w: 150.0
+          h: 46.0
+          fill: "#27272a"
+          stroke: "#3f3f46"
+          stroke_width: 2.0
+        - shape: circle
+          x: -60.0
+          y: 0.0
+          r: 4.0
+          fill: "#22c55e"
+        - shape: icon
+          x: -36.0
+          y: 0.0
+          w: 20.0
+          h: 20.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 14.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#f4f4f5"
+    - id: minimal_pill
+      shapes:
+        - shape: rect
+          x: 0.0
+          y: 0.0
+          w: 150.0
+          h: 46.0
+          fill: "#27272a"
+          stroke: "#3f3f46"
+          stroke_width: 2.0
+        - shape: circle
+          x: -60.0
+          y: 0.0
+          r: 4.0
+          fill: "#22c55e"
+        - shape: icon
+          x: -36.0
+          y: 0.0
+          w: 20.0
+          h: 20.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 14.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#f4f4f5"
 "##;
 
 pub const PRESET_THEME_MINIMAL: &str = r##"
@@ -159,6 +524,121 @@ graph_defn:
       font_size: 14.0
   node_templates:
     - id: minimal_pill
+      shapes:
+        - shape: rounded_rect
+          x: 0.0
+          y: 0.0
+          w: 124.0
+          h: 40.0
+          radius: 20.0
+          fill: "#ffffff"
+          stroke: "#e4e4e7"
+          stroke_width: 1.5
+        - shape: icon
+          x: -36.0
+          y: 0.0
+          w: 18.0
+          h: 18.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 8.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#18181b"
+    - id: card
+      shapes:
+        - shape: rounded_rect
+          x: 0.0
+          y: 0.0
+          w: 124.0
+          h: 40.0
+          radius: 20.0
+          fill: "#ffffff"
+          stroke: "#e4e4e7"
+          stroke_width: 1.5
+        - shape: icon
+          x: -36.0
+          y: 0.0
+          w: 18.0
+          h: 18.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 8.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#18181b"
+    - id: default
+      shapes:
+        - shape: rounded_rect
+          x: 0.0
+          y: 0.0
+          w: 124.0
+          h: 40.0
+          radius: 20.0
+          fill: "#ffffff"
+          stroke: "#e4e4e7"
+          stroke_width: 1.5
+        - shape: icon
+          x: -36.0
+          y: 0.0
+          w: 18.0
+          h: 18.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 8.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#18181b"
+    - id: cyber_hud
+      shapes:
+        - shape: rounded_rect
+          x: 0.0
+          y: 0.0
+          w: 124.0
+          h: 40.0
+          radius: 20.0
+          fill: "#ffffff"
+          stroke: "#e4e4e7"
+          stroke_width: 1.5
+        - shape: icon
+          x: -36.0
+          y: 0.0
+          w: 18.0
+          h: 18.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 8.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#18181b"
+    - id: cloud_card
+      shapes:
+        - shape: rounded_rect
+          x: 0.0
+          y: 0.0
+          w: 124.0
+          h: 40.0
+          radius: 20.0
+          fill: "#ffffff"
+          stroke: "#e4e4e7"
+          stroke_width: 1.5
+        - shape: icon
+          x: -36.0
+          y: 0.0
+          w: 18.0
+          h: 18.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 8.0
+          y: 0.0
+          text: "{{node_name}}"
+          size: 13.0
+          color: "#18181b"
+    - id: rack_blade
       shapes:
         - shape: rounded_rect
           x: 0.0
@@ -482,6 +962,65 @@ graph_defn:
         );
         assert!(file.graph_defn.node_templates.iter().any(|t| t.id == "cyber_hud"));
         assert_eq!(file.graph_defn.node_instances.len(), 1);
+    }
+
+    #[test]
+    fn test_theme_switching_template_cross_compatibility() {
+        let yaml_cyber = r#"
+theme: cyberpunk
+graph_defn:
+  graph:
+    - name: n1
+      node_type: t1
+      links: []
+  node_types:
+    - id: t1
+      attrs:
+        template_ref: cyber_hud
+"#.to_string();
+        assert!(parse_graph2(&yaml_cyber).is_ok());
+
+        let yaml_cloud = r#"
+theme: cloud
+graph_defn:
+  graph:
+    - name: n1
+      node_type: t1
+      links: []
+  node_types:
+    - id: t1
+      attrs:
+        template_ref: cyber_hud
+"#.to_string();
+        assert!(parse_graph2(&yaml_cloud).is_ok());
+
+        let yaml_datacenter = r#"
+theme: datacenter
+graph_defn:
+  graph:
+    - name: n1
+      node_type: t1
+      links: []
+  node_types:
+    - id: t1
+      attrs:
+        template_ref: cyber_hud
+"#.to_string();
+        assert!(parse_graph2(&yaml_datacenter).is_ok());
+
+        let yaml_minimal = r#"
+theme: minimal
+graph_defn:
+  graph:
+    - name: n1
+      node_type: t1
+      links: []
+  node_types:
+    - id: t1
+      attrs:
+        template_ref: cyber_hud
+"#.to_string();
+        assert!(parse_graph2(&yaml_minimal).is_ok());
     }
 
     #[test]

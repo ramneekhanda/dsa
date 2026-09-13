@@ -1071,6 +1071,11 @@ pub fn parse_graph2_with_sources(
                     ));
                 }
             }
+            if node_type.attrs.template.is_none() && node_type.attrs.template_ref.is_none() {
+                if m_data.graph_defn.node_templates.iter().any(|t| t.id == "default") {
+                    node_type.attrs.template_ref = Some("default".to_string());
+                }
+            }
             if let Some(template_ref) = &node_type.attrs.template_ref {
                 let Some(named) = m_data
                     .graph_defn

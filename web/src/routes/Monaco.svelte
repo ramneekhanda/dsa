@@ -31,6 +31,8 @@
   }
 
   export let value: string = "";
+  export let onChange: (code: string) => void = () => {};
+  let debounceTimer: any = null;
 
   export function getCode() {
     return editor.getValue();
@@ -85,7 +87,20 @@
     );
     editor.setModel(yamlModel);
 
+    editor.onDidChangeModelContent(() => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        onChange(editor.getValue());
+      }, 400);
+    });
+
+    editor.addCommand(Monaco.KeyMod.CtrlCmd | Monaco.KeyCode.Enter, () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      onChange(editor.getValue());
+    });
+
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       editor.dispose();
     };
   });

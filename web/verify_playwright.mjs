@@ -49,12 +49,173 @@ import { chromium } from 'playwright';
   await loadBtn.click();
   console.log('Clicked "Load this example into editor".');
 
-  // Wait 4 seconds for Bevy simulation to run multiple ticks and exchange messages
-  await page.waitForTimeout(4000);
+  // Switch back to Editor tab
+  const editorTab = page.getByText('Editor', { exact: true });
+  if (await editorTab.isVisible()) {
+    await editorTab.click();
+    await page.waitForTimeout(1000);
+  }
 
-  const screenshotPath = '/Users/ramneekhanda/.gemini/antigravity/brain/e8ef25d3-f55b-4c9e-8692-cd4a0b98744c/playwright_lesson3_6.png';
-  await page.screenshot({ path: screenshotPath, fullPage: true });
-  console.log('Saved screenshot to:', screenshotPath);
+  // 1. Verify Cyberpunk Theme Screenshot
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: '/Users/ramneekhanda/.gemini/antigravity/brain/e8ef25d3-f55b-4c9e-8692-cd4a0b98744c/theme_1_cyberpunk.png', fullPage: true });
+  console.log('Saved cyberpunk screenshot.');
+
+  // 2. Change to Cloud Theme via codeEditor
+  console.log('Testing live theme switch to "theme: cloud"...');
+  const cloudYaml = `theme: cloud
+
+imports:
+  - from: "stdlib:load_balancer"
+
+graph_defn:
+  graph_attrs:
+    title: "Cloud Cluster with stdlib Load Balancer"
+  graph:
+    - name: client
+      node_type: client
+      links: ["lb"]
+    - name: lb
+      node_type: round_robin_lb
+      links: ["srv1", "srv2"]
+    - name: srv1
+      node_type: worker
+      links: []
+    - name: srv2
+      node_type: worker
+      links: []
+
+  node_types:
+    - id: client
+      attrs:
+        ticks: 2
+      fn: |
+        fn on_timer() {
+          send(links[0], "GET /api/v1/data");
+        }
+    - id: worker
+      attrs:
+        ticks: 1
+      fn: |
+        fn on_message(msg) {
+          log("Worker processing: " + msg);
+        }
+`;
+
+  await page.evaluate(async (code) => {
+    // @ts-ignore
+    window.__procsimCodeEditor?.setCode(code);
+    // @ts-ignore
+    await window.__procsimCompile?.(code);
+  }, cloudYaml);
+
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: '/Users/ramneekhanda/.gemini/antigravity/brain/e8ef25d3-f55b-4c9e-8692-cd4a0b98744c/theme_2_cloud.png', fullPage: true });
+  console.log('Saved cloud screenshot.');
+
+  // 3. Change to Datacenter Theme
+  console.log('Testing live theme switch to "theme: datacenter"...');
+  const datacenterYaml = `theme: datacenter
+
+imports:
+  - from: "stdlib:load_balancer"
+
+graph_defn:
+  graph_attrs:
+    title: "Datacenter Rack with stdlib Load Balancer"
+  graph:
+    - name: client
+      node_type: client
+      links: ["lb"]
+    - name: lb
+      node_type: round_robin_lb
+      links: ["srv1", "srv2"]
+    - name: srv1
+      node_type: worker
+      links: []
+    - name: srv2
+      node_type: worker
+      links: []
+
+  node_types:
+    - id: client
+      attrs:
+        ticks: 2
+      fn: |
+        fn on_timer() {
+          send(links[0], "GET /api/v1/data");
+        }
+    - id: worker
+      attrs:
+        ticks: 1
+      fn: |
+        fn on_message(msg) {
+          log("Worker processing: " + msg);
+        }
+`;
+
+  await page.evaluate(async (code) => {
+    // @ts-ignore
+    window.__procsimCodeEditor?.setCode(code);
+    // @ts-ignore
+    await window.__procsimCompile?.(code);
+  }, datacenterYaml);
+
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: '/Users/ramneekhanda/.gemini/antigravity/brain/e8ef25d3-f55b-4c9e-8692-cd4a0b98744c/theme_3_datacenter.png', fullPage: true });
+  console.log('Saved datacenter screenshot.');
+
+  // 4. Change to Minimal Theme
+  console.log('Testing live theme switch to "theme: minimal"...');
+  const minimalYaml = `theme: minimal
+
+imports:
+  - from: "stdlib:load_balancer"
+
+graph_defn:
+  graph_attrs:
+    title: "Minimal Cluster with stdlib Load Balancer"
+  graph:
+    - name: client
+      node_type: client
+      links: ["lb"]
+    - name: lb
+      node_type: round_robin_lb
+      links: ["srv1", "srv2"]
+    - name: srv1
+      node_type: worker
+      links: []
+    - name: srv2
+      node_type: worker
+      links: []
+
+  node_types:
+    - id: client
+      attrs:
+        ticks: 2
+      fn: |
+        fn on_timer() {
+          send(links[0], "GET /api/v1/data");
+        }
+    - id: worker
+      attrs:
+        ticks: 1
+      fn: |
+        fn on_message(msg) {
+          log("Worker processing: " + msg);
+        }
+`;
+
+  await page.evaluate(async (code) => {
+    // @ts-ignore
+    window.__procsimCodeEditor?.setCode(code);
+    // @ts-ignore
+    await window.__procsimCompile?.(code);
+  }, minimalYaml);
+
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: '/Users/ramneekhanda/.gemini/antigravity/brain/e8ef25d3-f55b-4c9e-8692-cd4a0b98744c/theme_4_minimal.png', fullPage: true });
+  console.log('Saved minimal screenshot.');
 
   // Filter known non-fatal Wasm control flow message
   const fatalErrors = consoleErrors.filter(e => !e.includes("Using exceptions for control flow"));
@@ -65,7 +226,7 @@ import { chromium } from 'playwright';
     console.error('Test failed with errors:', fatalErrors);
     process.exit(1);
   } else {
-    console.log('ALL PLAYWRIGHT CHECKS PASSED!');
+    console.log('ALL PLAYWRIGHT THEME SWITCHING CHECKS PASSED!');
     process.exit(0);
   }
 })();

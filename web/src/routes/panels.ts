@@ -89,11 +89,11 @@ export class MonacoPanel implements IContentRenderer {
     return this._element;
   }
 
-  constructor(schema: string) {
+  constructor(schema: string, onChange: (code: string) => void) {
     const MonacoDiv = document.createElement("div");
     MonacoDiv.style.width = "100%";
     MonacoDiv.style.height = "100%";
-    this.monaco = new Monaco({ target: MonacoDiv, props: { schema } });
+    this.monaco = new Monaco({ target: MonacoDiv, props: { schema, onChange } });
     this._element = MonacoDiv;
   }
 
@@ -129,13 +129,20 @@ export interface DockviewReturn {
   viewPanel: IDockviewPanel;
 };
 
-export function createDockviewInternal(dockView: HTMLElement, schema: string, data: &Array<LogMessageType>, returnVal: DockviewReturn, loadExample: (filename: string) => void) {
+export function createDockviewInternal(
+  dockView: HTMLElement,
+  schema: string,
+  data: &Array<LogMessageType>,
+  returnVal: DockviewReturn,
+  loadExample: (filename: string) => void,
+  onCodeChanged?: (code: string) => void,
+) {
   const api = createDockview(dockView, {
     className: "dockview-theme-light",
     createComponent: (options) => {
       switch (options.name) {
         case "MonacoPanel":
-          let monacoPanel = new MonacoPanel(schema);
+          let monacoPanel = new MonacoPanel(schema, onCodeChanged || (() => {}));
           returnVal.codeEditor = monacoPanel.monaco;
           return monacoPanel;
         case "ViewPanel":
