@@ -1186,6 +1186,26 @@ pub fn instantiate_node(
 /// either builtin (or add params of their own the template refers to).
 fn template_params(instance_name: &str, attrs: &Attrs) -> HashMap<String, String> {
     let mut params = HashMap::new();
+    // Default fallback values for standard theme parameters so templates render cleanly
+    params.insert("accent_color".to_string(), "#38bdf8".to_string());
+    params.insert("service_type".to_string(), "Cloud Node".to_string());
+    params.insert("status_bg".to_string(), "#dbeafe".to_string());
+    params.insert("status_color".to_string(), "#1e40af".to_string());
+    params.insert("status_text".to_string(), "HEALTHY • ACTIVE".to_string());
+    params.insert("neon_border".to_string(), "#00f5ff".to_string());
+    params.insert("neon_accent".to_string(), "#00f5ff".to_string());
+    params.insert("telemetry".to_string(), "SYSTEM // ONLINE".to_string());
+    params.insert("badge_bg".to_string(), "#083344".to_string());
+    params.insert("badge_color".to_string(), "#67e8f9".to_string());
+    params.insert("status_code".to_string(), "ONLINE".to_string());
+    params.insert("unit_id".to_string(), "1U RACK UNIT".to_string());
+    params.insert("led_pwr".to_string(), "#22c55e".to_string());
+    params.insert("led_net".to_string(), "#38bdf8".to_string());
+    params.insert("led_act".to_string(), "#f59e0b".to_string());
+    params.insert("disc_color".to_string(), "#dbeafe".to_string());
+    params.insert("role_tag".to_string(), "NODE".to_string());
+    params.insert("tag_color".to_string(), "#2563eb".to_string());
+
     params.insert("node_name".to_string(), instance_name.to_string());
     if let Some(icon) = &attrs.icon {
         params.insert("icon".to_string(), icon.clone());

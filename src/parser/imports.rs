@@ -24,157 +24,438 @@ graph_defn:
     text_color: "#e0f7fa"
     message_theme:
       shape: chamfered
-      bg: "#0d1b2a"
-      stroke: "#00f0ff"
-      stroke_width: 2.0
-      text_color: "#00f0ff"
-      font_size: 15.0
+      bg: "#060d17"
+      stroke: "#00f5ff"
+      stroke_width: 1.5
+      text_color: "#00f5ff"
+      font_size: 14.0
   node_templates:
     - id: cyber_hud
       shapes:
-        - shape: rounded_rect
-          x: 0.0
-          y: 0.0
-          w: 130.0
-          h: 56.0
-          radius: 4.0
-          fill: "#0c1527"
-          stroke: "#00f0ff"
-          stroke_width: 2.0
-        - shape: line
-          x1: -55.0
-          y1: -12.0
-          x2: 55.0
-          y2: -12.0
-          stroke: "#ff007f"
+        - shape: polygon
+          points:
+            - [-48.0, 32.0]
+            - [48.0, 32.0]
+            - [60.0, 20.0]
+            - [60.0, -20.0]
+            - [48.0, -32.0]
+            - [-48.0, -32.0]
+            - [-60.0, -20.0]
+            - [-60.0, 20.0]
+          closed: true
+          fill: "#090d16"
+          stroke: "{{neon_border}}"
           stroke_width: 1.5
-        - shape: icon
-          x: -38.0
-          y: 6.0
-          w: 22.0
-          h: 22.0
-          icon: "{{icon}}"
-        - shape: text
-          x: 10.0
-          y: 6.0
-          text: "{{node_name}}"
-          size: 13.0
-          color: "#00f0ff"
-    - id: card
-      shapes:
-        - shape: rounded_rect
-          x: 0.0
-          y: 0.0
-          w: 130.0
-          h: 56.0
-          radius: 4.0
-          fill: "#0c1527"
-          stroke: "#00f0ff"
+        - shape: line
+          x1: -32.0
+          y1: 26.0
+          x2: 32.0
+          y2: 26.0
+          stroke: "{{neon_accent}}"
           stroke_width: 2.0
+        - shape: circle
+          x: -38.0
+          y: 0.0
+          r: 13.0
+          fill: "#0f172a"
+          stroke: "{{neon_accent}}"
+          stroke_width: 1.2
         - shape: icon
           x: -38.0
           y: 0.0
-          w: 22.0
-          h: 22.0
+          w: 18.0
+          h: 18.0
           icon: "{{icon}}"
         - shape: text
-          x: 10.0
-          y: 0.0
+          x: 12.0
+          y: 6.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#00f0ff"
+          size: 9.5
+          color: "#f0fdf4"
+        - shape: text
+          x: 12.0
+          y: -6.0
+          text: "{{telemetry}}"
+          size: 7.5
+          color: "{{neon_accent}}"
+        - shape: roundedrect
+          x: 0.0
+          y: -18.0
+          w: 86.0
+          h: 10.0
+          radius: 2.0
+          fill: "{{badge_bg}}"
+        - shape: text
+          x: 0.0
+          y: -18.0
+          text: "{{status_code}}"
+          size: 6.5
+          color: "{{badge_color}}"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -26.0
+          w: 64.0
+          h: 3.0
+          segments: 6
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "{{neon_accent}}"
     - id: default
       shapes:
-        - shape: rounded_rect
-          x: 0.0
-          y: 0.0
-          w: 130.0
-          h: 56.0
-          radius: 4.0
-          fill: "#0c1527"
-          stroke: "#00f0ff"
+        - shape: polygon
+          points:
+            - [-48.0, 32.0]
+            - [48.0, 32.0]
+            - [60.0, 20.0]
+            - [60.0, -20.0]
+            - [48.0, -32.0]
+            - [-48.0, -32.0]
+            - [-60.0, -20.0]
+            - [-60.0, 20.0]
+          closed: true
+          fill: "#090d16"
+          stroke: "{{neon_border}}"
+          stroke_width: 1.5
+        - shape: line
+          x1: -32.0
+          y1: 26.0
+          x2: 32.0
+          y2: 26.0
+          stroke: "{{neon_accent}}"
           stroke_width: 2.0
+        - shape: circle
+          x: -38.0
+          y: 0.0
+          r: 13.0
+          fill: "#0f172a"
+          stroke: "{{neon_accent}}"
+          stroke_width: 1.2
         - shape: icon
           x: -38.0
           y: 0.0
-          w: 22.0
-          h: 22.0
+          w: 18.0
+          h: 18.0
           icon: "{{icon}}"
         - shape: text
-          x: 10.0
-          y: 0.0
+          x: 12.0
+          y: 6.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#00f0ff"
+          size: 9.5
+          color: "#f0fdf4"
+        - shape: text
+          x: 12.0
+          y: -6.0
+          text: "{{telemetry}}"
+          size: 7.5
+          color: "{{neon_accent}}"
+        - shape: roundedrect
+          x: 0.0
+          y: -18.0
+          w: 86.0
+          h: 10.0
+          radius: 2.0
+          fill: "{{badge_bg}}"
+        - shape: text
+          x: 0.0
+          y: -18.0
+          text: "{{status_code}}"
+          size: 6.5
+          color: "{{badge_color}}"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -26.0
+          w: 64.0
+          h: 3.0
+          segments: 6
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "{{neon_accent}}"
+    - id: card
+      shapes:
+        - shape: polygon
+          points:
+            - [-48.0, 32.0]
+            - [48.0, 32.0]
+            - [60.0, 20.0]
+            - [60.0, -20.0]
+            - [48.0, -32.0]
+            - [-48.0, -32.0]
+            - [-60.0, -20.0]
+            - [-60.0, 20.0]
+          closed: true
+          fill: "#090d16"
+          stroke: "{{neon_border}}"
+          stroke_width: 1.5
+        - shape: line
+          x1: -32.0
+          y1: 26.0
+          x2: 32.0
+          y2: 26.0
+          stroke: "{{neon_accent}}"
+          stroke_width: 2.0
+        - shape: circle
+          x: -38.0
+          y: 0.0
+          r: 13.0
+          fill: "#0f172a"
+          stroke: "{{neon_accent}}"
+          stroke_width: 1.2
+        - shape: icon
+          x: -38.0
+          y: 0.0
+          w: 18.0
+          h: 18.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 12.0
+          y: 6.0
+          text: "{{node_name}}"
+          size: 9.5
+          color: "#f0fdf4"
+        - shape: text
+          x: 12.0
+          y: -6.0
+          text: "{{telemetry}}"
+          size: 7.5
+          color: "{{neon_accent}}"
+        - shape: roundedrect
+          x: 0.0
+          y: -18.0
+          w: 86.0
+          h: 10.0
+          radius: 2.0
+          fill: "{{badge_bg}}"
+        - shape: text
+          x: 0.0
+          y: -18.0
+          text: "{{status_code}}"
+          size: 6.5
+          color: "{{badge_color}}"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -26.0
+          w: 64.0
+          h: 3.0
+          segments: 6
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "{{neon_accent}}"
     - id: cloud_card
       shapes:
-        - shape: rounded_rect
-          x: 0.0
-          y: 0.0
-          w: 130.0
-          h: 56.0
-          radius: 4.0
-          fill: "#0c1527"
-          stroke: "#00f0ff"
+        - shape: polygon
+          points:
+            - [-48.0, 32.0]
+            - [48.0, 32.0]
+            - [60.0, 20.0]
+            - [60.0, -20.0]
+            - [48.0, -32.0]
+            - [-48.0, -32.0]
+            - [-60.0, -20.0]
+            - [-60.0, 20.0]
+          closed: true
+          fill: "#090d16"
+          stroke: "{{neon_border}}"
+          stroke_width: 1.5
+        - shape: line
+          x1: -32.0
+          y1: 26.0
+          x2: 32.0
+          y2: 26.0
+          stroke: "{{neon_accent}}"
           stroke_width: 2.0
+        - shape: circle
+          x: -38.0
+          y: 0.0
+          r: 13.0
+          fill: "#0f172a"
+          stroke: "{{neon_accent}}"
+          stroke_width: 1.2
         - shape: icon
           x: -38.0
           y: 0.0
-          w: 22.0
-          h: 22.0
+          w: 18.0
+          h: 18.0
           icon: "{{icon}}"
         - shape: text
-          x: 10.0
-          y: 0.0
+          x: 12.0
+          y: 6.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#00f0ff"
+          size: 9.5
+          color: "#f0fdf4"
+        - shape: text
+          x: 12.0
+          y: -6.0
+          text: "{{telemetry}}"
+          size: 7.5
+          color: "{{neon_accent}}"
+        - shape: roundedrect
+          x: 0.0
+          y: -18.0
+          w: 86.0
+          h: 10.0
+          radius: 2.0
+          fill: "{{badge_bg}}"
+        - shape: text
+          x: 0.0
+          y: -18.0
+          text: "{{status_code}}"
+          size: 6.5
+          color: "{{badge_color}}"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -26.0
+          w: 64.0
+          h: 3.0
+          segments: 6
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "{{neon_accent}}"
     - id: rack_blade
       shapes:
-        - shape: rounded_rect
-          x: 0.0
-          y: 0.0
-          w: 130.0
-          h: 56.0
-          radius: 4.0
-          fill: "#0c1527"
-          stroke: "#00f0ff"
+        - shape: polygon
+          points:
+            - [-48.0, 32.0]
+            - [48.0, 32.0]
+            - [60.0, 20.0]
+            - [60.0, -20.0]
+            - [48.0, -32.0]
+            - [-48.0, -32.0]
+            - [-60.0, -20.0]
+            - [-60.0, 20.0]
+          closed: true
+          fill: "#090d16"
+          stroke: "{{neon_border}}"
+          stroke_width: 1.5
+        - shape: line
+          x1: -32.0
+          y1: 26.0
+          x2: 32.0
+          y2: 26.0
+          stroke: "{{neon_accent}}"
           stroke_width: 2.0
+        - shape: circle
+          x: -38.0
+          y: 0.0
+          r: 13.0
+          fill: "#0f172a"
+          stroke: "{{neon_accent}}"
+          stroke_width: 1.2
         - shape: icon
           x: -38.0
           y: 0.0
-          w: 22.0
-          h: 22.0
+          w: 18.0
+          h: 18.0
           icon: "{{icon}}"
         - shape: text
-          x: 10.0
-          y: 0.0
+          x: 12.0
+          y: 6.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#00f0ff"
+          size: 9.5
+          color: "#f0fdf4"
+        - shape: text
+          x: 12.0
+          y: -6.0
+          text: "{{telemetry}}"
+          size: 7.5
+          color: "{{neon_accent}}"
+        - shape: roundedrect
+          x: 0.0
+          y: -18.0
+          w: 86.0
+          h: 10.0
+          radius: 2.0
+          fill: "{{badge_bg}}"
+        - shape: text
+          x: 0.0
+          y: -18.0
+          text: "{{status_code}}"
+          size: 6.5
+          color: "{{badge_color}}"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -26.0
+          w: 64.0
+          h: 3.0
+          segments: 6
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "{{neon_accent}}"
     - id: minimal_pill
       shapes:
-        - shape: rounded_rect
-          x: 0.0
-          y: 0.0
-          w: 130.0
-          h: 56.0
-          radius: 4.0
-          fill: "#0c1527"
-          stroke: "#00f0ff"
+        - shape: polygon
+          points:
+            - [-48.0, 32.0]
+            - [48.0, 32.0]
+            - [60.0, 20.0]
+            - [60.0, -20.0]
+            - [48.0, -32.0]
+            - [-48.0, -32.0]
+            - [-60.0, -20.0]
+            - [-60.0, 20.0]
+          closed: true
+          fill: "#090d16"
+          stroke: "{{neon_border}}"
+          stroke_width: 1.5
+        - shape: line
+          x1: -32.0
+          y1: 26.0
+          x2: 32.0
+          y2: 26.0
+          stroke: "{{neon_accent}}"
           stroke_width: 2.0
+        - shape: circle
+          x: -38.0
+          y: 0.0
+          r: 13.0
+          fill: "#0f172a"
+          stroke: "{{neon_accent}}"
+          stroke_width: 1.2
         - shape: icon
           x: -38.0
           y: 0.0
-          w: 22.0
-          h: 22.0
+          w: 18.0
+          h: 18.0
           icon: "{{icon}}"
         - shape: text
-          x: 10.0
-          y: 0.0
+          x: 12.0
+          y: 6.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#00f0ff"
+          size: 9.5
+          color: "#f0fdf4"
+        - shape: text
+          x: 12.0
+          y: -6.0
+          text: "{{telemetry}}"
+          size: 7.5
+          color: "{{neon_accent}}"
+        - shape: roundedrect
+          x: 0.0
+          y: -18.0
+          w: 86.0
+          h: 10.0
+          radius: 2.0
+          fill: "{{badge_bg}}"
+        - shape: text
+          x: 0.0
+          y: -18.0
+          text: "{{status_code}}"
+          size: 6.5
+          color: "{{badge_color}}"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -26.0
+          w: 64.0
+          h: 3.0
+          segments: 6
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "{{neon_accent}}"
 "##;
 
 pub const PRESET_THEME_CLOUD: &str = r##"
@@ -185,150 +466,390 @@ graph_defn:
     text_color: "#0f172a"
     message_theme:
       shape: pill
-      bg: "#3b82f6"
-      stroke: "#2563eb"
+      bg: "#1e293b"
+      stroke: "#38bdf8"
       stroke_width: 1.5
-      text_color: "#ffffff"
-      font_size: 14.0
+      text_color: "#f8fafc"
+      font_size: 13.0
   node_templates:
     - id: cloud_card
       shapes:
-        - shape: rounded_rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 140.0
-          h: 56.0
-          radius: 10.0
+          w: 124.0
+          h: 72.0
+          radius: 8.0
           fill: "#ffffff"
           stroke: "#cbd5e1"
-          stroke_width: 2.0
-        - shape: icon
-          x: -42.0
-          y: 0.0
-          w: 24.0
-          h: 24.0
-          icon: "{{icon}}"
-        - shape: text
-          x: 10.0
-          y: 0.0
-          text: "{{node_name}}"
-          size: 13.0
-          color: "#1e293b"
-    - id: card
-      shapes:
-        - shape: rounded_rect
+          stroke_width: 1.5
+        - shape: rect
           x: 0.0
-          y: 0.0
-          w: 140.0
-          h: 56.0
-          radius: 10.0
-          fill: "#ffffff"
-          stroke: "#cbd5e1"
-          stroke_width: 2.0
+          y: 32.0
+          w: 124.0
+          h: 8.0
+          fill: "{{accent_color}}"
+        - shape: circle
+          x: -38.0
+          y: 6.0
+          r: 16.0
+          fill: "#f8fafc"
+          stroke: "#e2e8f0"
+          stroke_width: 1.0
         - shape: icon
-          x: -42.0
-          y: 0.0
-          w: 24.0
-          h: 24.0
+          x: -38.0
+          y: 6.0
+          w: 22.0
+          h: 22.0
           icon: "{{icon}}"
         - shape: text
-          x: 10.0
-          y: 0.0
+          x: 14.0
+          y: 12.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#1e293b"
+          size: 10.0
+          color: "#0f172a"
+        - shape: text
+          x: 14.0
+          y: -2.0
+          text: "{{service_type}}"
+          size: 8.0
+          color: "#64748b"
+        - shape: roundedrect
+          x: 0.0
+          y: -20.0
+          w: 108.0
+          h: 14.0
+          radius: 4.0
+          fill: "{{status_bg}}"
+        - shape: text
+          x: 0.0
+          y: -20.0
+          text: "{{status_text}}"
+          size: 7.5
+          color: "{{status_color}}"
+        - shape: progress
+          style: bar
+          x: 0.0
+          y: -34.0
+          w: 124.0
+          h: 4.0
+          track_color: "#f1f5f9"
+          fill_color: "{{accent_color}}"
     - id: default
       shapes:
-        - shape: rounded_rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 140.0
-          h: 56.0
-          radius: 10.0
+          w: 124.0
+          h: 72.0
+          radius: 8.0
           fill: "#ffffff"
           stroke: "#cbd5e1"
-          stroke_width: 2.0
+          stroke_width: 1.5
+        - shape: rect
+          x: 0.0
+          y: 32.0
+          w: 124.0
+          h: 8.0
+          fill: "{{accent_color}}"
+        - shape: circle
+          x: -38.0
+          y: 6.0
+          r: 16.0
+          fill: "#f8fafc"
+          stroke: "#e2e8f0"
+          stroke_width: 1.0
         - shape: icon
-          x: -42.0
-          y: 0.0
-          w: 24.0
-          h: 24.0
+          x: -38.0
+          y: 6.0
+          w: 22.0
+          h: 22.0
           icon: "{{icon}}"
         - shape: text
-          x: 10.0
-          y: 0.0
+          x: 14.0
+          y: 12.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#1e293b"
+          size: 10.0
+          color: "#0f172a"
+        - shape: text
+          x: 14.0
+          y: -2.0
+          text: "{{service_type}}"
+          size: 8.0
+          color: "#64748b"
+        - shape: roundedrect
+          x: 0.0
+          y: -20.0
+          w: 108.0
+          h: 14.0
+          radius: 4.0
+          fill: "{{status_bg}}"
+        - shape: text
+          x: 0.0
+          y: -20.0
+          text: "{{status_text}}"
+          size: 7.5
+          color: "{{status_color}}"
+        - shape: progress
+          style: bar
+          x: 0.0
+          y: -34.0
+          w: 124.0
+          h: 4.0
+          track_color: "#f1f5f9"
+          fill_color: "{{accent_color}}"
+    - id: card
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 124.0
+          h: 72.0
+          radius: 8.0
+          fill: "#ffffff"
+          stroke: "#cbd5e1"
+          stroke_width: 1.5
+        - shape: rect
+          x: 0.0
+          y: 32.0
+          w: 124.0
+          h: 8.0
+          fill: "{{accent_color}}"
+        - shape: circle
+          x: -38.0
+          y: 6.0
+          r: 16.0
+          fill: "#f8fafc"
+          stroke: "#e2e8f0"
+          stroke_width: 1.0
+        - shape: icon
+          x: -38.0
+          y: 6.0
+          w: 22.0
+          h: 22.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 14.0
+          y: 12.0
+          text: "{{node_name}}"
+          size: 10.0
+          color: "#0f172a"
+        - shape: text
+          x: 14.0
+          y: -2.0
+          text: "{{service_type}}"
+          size: 8.0
+          color: "#64748b"
+        - shape: roundedrect
+          x: 0.0
+          y: -20.0
+          w: 108.0
+          h: 14.0
+          radius: 4.0
+          fill: "{{status_bg}}"
+        - shape: text
+          x: 0.0
+          y: -20.0
+          text: "{{status_text}}"
+          size: 7.5
+          color: "{{status_color}}"
+        - shape: progress
+          style: bar
+          x: 0.0
+          y: -34.0
+          w: 124.0
+          h: 4.0
+          track_color: "#f1f5f9"
+          fill_color: "{{accent_color}}"
     - id: cyber_hud
       shapes:
-        - shape: rounded_rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 140.0
-          h: 56.0
-          radius: 10.0
+          w: 124.0
+          h: 72.0
+          radius: 8.0
           fill: "#ffffff"
           stroke: "#cbd5e1"
-          stroke_width: 2.0
+          stroke_width: 1.5
+        - shape: rect
+          x: 0.0
+          y: 32.0
+          w: 124.0
+          h: 8.0
+          fill: "{{accent_color}}"
+        - shape: circle
+          x: -38.0
+          y: 6.0
+          r: 16.0
+          fill: "#f8fafc"
+          stroke: "#e2e8f0"
+          stroke_width: 1.0
         - shape: icon
-          x: -42.0
-          y: 0.0
-          w: 24.0
-          h: 24.0
+          x: -38.0
+          y: 6.0
+          w: 22.0
+          h: 22.0
           icon: "{{icon}}"
         - shape: text
-          x: 10.0
-          y: 0.0
+          x: 14.0
+          y: 12.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#1e293b"
+          size: 10.0
+          color: "#0f172a"
+        - shape: text
+          x: 14.0
+          y: -2.0
+          text: "{{service_type}}"
+          size: 8.0
+          color: "#64748b"
+        - shape: roundedrect
+          x: 0.0
+          y: -20.0
+          w: 108.0
+          h: 14.0
+          radius: 4.0
+          fill: "{{status_bg}}"
+        - shape: text
+          x: 0.0
+          y: -20.0
+          text: "{{status_text}}"
+          size: 7.5
+          color: "{{status_color}}"
+        - shape: progress
+          style: bar
+          x: 0.0
+          y: -34.0
+          w: 124.0
+          h: 4.0
+          track_color: "#f1f5f9"
+          fill_color: "{{accent_color}}"
     - id: rack_blade
       shapes:
-        - shape: rounded_rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 140.0
-          h: 56.0
-          radius: 10.0
+          w: 124.0
+          h: 72.0
+          radius: 8.0
           fill: "#ffffff"
           stroke: "#cbd5e1"
-          stroke_width: 2.0
+          stroke_width: 1.5
+        - shape: rect
+          x: 0.0
+          y: 32.0
+          w: 124.0
+          h: 8.0
+          fill: "{{accent_color}}"
+        - shape: circle
+          x: -38.0
+          y: 6.0
+          r: 16.0
+          fill: "#f8fafc"
+          stroke: "#e2e8f0"
+          stroke_width: 1.0
         - shape: icon
-          x: -42.0
-          y: 0.0
-          w: 24.0
-          h: 24.0
+          x: -38.0
+          y: 6.0
+          w: 22.0
+          h: 22.0
           icon: "{{icon}}"
         - shape: text
-          x: 10.0
-          y: 0.0
+          x: 14.0
+          y: 12.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#1e293b"
+          size: 10.0
+          color: "#0f172a"
+        - shape: text
+          x: 14.0
+          y: -2.0
+          text: "{{service_type}}"
+          size: 8.0
+          color: "#64748b"
+        - shape: roundedrect
+          x: 0.0
+          y: -20.0
+          w: 108.0
+          h: 14.0
+          radius: 4.0
+          fill: "{{status_bg}}"
+        - shape: text
+          x: 0.0
+          y: -20.0
+          text: "{{status_text}}"
+          size: 7.5
+          color: "{{status_color}}"
+        - shape: progress
+          style: bar
+          x: 0.0
+          y: -34.0
+          w: 124.0
+          h: 4.0
+          track_color: "#f1f5f9"
+          fill_color: "{{accent_color}}"
     - id: minimal_pill
       shapes:
-        - shape: rounded_rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 140.0
-          h: 56.0
-          radius: 10.0
+          w: 124.0
+          h: 72.0
+          radius: 8.0
           fill: "#ffffff"
           stroke: "#cbd5e1"
-          stroke_width: 2.0
+          stroke_width: 1.5
+        - shape: rect
+          x: 0.0
+          y: 32.0
+          w: 124.0
+          h: 8.0
+          fill: "{{accent_color}}"
+        - shape: circle
+          x: -38.0
+          y: 6.0
+          r: 16.0
+          fill: "#f8fafc"
+          stroke: "#e2e8f0"
+          stroke_width: 1.0
         - shape: icon
-          x: -42.0
-          y: 0.0
-          w: 24.0
-          h: 24.0
+          x: -38.0
+          y: 6.0
+          w: 22.0
+          h: 22.0
           icon: "{{icon}}"
         - shape: text
-          x: 10.0
-          y: 0.0
+          x: 14.0
+          y: 12.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#1e293b"
+          size: 10.0
+          color: "#0f172a"
+        - shape: text
+          x: 14.0
+          y: -2.0
+          text: "{{service_type}}"
+          size: 8.0
+          color: "#64748b"
+        - shape: roundedrect
+          x: 0.0
+          y: -20.0
+          w: 108.0
+          h: 14.0
+          radius: 4.0
+          fill: "{{status_bg}}"
+        - shape: text
+          x: 0.0
+          y: -20.0
+          text: "{{status_text}}"
+          size: 7.5
+          color: "{{status_color}}"
+        - shape: progress
+          style: bar
+          x: 0.0
+          y: -34.0
+          w: 124.0
+          h: 4.0
+          track_color: "#f1f5f9"
+          fill_color: "{{accent_color}}"
 "##;
 
 pub const PRESET_THEME_DATACENTER: &str = r##"
@@ -339,7 +860,7 @@ graph_defn:
     text_color: "#f4f4f5"
     message_theme:
       shape: box
-      bg: "#052e16"
+      bg: "#18181b"
       stroke: "#22c55e"
       stroke_width: 1.5
       text_color: "#4ade80"
@@ -347,320 +868,1007 @@ graph_defn:
   node_templates:
     - id: rack_blade
       shapes:
-        - shape: rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 150.0
-          h: 46.0
-          fill: "#27272a"
-          stroke: "#3f3f46"
-          stroke_width: 2.0
+          w: 136.0
+          h: 44.0
+          radius: 4.0
+          fill: "#1e293b"
+          stroke: "#475569"
+          stroke_width: 1.5
+        - shape: rect
+          x: -64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+          stroke: "#334155"
+          stroke_width: 1.0
+        - shape: rect
+          x: 64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+          stroke: "#334155"
+          stroke_width: 1.0
         - shape: circle
-          x: -60.0
-          y: 0.0
-          r: 4.0
-          fill: "#22c55e"
+          x: -64.0
+          y: 13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: -64.0
+          y: -13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: 64.0
+          y: 13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: 64.0
+          y: -13.0
+          r: 2.2
+          fill: "#94a3b8"
         - shape: icon
-          x: -36.0
+          x: -40.0
           y: 0.0
-          w: 20.0
-          h: 20.0
+          w: 22.0
+          h: 22.0
           icon: "{{icon}}"
         - shape: text
-          x: 14.0
-          y: 0.0
+          x: 3.0
+          y: 6.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#f4f4f5"
-    - id: card
+          size: 9.5
+          color: "#f8fafc"
+        - shape: text
+          x: 3.0
+          y: -8.0
+          text: "{{unit_id}}"
+          size: 7.5
+          color: "#94a3b8"
+        - shape: circle
+          x: 46.0
+          y: 10.0
+          r: 2.5
+          fill: "{{led_pwr}}"
+        - shape: circle
+          x: 46.0
+          y: 0.0
+          r: 2.5
+          fill: "{{led_net}}"
+        - shape: circle
+          x: 46.0
+          y: -10.0
+          r: 2.5
+          fill: "{{led_act}}"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -19.0
+          w: 110.0
+          h: 3.0
+          segments: 10
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "#22c55e"
+    - id: rack_chassis
       shapes:
-        - shape: rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 150.0
-          h: 46.0
-          fill: "#27272a"
-          stroke: "#3f3f46"
-          stroke_width: 2.0
+          w: 136.0
+          h: 44.0
+          radius: 4.0
+          fill: "#1e293b"
+          stroke: "#475569"
+          stroke_width: 1.5
+        - shape: rect
+          x: -64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+          stroke: "#334155"
+          stroke_width: 1.0
+        - shape: rect
+          x: 64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+          stroke: "#334155"
+          stroke_width: 1.0
         - shape: circle
-          x: -60.0
-          y: 0.0
-          r: 4.0
-          fill: "#22c55e"
+          x: -64.0
+          y: 13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: -64.0
+          y: -13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: 64.0
+          y: 13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: 64.0
+          y: -13.0
+          r: 2.2
+          fill: "#94a3b8"
         - shape: icon
-          x: -36.0
+          x: -40.0
           y: 0.0
-          w: 20.0
-          h: 20.0
+          w: 22.0
+          h: 22.0
           icon: "{{icon}}"
         - shape: text
-          x: 14.0
-          y: 0.0
+          x: 3.0
+          y: 6.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#f4f4f5"
+          size: 9.5
+          color: "#f8fafc"
+        - shape: text
+          x: 3.0
+          y: -8.0
+          text: "{{unit_id}}"
+          size: 7.5
+          color: "#94a3b8"
+        - shape: circle
+          x: 46.0
+          y: 10.0
+          r: 2.5
+          fill: "{{led_pwr}}"
+        - shape: circle
+          x: 46.0
+          y: 0.0
+          r: 2.5
+          fill: "{{led_net}}"
+        - shape: circle
+          x: 46.0
+          y: -10.0
+          r: 2.5
+          fill: "{{led_act}}"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -19.0
+          w: 110.0
+          h: 3.0
+          segments: 10
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "#22c55e"
     - id: default
       shapes:
-        - shape: rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 150.0
-          h: 46.0
-          fill: "#27272a"
-          stroke: "#3f3f46"
-          stroke_width: 2.0
+          w: 136.0
+          h: 44.0
+          radius: 4.0
+          fill: "#1e293b"
+          stroke: "#475569"
+          stroke_width: 1.5
+        - shape: rect
+          x: -64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+          stroke: "#334155"
+          stroke_width: 1.0
+        - shape: rect
+          x: 64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+          stroke: "#334155"
+          stroke_width: 1.0
         - shape: circle
-          x: -60.0
-          y: 0.0
-          r: 4.0
-          fill: "#22c55e"
+          x: -64.0
+          y: 13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: -64.0
+          y: -13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: 64.0
+          y: 13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: 64.0
+          y: -13.0
+          r: 2.2
+          fill: "#94a3b8"
         - shape: icon
-          x: -36.0
+          x: -40.0
           y: 0.0
-          w: 20.0
-          h: 20.0
+          w: 22.0
+          h: 22.0
           icon: "{{icon}}"
         - shape: text
-          x: 14.0
-          y: 0.0
+          x: 3.0
+          y: 6.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#f4f4f5"
-    - id: cyber_hud
+          size: 9.5
+          color: "#f8fafc"
+        - shape: text
+          x: 3.0
+          y: -8.0
+          text: "{{unit_id}}"
+          size: 7.5
+          color: "#94a3b8"
+        - shape: circle
+          x: 46.0
+          y: 10.0
+          r: 2.5
+          fill: "{{led_pwr}}"
+        - shape: circle
+          x: 46.0
+          y: 0.0
+          r: 2.5
+          fill: "{{led_net}}"
+        - shape: circle
+          x: 46.0
+          y: -10.0
+          r: 2.5
+          fill: "{{led_act}}"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -19.0
+          w: 110.0
+          h: 3.0
+          segments: 10
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "#22c55e"
+    - id: card
       shapes:
-        - shape: rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 150.0
-          h: 46.0
-          fill: "#27272a"
-          stroke: "#3f3f46"
-          stroke_width: 2.0
+          w: 136.0
+          h: 44.0
+          radius: 4.0
+          fill: "#1e293b"
+          stroke: "#475569"
+          stroke_width: 1.5
+        - shape: rect
+          x: -64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+          stroke: "#334155"
+          stroke_width: 1.0
+        - shape: rect
+          x: 64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+          stroke: "#334155"
+          stroke_width: 1.0
         - shape: circle
-          x: -60.0
-          y: 0.0
-          r: 4.0
-          fill: "#22c55e"
+          x: -64.0
+          y: 13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: -64.0
+          y: -13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: 64.0
+          y: 13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: 64.0
+          y: -13.0
+          r: 2.2
+          fill: "#94a3b8"
         - shape: icon
-          x: -36.0
+          x: -40.0
           y: 0.0
-          w: 20.0
-          h: 20.0
+          w: 22.0
+          h: 22.0
           icon: "{{icon}}"
         - shape: text
-          x: 14.0
-          y: 0.0
+          x: 3.0
+          y: 6.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#f4f4f5"
+          size: 9.5
+          color: "#f8fafc"
+        - shape: text
+          x: 3.0
+          y: -8.0
+          text: "{{unit_id}}"
+          size: 7.5
+          color: "#94a3b8"
+        - shape: circle
+          x: 46.0
+          y: 10.0
+          r: 2.5
+          fill: "{{led_pwr}}"
+        - shape: circle
+          x: 46.0
+          y: 0.0
+          r: 2.5
+          fill: "{{led_net}}"
+        - shape: circle
+          x: 46.0
+          y: -10.0
+          r: 2.5
+          fill: "{{led_act}}"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -19.0
+          w: 110.0
+          h: 3.0
+          segments: 10
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "#22c55e"
     - id: cloud_card
       shapes:
-        - shape: rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 150.0
-          h: 46.0
-          fill: "#27272a"
-          stroke: "#3f3f46"
-          stroke_width: 2.0
+          w: 136.0
+          h: 44.0
+          radius: 4.0
+          fill: "#1e293b"
+          stroke: "#475569"
+          stroke_width: 1.5
+        - shape: rect
+          x: -64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+          stroke: "#334155"
+          stroke_width: 1.0
+        - shape: rect
+          x: 64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+          stroke: "#334155"
+          stroke_width: 1.0
         - shape: circle
-          x: -60.0
-          y: 0.0
-          r: 4.0
-          fill: "#22c55e"
+          x: -64.0
+          y: 13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: -64.0
+          y: -13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: 64.0
+          y: 13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: 64.0
+          y: -13.0
+          r: 2.2
+          fill: "#94a3b8"
         - shape: icon
-          x: -36.0
+          x: -40.0
           y: 0.0
-          w: 20.0
-          h: 20.0
+          w: 22.0
+          h: 22.0
           icon: "{{icon}}"
         - shape: text
-          x: 14.0
-          y: 0.0
+          x: 3.0
+          y: 6.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#f4f4f5"
+          size: 9.5
+          color: "#f8fafc"
+        - shape: text
+          x: 3.0
+          y: -8.0
+          text: "{{unit_id}}"
+          size: 7.5
+          color: "#94a3b8"
+        - shape: circle
+          x: 46.0
+          y: 10.0
+          r: 2.5
+          fill: "{{led_pwr}}"
+        - shape: circle
+          x: 46.0
+          y: 0.0
+          r: 2.5
+          fill: "{{led_net}}"
+        - shape: circle
+          x: 46.0
+          y: -10.0
+          r: 2.5
+          fill: "{{led_act}}"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -19.0
+          w: 110.0
+          h: 3.0
+          segments: 10
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "#22c55e"
+    - id: cyber_hud
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 136.0
+          h: 44.0
+          radius: 4.0
+          fill: "#1e293b"
+          stroke: "#475569"
+          stroke_width: 1.5
+        - shape: rect
+          x: -64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+          stroke: "#334155"
+          stroke_width: 1.0
+        - shape: rect
+          x: 64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+          stroke: "#334155"
+          stroke_width: 1.0
+        - shape: circle
+          x: -64.0
+          y: 13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: -64.0
+          y: -13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: 64.0
+          y: 13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: 64.0
+          y: -13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: icon
+          x: -40.0
+          y: 0.0
+          w: 22.0
+          h: 22.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 3.0
+          y: 6.0
+          text: "{{node_name}}"
+          size: 9.5
+          color: "#f8fafc"
+        - shape: text
+          x: 3.0
+          y: -8.0
+          text: "{{unit_id}}"
+          size: 7.5
+          color: "#94a3b8"
+        - shape: circle
+          x: 46.0
+          y: 10.0
+          r: 2.5
+          fill: "{{led_pwr}}"
+        - shape: circle
+          x: 46.0
+          y: 0.0
+          r: 2.5
+          fill: "{{led_net}}"
+        - shape: circle
+          x: 46.0
+          y: -10.0
+          r: 2.5
+          fill: "{{led_act}}"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -19.0
+          w: 110.0
+          h: 3.0
+          segments: 10
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "#22c55e"
     - id: minimal_pill
       shapes:
-        - shape: rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 150.0
-          h: 46.0
-          fill: "#27272a"
-          stroke: "#3f3f46"
-          stroke_width: 2.0
+          w: 136.0
+          h: 44.0
+          radius: 4.0
+          fill: "#1e293b"
+          stroke: "#475569"
+          stroke_width: 1.5
+        - shape: rect
+          x: -64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+          stroke: "#334155"
+          stroke_width: 1.0
+        - shape: rect
+          x: 64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+          stroke: "#334155"
+          stroke_width: 1.0
         - shape: circle
-          x: -60.0
-          y: 0.0
-          r: 4.0
-          fill: "#22c55e"
+          x: -64.0
+          y: 13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: -64.0
+          y: -13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: 64.0
+          y: 13.0
+          r: 2.2
+          fill: "#94a3b8"
+        - shape: circle
+          x: 64.0
+          y: -13.0
+          r: 2.2
+          fill: "#94a3b8"
         - shape: icon
-          x: -36.0
+          x: -40.0
           y: 0.0
-          w: 20.0
-          h: 20.0
+          w: 22.0
+          h: 22.0
           icon: "{{icon}}"
         - shape: text
-          x: 14.0
-          y: 0.0
+          x: 3.0
+          y: 6.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#f4f4f5"
+          size: 9.5
+          color: "#f8fafc"
+        - shape: text
+          x: 3.0
+          y: -8.0
+          text: "{{unit_id}}"
+          size: 7.5
+          color: "#94a3b8"
+        - shape: circle
+          x: 46.0
+          y: 10.0
+          r: 2.5
+          fill: "{{led_pwr}}"
+        - shape: circle
+          x: 46.0
+          y: 0.0
+          r: 2.5
+          fill: "{{led_net}}"
+        - shape: circle
+          x: 46.0
+          y: -10.0
+          r: 2.5
+          fill: "{{led_act}}"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -19.0
+          w: 110.0
+          h: 3.0
+          segments: 10
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "#22c55e"
 "##;
 
 pub const PRESET_THEME_MINIMAL: &str = r##"
 graph_defn:
   graph_attrs:
-    background: "#fafafa"
-    connection_color: "#a1a1aa"
-    text_color: "#18181b"
+    background: "#f8fafc"
+    connection_color: "#3b82f6"
+    text_color: "#0f172a"
     message_theme:
-      shape: rounded
+      shape: pill
       bg: "#ffffff"
-      stroke: "#d4d4d8"
-      stroke_width: 1.0
-      text_color: "#18181b"
-      font_size: 14.0
+      stroke: "#94a3b8"
+      stroke_width: 1.5
+      text_color: "#1e293b"
+      font_size: 13.0
   node_templates:
     - id: minimal_pill
       shapes:
-        - shape: rounded_rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 124.0
-          h: 40.0
-          radius: 20.0
+          w: 114.0
+          h: 32.0
+          radius: 16.0
           fill: "#ffffff"
-          stroke: "#e4e4e7"
+          stroke: "#cbd5e1"
           stroke_width: 1.5
+        - shape: circle
+          x: -41.0
+          y: 0.0
+          r: 12.0
+          fill: "{{disc_color}}"
         - shape: icon
-          x: -36.0
+          x: -41.0
           y: 0.0
-          w: 18.0
-          h: 18.0
+          w: 16.0
+          h: 16.0
           icon: "{{icon}}"
-        - shape: text
-          x: 8.0
+        - shape: progress
+          style: ring
+          x: -41.0
           y: 0.0
+          r: 14.5
+          thickness: 2.0
+          track_color: "#e2e8f0"
+          fill_color: "{{tag_color}}"
+          start_angle: 90.0
+          clockwise: true
+        - shape: line
+          x1: -24.0
+          y1: 8.0
+          x2: -24.0
+          y2: -8.0
+          stroke: "#e2e8f0"
+          stroke_width: 1.0
+        - shape: text
+          x: 16.0
+          y: 4.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#18181b"
-    - id: card
+          size: 9.0
+          color: "#1e293b"
+        - shape: text
+          x: 16.0
+          y: -6.0
+          text: "{{role_tag}}"
+          size: 7.0
+          color: "{{tag_color}}"
+    - id: capsule_pill
       shapes:
-        - shape: rounded_rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 124.0
-          h: 40.0
-          radius: 20.0
+          w: 114.0
+          h: 32.0
+          radius: 16.0
           fill: "#ffffff"
-          stroke: "#e4e4e7"
+          stroke: "#cbd5e1"
           stroke_width: 1.5
+        - shape: circle
+          x: -41.0
+          y: 0.0
+          r: 12.0
+          fill: "{{disc_color}}"
         - shape: icon
-          x: -36.0
+          x: -41.0
           y: 0.0
-          w: 18.0
-          h: 18.0
+          w: 16.0
+          h: 16.0
           icon: "{{icon}}"
-        - shape: text
-          x: 8.0
+        - shape: progress
+          style: ring
+          x: -41.0
           y: 0.0
+          r: 14.5
+          thickness: 2.0
+          track_color: "#e2e8f0"
+          fill_color: "{{tag_color}}"
+          start_angle: 90.0
+          clockwise: true
+        - shape: line
+          x1: -24.0
+          y1: 8.0
+          x2: -24.0
+          y2: -8.0
+          stroke: "#e2e8f0"
+          stroke_width: 1.0
+        - shape: text
+          x: 16.0
+          y: 4.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#18181b"
+          size: 9.0
+          color: "#1e293b"
+        - shape: text
+          x: 16.0
+          y: -6.0
+          text: "{{role_tag}}"
+          size: 7.0
+          color: "{{tag_color}}"
     - id: default
       shapes:
-        - shape: rounded_rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 124.0
-          h: 40.0
-          radius: 20.0
+          w: 114.0
+          h: 32.0
+          radius: 16.0
           fill: "#ffffff"
-          stroke: "#e4e4e7"
+          stroke: "#cbd5e1"
           stroke_width: 1.5
+        - shape: circle
+          x: -41.0
+          y: 0.0
+          r: 12.0
+          fill: "{{disc_color}}"
         - shape: icon
-          x: -36.0
+          x: -41.0
           y: 0.0
-          w: 18.0
-          h: 18.0
+          w: 16.0
+          h: 16.0
           icon: "{{icon}}"
-        - shape: text
-          x: 8.0
+        - shape: progress
+          style: ring
+          x: -41.0
           y: 0.0
+          r: 14.5
+          thickness: 2.0
+          track_color: "#e2e8f0"
+          fill_color: "{{tag_color}}"
+          start_angle: 90.0
+          clockwise: true
+        - shape: line
+          x1: -24.0
+          y1: 8.0
+          x2: -24.0
+          y2: -8.0
+          stroke: "#e2e8f0"
+          stroke_width: 1.0
+        - shape: text
+          x: 16.0
+          y: 4.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#18181b"
-    - id: cyber_hud
+          size: 9.0
+          color: "#1e293b"
+        - shape: text
+          x: 16.0
+          y: -6.0
+          text: "{{role_tag}}"
+          size: 7.0
+          color: "{{tag_color}}"
+    - id: card
       shapes:
-        - shape: rounded_rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 124.0
-          h: 40.0
-          radius: 20.0
+          w: 114.0
+          h: 32.0
+          radius: 16.0
           fill: "#ffffff"
-          stroke: "#e4e4e7"
+          stroke: "#cbd5e1"
           stroke_width: 1.5
+        - shape: circle
+          x: -41.0
+          y: 0.0
+          r: 12.0
+          fill: "{{disc_color}}"
         - shape: icon
-          x: -36.0
+          x: -41.0
           y: 0.0
-          w: 18.0
-          h: 18.0
+          w: 16.0
+          h: 16.0
           icon: "{{icon}}"
-        - shape: text
-          x: 8.0
+        - shape: progress
+          style: ring
+          x: -41.0
           y: 0.0
+          r: 14.5
+          thickness: 2.0
+          track_color: "#e2e8f0"
+          fill_color: "{{tag_color}}"
+          start_angle: 90.0
+          clockwise: true
+        - shape: line
+          x1: -24.0
+          y1: 8.0
+          x2: -24.0
+          y2: -8.0
+          stroke: "#e2e8f0"
+          stroke_width: 1.0
+        - shape: text
+          x: 16.0
+          y: 4.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#18181b"
+          size: 9.0
+          color: "#1e293b"
+        - shape: text
+          x: 16.0
+          y: -6.0
+          text: "{{role_tag}}"
+          size: 7.0
+          color: "{{tag_color}}"
     - id: cloud_card
       shapes:
-        - shape: rounded_rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 124.0
-          h: 40.0
-          radius: 20.0
+          w: 114.0
+          h: 32.0
+          radius: 16.0
           fill: "#ffffff"
-          stroke: "#e4e4e7"
+          stroke: "#cbd5e1"
           stroke_width: 1.5
+        - shape: circle
+          x: -41.0
+          y: 0.0
+          r: 12.0
+          fill: "{{disc_color}}"
         - shape: icon
-          x: -36.0
+          x: -41.0
           y: 0.0
-          w: 18.0
-          h: 18.0
+          w: 16.0
+          h: 16.0
           icon: "{{icon}}"
-        - shape: text
-          x: 8.0
+        - shape: progress
+          style: ring
+          x: -41.0
           y: 0.0
+          r: 14.5
+          thickness: 2.0
+          track_color: "#e2e8f0"
+          fill_color: "{{tag_color}}"
+          start_angle: 90.0
+          clockwise: true
+        - shape: line
+          x1: -24.0
+          y1: 8.0
+          x2: -24.0
+          y2: -8.0
+          stroke: "#e2e8f0"
+          stroke_width: 1.0
+        - shape: text
+          x: 16.0
+          y: 4.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#18181b"
+          size: 9.0
+          color: "#1e293b"
+        - shape: text
+          x: 16.0
+          y: -6.0
+          text: "{{role_tag}}"
+          size: 7.0
+          color: "{{tag_color}}"
+    - id: cyber_hud
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 114.0
+          h: 32.0
+          radius: 16.0
+          fill: "#ffffff"
+          stroke: "#cbd5e1"
+          stroke_width: 1.5
+        - shape: circle
+          x: -41.0
+          y: 0.0
+          r: 12.0
+          fill: "{{disc_color}}"
+        - shape: icon
+          x: -41.0
+          y: 0.0
+          w: 16.0
+          h: 16.0
+          icon: "{{icon}}"
+        - shape: progress
+          style: ring
+          x: -41.0
+          y: 0.0
+          r: 14.5
+          thickness: 2.0
+          track_color: "#e2e8f0"
+          fill_color: "{{tag_color}}"
+          start_angle: 90.0
+          clockwise: true
+        - shape: line
+          x1: -24.0
+          y1: 8.0
+          x2: -24.0
+          y2: -8.0
+          stroke: "#e2e8f0"
+          stroke_width: 1.0
+        - shape: text
+          x: 16.0
+          y: 4.0
+          text: "{{node_name}}"
+          size: 9.0
+          color: "#1e293b"
+        - shape: text
+          x: 16.0
+          y: -6.0
+          text: "{{role_tag}}"
+          size: 7.0
+          color: "{{tag_color}}"
     - id: rack_blade
       shapes:
-        - shape: rounded_rect
+        - shape: roundedrect
           x: 0.0
           y: 0.0
-          w: 124.0
-          h: 40.0
-          radius: 20.0
+          w: 114.0
+          h: 32.0
+          radius: 16.0
           fill: "#ffffff"
-          stroke: "#e4e4e7"
+          stroke: "#cbd5e1"
           stroke_width: 1.5
+        - shape: circle
+          x: -41.0
+          y: 0.0
+          r: 12.0
+          fill: "{{disc_color}}"
         - shape: icon
-          x: -36.0
+          x: -41.0
           y: 0.0
-          w: 18.0
-          h: 18.0
+          w: 16.0
+          h: 16.0
           icon: "{{icon}}"
-        - shape: text
-          x: 8.0
+        - shape: progress
+          style: ring
+          x: -41.0
           y: 0.0
+          r: 14.5
+          thickness: 2.0
+          track_color: "#e2e8f0"
+          fill_color: "{{tag_color}}"
+          start_angle: 90.0
+          clockwise: true
+        - shape: line
+          x1: -24.0
+          y1: 8.0
+          x2: -24.0
+          y2: -8.0
+          stroke: "#e2e8f0"
+          stroke_width: 1.0
+        - shape: text
+          x: 16.0
+          y: 4.0
           text: "{{node_name}}"
-          size: 13.0
-          color: "#18181b"
+          size: 9.0
+          color: "#1e293b"
+        - shape: text
+          x: 16.0
+          y: -6.0
+          text: "{{role_tag}}"
+          size: 7.0
+          color: "{{tag_color}}"
 "##;
 
 pub const PRESET_STDLIB_LOAD_BALANCER: &str = r##"
