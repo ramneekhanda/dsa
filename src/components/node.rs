@@ -21,9 +21,36 @@ pub struct SelectedNodeMarker {
     pub node_type: String,
 }
 
-#[derive(Component, Debug)]
+#[derive(Clone, Debug, PartialEq)]
+pub enum ProgressKind {
+    Bar {
+        origin_x: f32,
+        w: f32,
+    },
+    Ring {
+        center: Vec2,
+        r: f32,
+        start_angle: f32,
+        clockwise: bool,
+    },
+    Pie {
+        center: Vec2,
+        r: f32,
+        start_angle: f32,
+        clockwise: bool,
+    },
+    Segmented {
+        segment_index: usize,
+        total_segments: usize,
+        active_color: Color,
+        inactive_color: Color,
+    },
+}
+
+#[derive(Component, Clone, Debug)]
 pub struct TickProgressFill {
     pub node_name: String,
+    pub kind: ProgressKind,
 }
 
 /// A single shape entity belonging to a node's custom `draw()` overlay. Child of

@@ -153,6 +153,42 @@ fn default_icon_size() -> f32 {
     64.0
 }
 
+fn default_progress_style() -> String {
+    "bar".to_string()
+}
+
+fn default_bar_width() -> f32 {
+    32.0
+}
+
+fn default_bar_height() -> f32 {
+    3.0
+}
+
+fn default_progress_radius() -> f32 {
+    16.0
+}
+
+fn default_progress_thickness() -> f32 {
+    3.0
+}
+
+fn default_progress_start_angle() -> f32 {
+    90.0
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_progress_segments() -> usize {
+    5
+}
+
+fn default_progress_gap() -> f32 {
+    2.0
+}
+
 /// A YAML-declarable equivalent of one shape in a Rhai handler's `draw([...])`
 /// call (see `parser::draw`'s module doc for the shapes/fields this mirrors) -
 /// lets a node type get a custom on-canvas look with no script at all, via
@@ -282,6 +318,40 @@ pub enum TemplateShape {
         h: f32,
         icon: String,
     },
+    /// A timer progress indicator (linear bar, circular ring, pie wedge, or segmented meter)
+    /// positioned at arbitrary node-local coordinates with configurable dimensions and theme colors.
+    Progress {
+        #[serde(default = "default_progress_style")]
+        style: String,
+        #[serde(default)]
+        x: f32,
+        #[serde(default)]
+        y: f32,
+        #[serde(default = "default_bar_width")]
+        w: f32,
+        #[serde(default = "default_bar_height")]
+        h: f32,
+        #[serde(default = "default_progress_radius")]
+        r: f32,
+        #[serde(default = "default_progress_thickness")]
+        thickness: f32,
+        #[serde(default = "default_progress_start_angle")]
+        start_angle: f32,
+        #[serde(default = "default_true")]
+        clockwise: bool,
+        #[serde(default)]
+        radius: f32,
+        #[serde(default = "default_progress_segments")]
+        segments: usize,
+        #[serde(default = "default_progress_gap")]
+        gap: f32,
+        #[serde(default)]
+        track_color: Option<String>,
+        #[serde(default)]
+        fill_color: Option<String>,
+        #[serde(default = "default_opacity")]
+        opacity: f32,
+    },
 }
 
 impl TemplateShape {
@@ -382,6 +452,69 @@ impl TemplateShape {
                 h: *h,
                 icon: icon.clone(),
             },
+            TemplateShape::Progress {
+                style,
+                x,
+                y,
+                w,
+                h,
+                r,
+                thickness,
+                start_angle,
+                clockwise,
+                radius,
+                segments,
+                gap,
+                track_color,
+                fill_color,
+                opacity,
+            } => {
+                let opacity = opacity.clamp(0.0, 1.0);
+                let with_op = |c: Color| {
+                    let mut s = c.to_srgba();
+                    s.alpha *= opacity;
+                    Color::from(s)
+                };
+                let track_color = match track_color {
+                    Some(s) => parse_color(s).map(with_op),
+                    None => None,
+                };
+                let fill_color = match fill_color {
+                    Some(s) => parse_color(s).map(with_op),
+                    None => None,
+                };
+                let style = match style.as_str() {
+                    "ring" | "radial" | "circle" => crate::parser::draw::DrawProgressStyle::Ring {
+                        r: *r,
+                        thickness: *thickness,
+                        start_angle: *start_angle,
+                        clockwise: *clockwise,
+                    },
+                    "pie" => crate::parser::draw::DrawProgressStyle::Pie {
+                        r: *r,
+                        start_angle: *start_angle,
+                        clockwise: *clockwise,
+                    },
+                    "segmented" => crate::parser::draw::DrawProgressStyle::Segmented {
+                        w: *w,
+                        h: *h,
+                        segments: *segments,
+                        gap: *gap,
+                    },
+                    _ => crate::parser::draw::DrawProgressStyle::Bar {
+                        w: *w,
+                        h: *h,
+                        radius: *radius,
+                    },
+                };
+                DrawCmd::Progress {
+                    x: *x,
+                    y: *y,
+                    style,
+                    track_color,
+                    fill_color,
+                }
+            }
         })
     }
 
@@ -508,6 +641,39 @@ impl TemplateShape {
                 w: *w,
                 h: *h,
                 icon: sub(icon, params),
+            },
+            TemplateShape::Progress {
+                style,
+                x,
+                y,
+                w,
+                h,
+                r,
+                thickness,
+                start_angle,
+                clockwise,
+                radius,
+                segments,
+                gap,
+                track_color,
+                fill_color,
+                opacity,
+            } => TemplateShape::Progress {
+                style: sub(style, params),
+                x: *x,
+                y: *y,
+                w: *w,
+                h: *h,
+                r: *r,
+                thickness: *thickness,
+                start_angle: *start_angle,
+                clockwise: *clockwise,
+                radius: *radius,
+                segments: *segments,
+                gap: *gap,
+                track_color: track_color.as_deref().map(|s| sub(s, params)),
+                fill_color: fill_color.as_deref().map(|s| sub(s, params)),
+                opacity: *opacity,
             },
         }
     }

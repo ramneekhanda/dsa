@@ -56,6 +56,26 @@ const EXAMPLES: &[(&str, &str)] = &[
         "2.4 Parametrized Templates",
         include_str!("../../web/static/tutorial/ch2/04_parametrized_templates.yml"),
     ),
+    (
+        "3.1 Cloud Architecture Theme",
+        include_str!("../../web/static/tutorial/ch3/01_cloud_cards.yml"),
+    ),
+    (
+        "3.2 Datacenter Rack Units",
+        include_str!("../../web/static/tutorial/ch3/02_datacenter_rack.yml"),
+    ),
+    (
+        "3.3 Cyberpunk Neon HUD",
+        include_str!("../../web/static/tutorial/ch3/03_cyberpunk_hud.yml"),
+    ),
+    (
+        "3.4 Minimal Capsule Pills",
+        include_str!("../../web/static/tutorial/ch3/04_capsule_pills.yml"),
+    ),
+    (
+        "3.5 Layered & Composed Themes",
+        include_str!("../../web/static/tutorial/ch3/05_layered_theming.yml"),
+    ),
 ];
 
 /// Same list `load_native_demo_on_startup` seeds `E_CODE` with at `Startup`

@@ -89,4 +89,41 @@ export const tutorialChapters: TutorialChapter[] = [
       },
     ],
   },
+  {
+    id: "ch3",
+    title: "Chapter 3: Theming",
+    dir: "ch3",
+    lessons: [
+      {
+        id: "3.1",
+        title: "3.1 Cloud Architecture Theme",
+        markdown: "01_cloud_cards.md",
+        yaml: "01_cloud_cards.yml",
+      },
+      {
+        id: "3.2",
+        title: "3.2 Datacenter Rack Units",
+        markdown: "02_datacenter_rack.md",
+        yaml: "02_datacenter_rack.yml",
+      },
+      {
+        id: "3.3",
+        title: "3.3 Cyberpunk Neon HUD",
+        markdown: "03_cyberpunk_hud.md",
+        yaml: "03_cyberpunk_hud.yml",
+      },
+      {
+        id: "3.4",
+        title: "3.4 Minimal Capsule Pills",
+        markdown: "04_capsule_pills.md",
+        yaml: "04_capsule_pills.yml",
+      },
+      {
+        id: "3.5",
+        title: "3.5 Layered & Composed Themes",
+        markdown: "05_layered_theming.md",
+        yaml: "05_layered_theming.yml",
+      },
+    ],
+  },
 ];

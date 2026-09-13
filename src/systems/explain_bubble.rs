@@ -129,7 +129,7 @@ pub fn show_next_explain(
             stroke_width: 0.0,
         },
     };
-    let backdrop = spawn_shape(&mut commands, &backdrop_cmd, BACKDROP_Z, &font, &ca)
+    let backdrop = spawn_shape(&mut commands, &backdrop_cmd, BACKDROP_Z, &font, &ca, "")
         .insert((ExplainBubble, RenderLayers::layer(1)))
         .id();
     commands.entity(node_entity).add_child(backdrop);
@@ -205,7 +205,7 @@ pub fn show_next_explain(
         .iter()
         .enumerate()
     {
-        let child = spawn_shape(&mut commands, cmd, i as f32 * 0.01, &font, &ca)
+        let child = spawn_shape(&mut commands, cmd, i as f32 * 0.01, &font, &ca, "")
             .insert(RenderLayers::layer(1))
             .id();
         commands.entity(root).add_child(child);
@@ -224,7 +224,7 @@ pub fn show_next_explain(
     // z must clear every shape in the shadow/pointer/body loop above (which
     // now runs up to index 3, i.e. z 0.03) or the opaque body rect draws over
     // the text and hides it entirely.
-    let text_entity = spawn_shape(&mut commands, &text_cmd, 0.05, &font, &ca)
+    let text_entity = spawn_shape(&mut commands, &text_cmd, 0.05, &font, &ca, "")
         .insert((
             Text2dBounds {
                 // Word-wrap is computed in the unscaled glyph-layout space

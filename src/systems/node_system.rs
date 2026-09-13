@@ -1,5 +1,7 @@
 use crate::components::camera::BubbleCamera;
-use crate::components::node::{DragState, NodeMarker, SelectedNodeMarker, TickProgressFill};
+use crate::components::node::{
+    DragState, NodeMarker, NodeOverlayShape, SelectedNodeMarker, TickProgressFill,
+};
 use crate::parser::graphv2::{GraphAttrs, Node};
 use crate::resources::common_assets::CommonAssets;
 use crate::resources::common_assets::ResourceType;
@@ -207,7 +209,7 @@ pub fn on_click(
     mut commands: Commands,
     mut q_selected: Query<(Entity, &SelectedNodeMarker)>,
     mut q: Query<(Entity, &mut Transform, &mut Children, &NodeMarker)>,
-    text_query: Query<(&Transform, &TextLayoutInfo), Without<NodeMarker>>,
+    text_query: Query<(&Transform, &TextLayoutInfo, Option<&NodeOverlayShape>), Without<NodeMarker>>,
     real_time: Res<Time<Real>>,
     mut last_click: ResMut<LastNodeClick>,
     mut node_props: ResMut<NodePropertiesPopup>,
@@ -250,9 +252,12 @@ pub fn on_click(
                 node_props.anchor_screen_pos = screen_pos;
             }
 
+            // Only the node's own default name-label text child (never an
+            // overlay's own Text shape - see the query's other caller below
+            // for why that distinction matters) contributes here.
             let mut text_rect = Vec2::default();
             for child in children.iter() {
-                if let Ok((_, text)) = text_query.get(*child) {
+                if let Ok((_, text, None)) = text_query.get(*child) {
                     text_rect = text.logical_size;
                 }
             }
@@ -304,8 +309,9 @@ pub fn on_click(
                     .map(|cmd| {
                         if let crate::parser::draw::DrawCmd::Text { x, y, .. } = cmd {
                             let measured = children.iter().find_map(|c| {
-                                let (t, info) = text_query.get(*c).ok()?;
-                                let close = (t.translation.x - x).abs() < 0.01
+                                let (t, info, overlay_marker) = text_query.get(*c).ok()?;
+                                let close = overlay_marker.is_some()
+                                    && (t.translation.x - x).abs() < 0.01
                                     && (t.translation.y - y).abs() < 0.01;
                                 close.then(|| {
                                     let half = (info.logical_size * t.scale.truncate()) / 2.0;
@@ -496,38 +502,42 @@ fn spawn_node(
     let mut children = vec![icon_child];
     if !has_template {
         children.push(commands.spawn(txt_bndl).id());
-    }
 
-    let track_child = commands
-        .spawn(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, TICK_BAR_Y, 100.)),
-            sprite: Sprite {
-                color: Color::srgba(0.0, 0.0, 0.0, 0.25),
-                custom_size: Some(Vec2::new(TICK_BAR_WIDTH, TICK_BAR_HEIGHT)),
-                ..Default::default()
-            },
-            ..default()
-        })
-        .id();
-
-    let fill_child = commands
-        .spawn((
-            SpriteBundle {
-                transform: Transform::from_translation(Vec3::new(0.0, TICK_BAR_Y, 101.)),
+        let track_child = commands
+            .spawn(SpriteBundle {
+                transform: Transform::from_translation(Vec3::new(0.0, TICK_BAR_Y, 100.)),
                 sprite: Sprite {
-                    color: g_attrs.connection_color,
+                    color: Color::srgba(0.0, 0.0, 0.0, 0.25),
                     custom_size: Some(Vec2::new(TICK_BAR_WIDTH, TICK_BAR_HEIGHT)),
                     ..Default::default()
                 },
                 ..default()
-            },
-            TickProgressFill {
-                node_name: node.name.clone(),
-            },
-        ))
-        .id();
+            })
+            .id();
 
-    children.push(track_child);
-    children.push(fill_child);
+        let fill_child = commands
+            .spawn((
+                SpriteBundle {
+                    transform: Transform::from_translation(Vec3::new(0.0, TICK_BAR_Y, 101.)),
+                    sprite: Sprite {
+                        color: g_attrs.connection_color,
+                        custom_size: Some(Vec2::new(TICK_BAR_WIDTH, TICK_BAR_HEIGHT)),
+                        ..Default::default()
+                    },
+                    ..default()
+                },
+                TickProgressFill {
+                    node_name: node.name.clone(),
+                    kind: crate::components::node::ProgressKind::Bar {
+                        origin_x: 0.0,
+                        w: TICK_BAR_WIDTH,
+                    },
+                },
+            ))
+            .id();
+
+        children.push(track_child);
+        children.push(fill_child);
+    }
     commands.entity(parent).push_children(&children);
 }

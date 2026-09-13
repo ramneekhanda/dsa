@@ -85,6 +85,41 @@ pub enum DrawCmd {
         h: f32,
         icon: String,
     },
+    /// A timer progress indicator (bar, ring, pie, or segmented meter) positioned
+    /// at an arbitrary node-local position and customized to match the node's theme.
+    Progress {
+        x: f32,
+        y: f32,
+        style: DrawProgressStyle,
+        track_color: Option<Color>,
+        fill_color: Option<Color>,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum DrawProgressStyle {
+    Bar {
+        w: f32,
+        h: f32,
+        radius: f32,
+    },
+    Ring {
+        r: f32,
+        thickness: f32,
+        start_angle: f32,
+        clockwise: bool,
+    },
+    Pie {
+        r: f32,
+        start_angle: f32,
+        clockwise: bool,
+    },
+    Segmented {
+        w: f32,
+        h: f32,
+        segments: usize,
+        gap: f32,
+    },
 }
 
 fn num(map: &rhai::Map, key: &str, default: f32) -> f32 {
@@ -224,6 +259,41 @@ pub fn parse_draw_cmd(value: &Dynamic) -> Option<DrawCmd> {
             h: num(&map, "h", 64.0).max(1.0),
             icon: text_of(&map, "icon").unwrap_or_default(),
         }),
+        "progress" => {
+            let style_str = text_of(&map, "style").unwrap_or_else(|| "bar".to_string());
+            let style = match style_str.as_str() {
+                "ring" | "radial" | "circle" => DrawProgressStyle::Ring {
+                    r: num(&map, "r", 16.0).max(1.0),
+                    thickness: num(&map, "thickness", 3.0).max(0.5),
+                    start_angle: num(&map, "start_angle", 90.0),
+                    clockwise: map.get("clockwise").and_then(|v| v.clone().try_cast::<bool>()).unwrap_or(true),
+                },
+                "pie" => DrawProgressStyle::Pie {
+                    r: num(&map, "r", 16.0).max(1.0),
+                    start_angle: num(&map, "start_angle", 90.0),
+                    clockwise: map.get("clockwise").and_then(|v| v.clone().try_cast::<bool>()).unwrap_or(true),
+                },
+                "segmented" => DrawProgressStyle::Segmented {
+                    w: num(&map, "w", 32.0).max(1.0),
+                    h: num(&map, "h", 4.0).max(1.0),
+                    segments: num(&map, "segments", 5.0).max(1.0) as usize,
+                    gap: num(&map, "gap", 2.0).max(0.0),
+                },
+                _ => DrawProgressStyle::Bar {
+                    w: num(&map, "w", 32.0).max(1.0),
+                    h: num(&map, "h", 3.0).max(1.0),
+                    radius: num(&map, "radius", 0.0).max(0.0),
+                },
+            };
+            let opacity = num(&map, "opacity", 1.0);
+            Some(DrawCmd::Progress {
+                x: num(&map, "x", 0.0),
+                y: num(&map, "y", 0.0),
+                style,
+                track_color: with_opacity(color_of(&map, "track_color"), opacity),
+                fill_color: with_opacity(color_of(&map, "fill_color"), opacity),
+            })
+        }
         _ => None,
     }
 }
@@ -255,6 +325,16 @@ pub fn bounds(cmd: &DrawCmd) -> (Vec2, Vec2) {
             Vec2::new(x - w / 2.0, y - h / 2.0),
             Vec2::new(x + w / 2.0, y + h / 2.0),
         ),
+        DrawCmd::Progress { x, y, style, .. } => match style {
+            DrawProgressStyle::Bar { w, h, .. } | DrawProgressStyle::Segmented { w, h, .. } => (
+                Vec2::new(x - w / 2.0, y - h / 2.0),
+                Vec2::new(x + w / 2.0, y + h / 2.0),
+            ),
+            DrawProgressStyle::Ring { r, .. } | DrawProgressStyle::Pie { r, .. } => (
+                Vec2::new(x - r, y - r),
+                Vec2::new(x + r, y + r),
+            ),
+        },
         DrawCmd::Circle { x, y, r, .. } => (Vec2::new(x - r, y - r), Vec2::new(x + r, y + r)),
         DrawCmd::Line { x1, y1, x2, y2, .. } => (
             Vec2::new(x1.min(*x2), y1.min(*y2)),
