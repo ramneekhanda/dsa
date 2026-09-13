@@ -1881,6 +1881,7 @@ graph_defn:
         fn on_init() {
           state.idx = 0;
         }
+        fn on_timer() {}
         fn on_message(msg) {
           if links.len() == 0 { return; }
           let target = links[state.idx % links.len()];
@@ -1894,6 +1895,7 @@ graph_defn:
         fn on_init() {
           state.count = 0;
         }
+        fn on_timer() {}
         fn on_message(msg) {
           if links.len() == 0 { return; }
           let target = links[state.count % links.len()];
@@ -1914,6 +1916,7 @@ graph_defn:
           state.failures = 0;
           state.threshold = 3;
         }
+        fn on_timer() {}
         fn on_message(msg) {
           if state.status == "OPEN" {
             log("Circuit breaker OPEN - dropping message");
@@ -1935,6 +1938,7 @@ graph_defn:
         fn on_init() {
           state.store = #{};
         }
+        fn on_timer() {}
         fn on_message(msg) {
           if state.store.contains(msg) {
             log("Cache HIT for: " + msg);
@@ -2065,7 +2069,11 @@ pub fn merge_graph_definitions(
                 nt.id = format!("{}_{}", al, nt.id);
             }
         }
-        if !base.node_types.iter().any(|n| n.id == nt.id) {
+        if let Some(existing) = base.node_types.iter_mut().find(|n| n.id == nt.id) {
+            if existing.func.as_ref().map_or(true, |s| s.trim().is_empty()) {
+                existing.func = nt.func;
+            }
+        } else {
             base.node_types.push(nt);
         }
     }
@@ -2327,6 +2335,7 @@ imports:
         assert_eq!(file.graph_defn.graph_attrs.title, "My Custom Cyberpunk Graph");
         let lb_type = file.graph_defn.node_types.iter().find(|t| t.id == "round_robin_lb").unwrap();
         assert_eq!(lb_type.attrs.ticks, crate::parser::graphv2::Ticks::Fixed(99));
+        assert!(lb_type.func.is_some(), "Should inherit func from stdlib:load_balancer");
     }
 
     #[test]
