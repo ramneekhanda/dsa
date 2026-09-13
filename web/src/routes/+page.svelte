@@ -40,7 +40,7 @@
 
   onMount(async () => {
     let returnVal = {} as Panels.DockviewReturn;
-    Panels.createDockviewInternal(dockView, schema, data, returnVal);
+    Panels.createDockviewInternal(dockView, schema, data, returnVal, loadExample);
     codeEditor = returnVal.codeEditor;
     viewPanel = returnVal.viewPanel;
     log_event_listener.addEventListener("dsa-log-event", onLogEvent);
@@ -76,26 +76,24 @@
     }
   }
 
-  async function getExampleFiles(filename: string) {
-    return await fetch(`examples/${filename}`);
-  }
-  function exampleClicked(i: Object) {
-    if (i.detail.filename) 
-      getExampleFiles(i.detail.filename)
-        .then((response) => response.text())
-        .then((data) => {
-          code = data;
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-        });
+  // Loads a tutorial chapter's YAML snippet straight into the editor - the
+  // "Load this example" button in the Learn panel (`Help.svelte`) calls this
+  // via the `loadExample` prop threaded through `Panels.createDockviewInternal`.
+  function loadExample(filename: string) {
+    fetch(`tutorial/${filename}`)
+      .then((response) => response.text())
+      .then((data) => {
+        code = data;
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
   }
 </script>
 
 <div class="flex">
   <Menubar
     on:runClicked={() => compileCode()}
-    on:exampleClicked={(i) => exampleClicked(i)}
     on:fullscreenClicked={() => toggleFullscreen()}
   />
   <div class="flex" bind:this={dockView}></div>

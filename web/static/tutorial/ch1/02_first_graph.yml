@@ -1,0 +1,21 @@
+fns:
+  - &pinger_fn |
+      fn on_init() {
+        log("pinger is alive");
+      }
+      fn on_timer() {
+        log("tick!");
+      }
+
+graph_defn:
+  graph:
+    - name: pinger
+      node_type: pinger
+      links: []
+  graph_attrs:
+    title: Your First Graph
+  node_types:
+    - id: pinger
+      fn: *pinger_fn
+      attrs:
+        ticks: 2

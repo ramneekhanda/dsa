@@ -52,11 +52,11 @@ export class HelpPanel implements IContentRenderer {
     return this._element;
   }
 
-  constructor() {
+  constructor(loadExample: (filename: string) => void) {
     const MDDiv = document.createElement("div");
     MDDiv.style.width = "100%";
     MDDiv.style.height = "100%";
-    let canvas = new Help({ target: MDDiv });
+    let canvas = new Help({ target: MDDiv, props: { loadExample } });
     this._element = MDDiv;
   }
 
@@ -129,7 +129,7 @@ export interface DockviewReturn {
   viewPanel: IDockviewPanel;
 };
 
-export function createDockviewInternal(dockView: HTMLElement, schema: string, data: &Array<LogMessageType>, returnVal: DockviewReturn) {
+export function createDockviewInternal(dockView: HTMLElement, schema: string, data: &Array<LogMessageType>, returnVal: DockviewReturn, loadExample: (filename: string) => void) {
   const api = createDockview(dockView, {
     className: "dockview-theme-light",
     createComponent: (options) => {
@@ -143,7 +143,7 @@ export function createDockviewInternal(dockView: HTMLElement, schema: string, da
         case "LogPanel":
           return new LogPanel(data);
         case "HelpPanel":
-            return new HelpPanel();
+            return new HelpPanel(loadExample);
         default:
           throw new Error(`Unknown component ${options.name}`);
       }
