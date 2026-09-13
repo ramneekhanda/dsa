@@ -109,9 +109,6 @@ fn setup_app(app: &mut App) {
                     state: LoadingStateOpt::Ready,
                 },
             )),
-            systems::node_pulse::pulse_on_tick.run_if(resource_equals(LoadingState {
-                state: LoadingStateOpt::Ready,
-            })),
             // TEMPORARY - see systems::profiling's doc comment.
             systems::profiling::report_profiling_stats.run_if(resource_equals(LoadingState {
                 state: LoadingStateOpt::Ready,
