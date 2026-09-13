@@ -1,0 +1,89 @@
+graph_defn:
+  graph_attrs:
+    background: "#160f29"
+    connection_color: "#ff2a85"
+    text_color: "#f3e8ff"
+    message_theme:
+      shape: chamfered
+      bg: "#241442"
+      stroke: "#ff2a85"
+      stroke_width: 1.5
+      text_color: "#00f0ff"
+      font_size: 13.5
+    explain_theme:
+      shape: chamfered
+      bg: "#1e1035"
+      border: "#ff2a85"
+      border_width: 1.8
+      text_color: "#f3e8ff"
+      accent: "#ffd200"
+      button_text_color: "#160f29"
+      shadow_color: "#ff2a8540"
+      backdrop_color: "#160f29b3"
+      font_size: 13.5
+  node_templates:
+    - id: synth_card
+      shapes:
+        - shape: polygon
+          points:
+            - [-48.0, 32.0]
+            - [48.0, 32.0]
+            - [60.0, 20.0]
+            - [60.0, -20.0]
+            - [48.0, -32.0]
+            - [-48.0, -32.0]
+            - [-60.0, -20.0]
+            - [-60.0, 20.0]
+          closed: true
+          fill: "#241442"
+          stroke: "#ff2a85"
+          stroke_width: 1.5
+        - shape: line
+          x1: -40.0
+          y1: 22.0
+          x2: 40.0
+          y2: 22.0
+          stroke: "#00f0ff"
+          stroke_width: 1.5
+        - shape: circle
+          x: -36.0
+          y: 0.0
+          r: 12.0
+          fill: "#160f29"
+          stroke: "#ffd200"
+          stroke_width: 1.2
+        - shape: icon
+          x: -36.0
+          y: 0.0
+          w: 16.0
+          h: 16.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 12.0
+          y: 6.0
+          text: "{{node_name}}"
+          size: 9.5
+          color: "#ffffff"
+        - shape: text
+          x: 12.0
+          y: -6.0
+          text: "{{status_text}}"
+          size: 7.5
+          color: "#00f0ff"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -22.0
+          w: 72.0
+          h: 3.5
+          segments: 8
+          gap: 2.0
+          track_color: "#160f29"
+          fill_color: "#ff2a85"
+  node_types:
+    - id: synth_node
+      attrs:
+        ticks: 2
+        template_ref: synth_card
+        params:
+          status_text: "SYNTH // ACTIVE"

@@ -1,0 +1,76 @@
+graph_defn:
+  graph_attrs:
+    background: "#1e1f29"
+    connection_color: "#bd93f9"
+    text_color: "#f8f8f2"
+    message_theme:
+      shape: rounded
+      bg: "#282a36"
+      stroke: "#bd93f9"
+      stroke_width: 1.5
+      text_color: "#50fa7b"
+      font_size: 13.0
+    explain_theme:
+      shape: rounded
+      bg: "#282a36"
+      border: "#ff79c6"
+      border_width: 1.6
+      text_color: "#f8f8f2"
+      accent: "#bd93f9"
+      button_text_color: "#1e1f29"
+      shadow_color: "#bd93f933"
+      backdrop_color: "#1e1f29b3"
+      font_size: 13.5
+  node_templates:
+    - id: dracula_node
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 122.0
+          h: 58.0
+          radius: 10.0
+          fill: "#282a36"
+          stroke: "#44475a"
+          stroke_width: 1.5
+        - shape: roundedrect
+          x: 0.0
+          y: 20.0
+          w: 122.0
+          h: 18.0
+          radius: 10.0
+          fill: "#44475a"
+        - shape: text
+          x: -16.0
+          y: 20.0
+          text: "{{node_name}}"
+          size: 8.5
+          color: "#f8f8f2"
+        - shape: circle
+          x: 44.0
+          y: 20.0
+          r: 3.5
+          fill: "#50fa7b"
+        - shape: text
+          x: 0.0
+          y: -2.0
+          text: "{{status_text}}"
+          size: 8.0
+          color: "#ff79c6"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -18.0
+          w: 96.0
+          h: 3.5
+          segments: 8
+          gap: 2.0
+          track_color: "#1e1f29"
+          fill_color: "#bd93f9"
+  node_types:
+    - id: dracula_service
+      attrs:
+        ticks: 2
+        template_ref: dracula_node
+        params:
+          status_text: "DRACULA // RUNNING"

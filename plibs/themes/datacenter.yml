@@ -1,0 +1,104 @@
+graph_defn:
+  graph_attrs:
+    background: "#18181b"
+    connection_color: "#22c55e"
+    text_color: "#f4f4f5"
+    message_theme:
+      shape: box
+      bg: "#18181b"
+      stroke: "#22c55e"
+      stroke_width: 1.5
+      text_color: "#4ade80"
+      font_size: 13.0
+    explain_theme:
+      shape: box
+      bg: "#0f172a"
+      border: "#22c55e"
+      border_width: 1.5
+      text_color: "#f4f4f5"
+      accent: "#22c55e"
+      button_text_color: "#0f172a"
+      shadow_color: "rgba(34, 197, 94, 0.2)"
+      backdrop_color: "rgba(15, 23, 42, 0.65)"
+  node_templates:
+    - id: rack_blade
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 136.0
+          h: 44.0
+          radius: 4.0
+          fill: "#1e293b"
+          stroke: "#475569"
+          stroke_width: 1.5
+        - shape: rect
+          x: -64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+        - shape: circle
+          x: -64.0
+          y: 14.0
+          r: 2.0
+          fill: "#64748b"
+        - shape: circle
+          x: -64.0
+          y: -14.0
+          r: 2.0
+          fill: "#64748b"
+        - shape: rect
+          x: 64.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+        - shape: circle
+          x: 64.0
+          y: 14.0
+          r: 2.0
+          fill: "#64748b"
+        - shape: circle
+          x: 64.0
+          y: -14.0
+          r: 2.0
+          fill: "#64748b"
+        - shape: icon
+          x: -42.0
+          y: 0.0
+          w: 18.0
+          h: 18.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 2.0
+          y: 8.0
+          text: "{{node_name}}"
+          size: 9.0
+          color: "#f8fafc"
+        - shape: text
+          x: 2.0
+          y: -4.0
+          text: "{{ip_addr}}"
+          size: 7.5
+          color: "#94a3b8"
+        - shape: circle
+          x: 46.0
+          y: 10.0
+          r: 2.5
+          fill: "{{led_pwr}}"
+        - shape: circle
+          x: 46.0
+          y: -10.0
+          r: 2.5
+          fill: "{{led_act}}"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -19.0
+          w: 110.0
+          h: 3.0
+          segments: 10
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "#22c55e"

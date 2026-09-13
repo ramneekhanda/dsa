@@ -29,6 +29,16 @@ graph_defn:
       stroke_width: 1.5
       text_color: "#00f5ff"
       font_size: 14.0
+    explain_theme:
+      shape: chamfered
+      bg: "#060d17"
+      border: "#00f5ff"
+      border_width: 1.5
+      text_color: "#e0f7fa"
+      accent: "#00f5ff"
+      button_text_color: "#060d17"
+      shadow_color: "rgba(0, 245, 255, 0.25)"
+      backdrop_color: "rgba(7, 11, 25, 0.7)"
   node_templates:
     - id: cyber_hud
       shapes:
@@ -471,6 +481,16 @@ graph_defn:
       stroke_width: 1.5
       text_color: "#f8fafc"
       font_size: 13.0
+    explain_theme:
+      shape: rounded
+      bg: "#ffffff"
+      border: "#94a3b8"
+      border_width: 1.5
+      text_color: "#0f172a"
+      accent: "#2563eb"
+      button_text_color: "#ffffff"
+      shadow_color: "rgba(15, 23, 42, 0.15)"
+      backdrop_color: "rgba(15, 23, 42, 0.45)"
   node_templates:
     - id: cloud_card
       shapes:
@@ -865,6 +885,16 @@ graph_defn:
       stroke_width: 1.5
       text_color: "#4ade80"
       font_size: 13.0
+    explain_theme:
+      shape: box
+      bg: "#0f172a"
+      border: "#22c55e"
+      border_width: 1.5
+      text_color: "#f4f4f5"
+      accent: "#22c55e"
+      button_text_color: "#0f172a"
+      shadow_color: "rgba(34, 197, 94, 0.2)"
+      backdrop_color: "rgba(15, 23, 42, 0.65)"
   node_templates:
     - id: rack_blade
       shapes:
@@ -1511,6 +1541,16 @@ graph_defn:
       stroke_width: 1.5
       text_color: "#1e293b"
       font_size: 13.0
+    explain_theme:
+      shape: pill
+      bg: "#ffffff"
+      border: "#0f172a"
+      border_width: 1.5
+      text_color: "#0f172a"
+      accent: "#0f172a"
+      button_text_color: "#ffffff"
+      shadow_color: "rgba(0, 0, 0, 0.12)"
+      backdrop_color: "rgba(15, 23, 42, 0.35)"
   node_templates:
     - id: minimal_pill
       shapes:
@@ -1952,14 +1992,47 @@ graph_defn:
         }
 "##;
 
+pub const PRESET_THEME_SYNTHWAVE: &str = include_str!("../../plibs/themes/synthwave.yml");
+pub const PRESET_THEME_NORDIC: &str = include_str!("../../plibs/themes/nordic.yml");
+pub const PRESET_THEME_DRACULA: &str = include_str!("../../plibs/themes/dracula.yml");
+pub const PRESET_THEME_MATRIX: &str = include_str!("../../plibs/themes/matrix.yml");
+pub const PRESET_THEME_SOLARIZED_LIGHT: &str = include_str!("../../plibs/themes/solarized_light.yml");
+
 /// Looks up a built-in preset by name/shorthand.
 pub fn get_builtin_preset(name: &str) -> Option<&'static str> {
     let normalized = name.trim().to_lowercase();
     match normalized.as_str() {
-        "theme:cyberpunk" | "cyberpunk" => Some(PRESET_THEME_CYBERPUNK),
-        "theme:cloud" | "theme:cloud_cards" | "cloud" | "cloud_cards" => Some(PRESET_THEME_CLOUD),
-        "theme:datacenter" | "theme:rack" | "datacenter" | "rack" => Some(PRESET_THEME_DATACENTER),
-        "theme:minimal" | "theme:capsule" | "minimal" | "capsule" => Some(PRESET_THEME_MINIMAL),
+        "theme:cyberpunk" | "plibs:cyberpunk" | "cyberpunk" | "plibs/themes/cyberpunk.yml" => {
+            Some(PRESET_THEME_CYBERPUNK)
+        }
+        "theme:cloud" | "theme:cloud_cards" | "plibs:cloud" | "cloud" | "cloud_cards" | "plibs/themes/cloud.yml" => {
+            Some(PRESET_THEME_CLOUD)
+        }
+        "theme:datacenter" | "theme:rack" | "plibs:datacenter" | "datacenter" | "rack" | "plibs/themes/datacenter.yml" => {
+            Some(PRESET_THEME_DATACENTER)
+        }
+        "theme:minimal" | "theme:capsule" | "plibs:minimal" | "minimal" | "capsule" | "plibs/themes/minimal.yml" => {
+            Some(PRESET_THEME_MINIMAL)
+        }
+        "theme:synthwave" | "plibs:synthwave" | "synthwave" | "plibs/themes/synthwave.yml" => {
+            Some(PRESET_THEME_SYNTHWAVE)
+        }
+        "theme:nordic" | "plibs:nordic" | "nordic" | "nord" | "plibs/themes/nordic.yml" => {
+            Some(PRESET_THEME_NORDIC)
+        }
+        "theme:dracula" | "plibs:dracula" | "dracula" | "plibs/themes/dracula.yml" => {
+            Some(PRESET_THEME_DRACULA)
+        }
+        "theme:matrix" | "plibs:matrix" | "matrix" | "plibs/themes/matrix.yml" => {
+            Some(PRESET_THEME_MATRIX)
+        }
+        "theme:solarized_light"
+        | "theme:solarized"
+        | "plibs:solarized_light"
+        | "plibs:solarized"
+        | "solarized_light"
+        | "solarized"
+        | "plibs/themes/solarized_light.yml" => Some(PRESET_THEME_SOLARIZED_LIGHT),
         "stdlib:load_balancer" | "load_balancer" | "stdlib:lb" | "lb" => {
             Some(PRESET_STDLIB_LOAD_BALANCER)
         }
@@ -2039,6 +2112,9 @@ pub fn merge_graph_definitions(
     }
     if base.graph_attrs.message_theme.is_none() && imported.graph_attrs.message_theme.is_some() {
         base.graph_attrs.message_theme = imported.graph_attrs.message_theme;
+    }
+    if base.graph_attrs.explain_theme.is_none() && imported.graph_attrs.explain_theme.is_some() {
+        base.graph_attrs.explain_theme = imported.graph_attrs.explain_theme;
     }
 
     // 2. Merge icons (deduplicated by id)
@@ -2345,6 +2421,16 @@ imports:
             "theme:cloud",
             "theme:datacenter",
             "theme:minimal",
+            "theme:synthwave",
+            "theme:nordic",
+            "theme:dracula",
+            "theme:matrix",
+            "theme:solarized_light",
+            "plibs:synthwave",
+            "plibs:nordic",
+            "plibs:dracula",
+            "plibs:matrix",
+            "plibs:solarized_light",
             "stdlib:load_balancer",
             "stdlib:circuit_breaker",
             "stdlib:cache",
@@ -2356,4 +2442,34 @@ imports:
             let _ = file;
         }
     }
+
+    #[test]
+    fn test_all_builtin_themes_have_explain_theme() {
+        let themes = [
+            ("theme:cyberpunk", crate::parser::graphv2::MessageBubbleShape::Chamfered),
+            ("theme:cloud", crate::parser::graphv2::MessageBubbleShape::Rounded),
+            ("theme:datacenter", crate::parser::graphv2::MessageBubbleShape::Box),
+            ("theme:minimal", crate::parser::graphv2::MessageBubbleShape::Pill),
+            ("theme:synthwave", crate::parser::graphv2::MessageBubbleShape::Chamfered),
+            ("theme:nordic", crate::parser::graphv2::MessageBubbleShape::Rounded),
+            ("theme:dracula", crate::parser::graphv2::MessageBubbleShape::Rounded),
+            ("theme:matrix", crate::parser::graphv2::MessageBubbleShape::Box),
+            ("theme:solarized_light", crate::parser::graphv2::MessageBubbleShape::Pill),
+        ];
+
+        for (theme_name, expected_shape) in themes {
+            let yaml = format!("theme: {}\n", theme_name.strip_prefix("theme:").unwrap());
+            let file = parse_graph2(&yaml).unwrap_or_else(|e| panic!("Theme '{}' failed to parse: {}", theme_name, e));
+            let explain_theme = file
+                .graph_defn
+                .graph_attrs
+                .explain_theme
+                .unwrap_or_else(|| panic!("Theme '{}' missing explain_theme", theme_name));
+            assert_eq!(explain_theme.shape, expected_shape, "Theme '{}' had unexpected explain_theme shape", theme_name);
+            assert!(explain_theme.bg.is_some(), "Theme '{}' missing bg", theme_name);
+            assert!(explain_theme.border.is_some(), "Theme '{}' missing border", theme_name);
+            assert!(explain_theme.accent.is_some(), "Theme '{}' missing accent", theme_name);
+        }
+    }
 }
+

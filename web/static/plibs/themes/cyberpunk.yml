@@ -1,0 +1,94 @@
+graph_defn:
+  graph_attrs:
+    background: "#070b19"
+    connection_color: "#00f0ff"
+    text_color: "#e0f7fa"
+    message_theme:
+      shape: chamfered
+      bg: "#060d17"
+      stroke: "#00f5ff"
+      stroke_width: 1.5
+      text_color: "#00f5ff"
+      font_size: 14.0
+    explain_theme:
+      shape: chamfered
+      bg: "#060d17"
+      border: "#00f5ff"
+      border_width: 1.5
+      text_color: "#e0f7fa"
+      accent: "#00f5ff"
+      button_text_color: "#060d17"
+      shadow_color: "rgba(0, 245, 255, 0.25)"
+      backdrop_color: "rgba(7, 11, 25, 0.7)"
+  node_templates:
+    - id: cyber_hud
+      shapes:
+        - shape: polygon
+          points:
+            - [-48.0, 32.0]
+            - [48.0, 32.0]
+            - [60.0, 20.0]
+            - [60.0, -20.0]
+            - [48.0, -32.0]
+            - [-48.0, -32.0]
+            - [-60.0, -20.0]
+            - [-60.0, 20.0]
+          closed: true
+          fill: "#090d16"
+          stroke: "{{neon_border}}"
+          stroke_width: 1.5
+        - shape: line
+          x1: -32.0
+          y1: 26.0
+          x2: 32.0
+          y2: 26.0
+          stroke: "{{neon_accent}}"
+          stroke_width: 2.0
+        - shape: circle
+          x: -38.0
+          y: 0.0
+          r: 13.0
+          fill: "#0f172a"
+          stroke: "{{neon_accent}}"
+          stroke_width: 1.2
+        - shape: icon
+          x: -38.0
+          y: 0.0
+          w: 18.0
+          h: 18.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 12.0
+          y: 6.0
+          text: "{{node_name}}"
+          size: 9.5
+          color: "#f0fdf4"
+        - shape: text
+          x: 12.0
+          y: -6.0
+          text: "{{telemetry}}"
+          size: 7.5
+          color: "{{neon_accent}}"
+        - shape: roundedrect
+          x: 0.0
+          y: -18.0
+          w: 86.0
+          h: 10.0
+          radius: 2.0
+          fill: "{{badge_bg}}"
+        - shape: text
+          x: 0.0
+          y: -18.0
+          text: "{{status_code}}"
+          size: 6.5
+          color: "{{badge_color}}"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -26.0
+          w: 64.0
+          h: 3.0
+          segments: 6
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "{{neon_accent}}"

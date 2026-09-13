@@ -36,7 +36,9 @@ use bevy_prototype_lyon::prelude::*;
 
 use crate::components::node::{ExplainBubble, NodeMarker};
 use crate::parser::draw::{DrawCmd, Paint};
+use crate::parser::graphv2::MessageBubbleShape;
 use crate::resources::common_assets::{CommonAssets, ResourceType};
+use crate::resources::graph_def::GraphDefinitionRes;
 use crate::resources::narration::PendingExplain;
 use crate::systems::node_overlay::{spawn_shape, TEXT_SUPERSAMPLE};
 
@@ -57,9 +59,8 @@ const POP_IN_SECS: f32 = 0.22;
 const BUTTON_W: f32 = 104.0;
 const BUTTON_H: f32 = 30.0;
 /// Offset of the fake drop-shadow rect behind the body/pointer, in node-local
-/// (y-up) units - down and to the right, like a light source from the
-/// top-left.
-const SHADOW_OFFSET: Vec2 = Vec2::new(5.0, -7.0);
+/// (y-up) units - centered with subtle downward drop.
+const SHADOW_OFFSET: Vec2 = Vec2::new(0.0, -4.0);
 /// Scale the bubble starts at before popping in - not exactly 0, so the shape
 /// builder never has to deal with a zero-size geometry.
 const POP_START_SCALE: f32 = 0.05;
@@ -75,10 +76,6 @@ const BACKDROP_Z: f32 = 300.0;
 const BACKDROP_SIZE: f32 = 50_000.0;
 const BACKDROP_COLOR: Color = Color::srgba(0.0, 0.0, 0.0, 0.55);
 
-// A quiet charcoal card rather than the previous navy/gold combo - a soft
-// indigo accent (border, pointer stroke, button) against near-black, plus a
-// faint drop shadow (`SHADOW_COLOR`) so the card reads as floating above the
-// blurred world instead of pasted flat onto it.
 const BODY_COLOR: Color = Color::srgb(0.098, 0.106, 0.137);
 const BORDER_COLOR: Color = Color::srgb(0.42, 0.47, 0.78);
 const ACCENT_COLOR: Color = Color::srgb(0.49, 0.55, 0.98);
@@ -90,6 +87,7 @@ const BUTTON_TEXT_COLOR: Color = Color::srgb(0.98, 0.98, 1.0);
 pub fn show_next_explain(
     mut commands: Commands,
     ca: Res<CommonAssets>,
+    gd: Res<GraphDefinitionRes>,
     mut pending: ResMut<PendingExplain>,
     mut sim_time: ResMut<Time<Virtual>>,
     active: Query<(), With<ExplainBubble>>,
@@ -109,14 +107,26 @@ pub fn show_next_explain(
 
     sim_time.pause();
 
+    let theme = gd.graph_defn.graph_attrs.explain_theme.as_ref();
+    let body_color = theme.and_then(|t| t.bg).unwrap_or(BODY_COLOR);
+    let border_color = theme.and_then(|t| t.border).unwrap_or(BORDER_COLOR);
+    let border_width = theme.map(|t| t.border_width).unwrap_or(1.5);
+    let text_color = theme.and_then(|t| t.text_color).unwrap_or(TEXT_COLOR);
+    let accent_color = theme.and_then(|t| t.accent).unwrap_or(ACCENT_COLOR);
+    let button_color = accent_color;
+    let button_text_color = theme.and_then(|t| t.button_text_color).unwrap_or(BUTTON_TEXT_COLOR);
+    let shadow_color = theme.and_then(|t| t.shadow_color).unwrap_or(SHADOW_COLOR);
+    let backdrop_color = theme.and_then(|t| t.backdrop_color).unwrap_or(BACKDROP_COLOR);
+    let font_size = theme.map(|t| t.font_size).unwrap_or(13.5);
+    let shape_kind = theme.map(|t| t.shape).unwrap_or(MessageBubbleShape::Rounded);
+
     let mut font: Handle<Font> = Default::default();
     if let Some(ResourceType::FontHandle(f)) = ca.resource_map.get("default_font") {
         font = f.clone();
     }
 
     // Dim backdrop - a sibling of `root`, not a child of it, so it doesn't
-    // inherit `root`'s pop-in scale (a huge rect visibly growing from a point
-    // would look broken, not like a dialog appearing).
+    // inherit `root`'s pop-in scale.
     let backdrop_cmd = DrawCmd::Rect {
         x: 0.0,
         y: 0.0,
@@ -124,7 +134,7 @@ pub fn show_next_explain(
         h: BACKDROP_SIZE,
         radius: 0.0,
         paint: Paint {
-            fill: Some(BACKDROP_COLOR),
+            fill: Some(backdrop_color),
             stroke: None,
             stroke_width: 0.0,
         },
@@ -146,62 +156,233 @@ pub fn show_next_explain(
         .id();
     commands.entity(node_entity).add_child(root);
 
-    // Fake drop shadow: the same body+pointer silhouette, solid and offset,
-    // drawn first (lowest z) so it peeks out from behind the card instead of
-    // the card sitting flat on the blurred backdrop.
+    let (ptr_w, ptr_h) = match shape_kind {
+        MessageBubbleShape::Rounded => (11.0, 13.0),
+        MessageBubbleShape::Box => (9.0, 10.0),
+        MessageBubbleShape::Chamfered => (10.0, 13.0),
+        MessageBubbleShape::Pill => (8.0, 10.0),
+    };
+
     let shadow_pointer = DrawCmd::Polygon {
         points: vec![
-            Vec2::new(-14.0, BUBBLE_BOTTOM) + SHADOW_OFFSET,
-            Vec2::new(14.0, BUBBLE_BOTTOM) + SHADOW_OFFSET,
-            Vec2::new(0.0, BUBBLE_BOTTOM - 25.0) + SHADOW_OFFSET,
+            Vec2::new(-ptr_w, BUBBLE_BOTTOM) + SHADOW_OFFSET,
+            Vec2::new(ptr_w, BUBBLE_BOTTOM) + SHADOW_OFFSET,
+            Vec2::new(0.0, BUBBLE_BOTTOM - ptr_h) + SHADOW_OFFSET,
         ],
         closed: true,
         paint: Paint {
-            fill: Some(SHADOW_COLOR),
+            fill: Some(shadow_color),
             stroke: None,
             stroke_width: 0.0,
         },
     };
-    let shadow_body = DrawCmd::Rect {
-        x: SHADOW_OFFSET.x,
-        y: BUBBLE_CENTER_Y + SHADOW_OFFSET.y,
-        w: BUBBLE_W,
-        h: BUBBLE_H,
-        radius: 20.0,
-        paint: Paint {
-            fill: Some(SHADOW_COLOR),
-            stroke: None,
-            stroke_width: 0.0,
-        },
-    };
-    // Pointer triangle, bubble body, and narration text all reuse the same
-    // shape primitives an author's own `draw()` calls use.
-    let pointer = DrawCmd::Polygon {
+
+    // Fills the pointer interior and overlaps slightly into the card body to seamlessly
+    // mask the card's bottom border stroke between -ptr_w and +ptr_w.
+    let pointer_fill = DrawCmd::Polygon {
         points: vec![
-            Vec2::new(-14.0, BUBBLE_BOTTOM),
-            Vec2::new(14.0, BUBBLE_BOTTOM),
-            Vec2::new(0.0, BUBBLE_BOTTOM - 25.0),
+            Vec2::new(-ptr_w + 0.5, BUBBLE_BOTTOM + 2.5),
+            Vec2::new(ptr_w - 0.5, BUBBLE_BOTTOM + 2.5),
+            Vec2::new(0.0, BUBBLE_BOTTOM - ptr_h),
         ],
         closed: true,
         paint: Paint {
-            fill: Some(BODY_COLOR),
-            stroke: Some(BORDER_COLOR),
-            stroke_width: 1.5,
+            fill: Some(body_color),
+            stroke: None,
+            stroke_width: 0.0,
         },
     };
-    let body = DrawCmd::Rect {
-        x: 0.0,
-        y: BUBBLE_CENTER_Y,
-        w: BUBBLE_W,
-        h: BUBBLE_H,
-        radius: 20.0,
+
+    // Open polyline stroke for the left and right legs only (no horizontal line across the card).
+    let pointer_stroke = DrawCmd::Polygon {
+        points: vec![
+            Vec2::new(-ptr_w, BUBBLE_BOTTOM),
+            Vec2::new(0.0, BUBBLE_BOTTOM - ptr_h),
+            Vec2::new(ptr_w, BUBBLE_BOTTOM),
+        ],
+        closed: false,
         paint: Paint {
-            fill: Some(BODY_COLOR),
-            stroke: Some(BORDER_COLOR),
-            stroke_width: 1.5,
+            fill: None,
+            stroke: Some(border_color),
+            stroke_width: border_width,
         },
     };
-    for (i, cmd) in [shadow_pointer, shadow_body, pointer, body]
+
+    let (shadow_body, body, button_mesh) = match shape_kind {
+        MessageBubbleShape::Rounded => {
+            let s_body = DrawCmd::Rect {
+                x: SHADOW_OFFSET.x,
+                y: BUBBLE_CENTER_Y + SHADOW_OFFSET.y,
+                w: BUBBLE_W,
+                h: BUBBLE_H,
+                radius: 18.0,
+                paint: Paint {
+                    fill: Some(shadow_color),
+                    stroke: None,
+                    stroke_width: 0.0,
+                },
+            };
+            let b_body = DrawCmd::Rect {
+                x: 0.0,
+                y: BUBBLE_CENTER_Y,
+                w: BUBBLE_W,
+                h: BUBBLE_H,
+                radius: 18.0,
+                paint: Paint {
+                    fill: Some(body_color),
+                    stroke: Some(border_color),
+                    stroke_width: border_width,
+                },
+            };
+            let b_mesh = GeometryBuilder::build_as(&shapes::RoundedPolygon {
+                points: vec![
+                    Vec2::new(-BUTTON_W / 2.0, -BUTTON_H / 2.0),
+                    Vec2::new(BUTTON_W / 2.0, -BUTTON_H / 2.0),
+                    Vec2::new(BUTTON_W / 2.0, BUTTON_H / 2.0),
+                    Vec2::new(-BUTTON_W / 2.0, BUTTON_H / 2.0),
+                ],
+                radius: 10.0,
+                ..default()
+            });
+            (s_body, b_body, b_mesh)
+        }
+        MessageBubbleShape::Box => {
+            let s_body = DrawCmd::Rect {
+                x: SHADOW_OFFSET.x,
+                y: BUBBLE_CENTER_Y + SHADOW_OFFSET.y,
+                w: BUBBLE_W,
+                h: BUBBLE_H,
+                radius: 0.0,
+                paint: Paint {
+                    fill: Some(shadow_color),
+                    stroke: None,
+                    stroke_width: 0.0,
+                },
+            };
+            let b_body = DrawCmd::Rect {
+                x: 0.0,
+                y: BUBBLE_CENTER_Y,
+                w: BUBBLE_W,
+                h: BUBBLE_H,
+                radius: 0.0,
+                paint: Paint {
+                    fill: Some(body_color),
+                    stroke: Some(border_color),
+                    stroke_width: border_width,
+                },
+            };
+            let b_mesh = GeometryBuilder::build_as(&shapes::RoundedPolygon {
+                points: vec![
+                    Vec2::new(-BUTTON_W / 2.0, -BUTTON_H / 2.0),
+                    Vec2::new(BUTTON_W / 2.0, -BUTTON_H / 2.0),
+                    Vec2::new(BUTTON_W / 2.0, BUTTON_H / 2.0),
+                    Vec2::new(-BUTTON_W / 2.0, BUTTON_H / 2.0),
+                ],
+                radius: 0.0,
+                ..default()
+            });
+            (s_body, b_body, b_mesh)
+        }
+        MessageBubbleShape::Chamfered => {
+            let hw = BUBBLE_W / 2.0;
+            let hh = BUBBLE_H / 2.0;
+            let cut = 16.0;
+            let s_pts = vec![
+                Vec2::new(-hw + cut, BUBBLE_CENTER_Y - hh) + SHADOW_OFFSET,
+                Vec2::new(hw - cut, BUBBLE_CENTER_Y - hh) + SHADOW_OFFSET,
+                Vec2::new(hw, BUBBLE_CENTER_Y - hh + cut) + SHADOW_OFFSET,
+                Vec2::new(hw, BUBBLE_CENTER_Y + hh - cut) + SHADOW_OFFSET,
+                Vec2::new(hw - cut, BUBBLE_CENTER_Y + hh) + SHADOW_OFFSET,
+                Vec2::new(-hw + cut, BUBBLE_CENTER_Y + hh) + SHADOW_OFFSET,
+                Vec2::new(-hw, BUBBLE_CENTER_Y + hh - cut) + SHADOW_OFFSET,
+                Vec2::new(-hw, BUBBLE_CENTER_Y - hh + cut) + SHADOW_OFFSET,
+            ];
+            let pts = vec![
+                Vec2::new(-hw + cut, BUBBLE_CENTER_Y - hh),
+                Vec2::new(hw - cut, BUBBLE_CENTER_Y - hh),
+                Vec2::new(hw, BUBBLE_CENTER_Y - hh + cut),
+                Vec2::new(hw, BUBBLE_CENTER_Y + hh - cut),
+                Vec2::new(hw - cut, BUBBLE_CENTER_Y + hh),
+                Vec2::new(-hw + cut, BUBBLE_CENTER_Y + hh),
+                Vec2::new(-hw, BUBBLE_CENTER_Y + hh - cut),
+                Vec2::new(-hw, BUBBLE_CENTER_Y - hh + cut),
+            ];
+            let s_body = DrawCmd::Polygon {
+                points: s_pts,
+                closed: true,
+                paint: Paint {
+                    fill: Some(shadow_color),
+                    stroke: None,
+                    stroke_width: 0.0,
+                },
+            };
+            let b_body = DrawCmd::Polygon {
+                points: pts,
+                closed: true,
+                paint: Paint {
+                    fill: Some(body_color),
+                    stroke: Some(border_color),
+                    stroke_width: border_width,
+                },
+            };
+            let b_cut = 6.0;
+            let bhw = BUTTON_W / 2.0;
+            let bhh = BUTTON_H / 2.0;
+            let b_mesh = GeometryBuilder::build_as(&shapes::Polygon {
+                points: vec![
+                    Vec2::new(-bhw + b_cut, -bhh),
+                    Vec2::new(bhw - b_cut, -bhh),
+                    Vec2::new(bhw, -bhh + b_cut),
+                    Vec2::new(bhw, bhh - b_cut),
+                    Vec2::new(bhw - b_cut, bhh),
+                    Vec2::new(-bhw + b_cut, bhh),
+                    Vec2::new(-bhw, bhh - b_cut),
+                    Vec2::new(-bhw, -bhh + b_cut),
+                ],
+                closed: true,
+            });
+            (s_body, b_body, b_mesh)
+        }
+        MessageBubbleShape::Pill => {
+            let s_body = DrawCmd::Rect {
+                x: SHADOW_OFFSET.x,
+                y: BUBBLE_CENTER_Y + SHADOW_OFFSET.y,
+                w: BUBBLE_W,
+                h: BUBBLE_H,
+                radius: 26.0,
+                paint: Paint {
+                    fill: Some(shadow_color),
+                    stroke: None,
+                    stroke_width: 0.0,
+                },
+            };
+            let b_body = DrawCmd::Rect {
+                x: 0.0,
+                y: BUBBLE_CENTER_Y,
+                w: BUBBLE_W,
+                h: BUBBLE_H,
+                radius: 26.0,
+                paint: Paint {
+                    fill: Some(body_color),
+                    stroke: Some(border_color),
+                    stroke_width: border_width,
+                },
+            };
+            let b_mesh = GeometryBuilder::build_as(&shapes::RoundedPolygon {
+                points: vec![
+                    Vec2::new(-BUTTON_W / 2.0, -BUTTON_H / 2.0),
+                    Vec2::new(BUTTON_W / 2.0, -BUTTON_H / 2.0),
+                    Vec2::new(BUTTON_W / 2.0, BUTTON_H / 2.0),
+                    Vec2::new(-BUTTON_W / 2.0, BUTTON_H / 2.0),
+                ],
+                radius: BUTTON_H / 2.0,
+                ..default()
+            });
+            (s_body, b_body, b_mesh)
+        }
+    };
+
+    for (i, cmd) in [shadow_pointer, shadow_body, body, pointer_fill, pointer_stroke]
         .iter()
         .enumerate()
     {
@@ -211,26 +392,16 @@ pub fn show_next_explain(
         commands.entity(root).add_child(child);
     }
 
-    // The narration text specifically needs word-wrap, unlike the short single-line
-    // labels `draw()` overlays normally carry - `spawn_shape` leaves text unbounded,
-    // so bound this one instance directly rather than changing that shared default.
     let text_cmd = DrawCmd::Text {
         x: 0.0,
         y: BUBBLE_CENTER_Y + 24.0,
         text: entry.text,
-        size: 13.5,
-        color: TEXT_COLOR,
+        size: font_size,
+        color: text_color,
     };
-    // z must clear every shape in the shadow/pointer/body loop above (which
-    // now runs up to index 3, i.e. z 0.03) or the opaque body rect draws over
-    // the text and hides it entirely.
     let text_entity = spawn_shape(&mut commands, &text_cmd, 0.05, &font, &ca, "")
         .insert((
             Text2dBounds {
-                // Word-wrap is computed in the unscaled glyph-layout space
-                // `spawn_shape` rasterizes text in (see `TEXT_SUPERSAMPLE`'s
-                // doc comment) - scale the wrap width/height the same way it
-                // scaled font_size, or lines would wrap too early.
                 size: Vec2::new(BUBBLE_W - 40.0, BUBBLE_H - 66.0) * TEXT_SUPERSAMPLE,
             },
             RenderLayers::layer(1),
@@ -238,34 +409,15 @@ pub fn show_next_explain(
         .id();
     commands.entity(root).add_child(text_entity);
 
-    // Continue button. The visible rounded rect + label are `bevy_prototype_lyon`/
-    // `Text2d`, same as the rest of the bubble - but this project's
-    // `bevy_mod_picking` is built with only `backend_sprite` enabled (see
-    // Cargo.toml), which hit-tests `Sprite` entities and nothing else; lyon
-    // shapes render as `Mesh2d` and are never picked by it (this is also why
-    // connector hover has never actually worked - a pre-existing, unrelated gap).
-    // So the actual clickable surface is a separate, fully transparent `Sprite`
-    // layered on top, sized to the button - invisible, but real to the backend
-    // that's proven to work (it's what makes node icons clickable).
-    let button_shape = shapes::RoundedPolygon {
-        points: vec![
-            Vec2::new(-BUTTON_W / 2.0, -BUTTON_H / 2.0),
-            Vec2::new(BUTTON_W / 2.0, -BUTTON_H / 2.0),
-            Vec2::new(BUTTON_W / 2.0, BUTTON_H / 2.0),
-            Vec2::new(-BUTTON_W / 2.0, BUTTON_H / 2.0),
-        ],
-        radius: 10.0,
-        ..default()
-    };
     let button_y = BUBBLE_CENTER_Y - BUBBLE_H / 2.0 + 24.0;
     let button = commands
         .spawn((
             ShapeBundle {
-                path: GeometryBuilder::build_as(&button_shape),
+                path: button_mesh,
                 spatial: SpatialBundle::from_transform(Transform::from_xyz(0.0, button_y, 0.06)),
                 ..default()
             },
-            Fill::color(BUTTON_COLOR),
+            Fill::color(button_color),
             RenderLayers::layer(1),
         ))
         .id();
@@ -278,7 +430,7 @@ pub fn show_next_explain(
                     TextStyle {
                         font,
                         font_size: 14.0,
-                        color: BUTTON_TEXT_COLOR,
+                        color: button_text_color,
                     },
                 )
                 .with_justify(JustifyText::Center),

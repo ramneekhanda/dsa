@@ -1,0 +1,57 @@
+graph_defn:
+  graph_attrs:
+    background: "#f8fafc"
+    connection_color: "#3b82f6"
+    text_color: "#0f172a"
+    message_theme:
+      shape: pill
+      bg: "#ffffff"
+      stroke: "#94a3b8"
+      stroke_width: 1.5
+      text_color: "#1e293b"
+      font_size: 13.0
+    explain_theme:
+      shape: pill
+      bg: "#ffffff"
+      border: "#0f172a"
+      border_width: 1.5
+      text_color: "#0f172a"
+      accent: "#0f172a"
+      button_text_color: "#ffffff"
+      shadow_color: "rgba(0, 0, 0, 0.12)"
+      backdrop_color: "rgba(15, 23, 42, 0.35)"
+  node_templates:
+    - id: minimal_pill
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 114.0
+          h: 32.0
+          radius: 16.0
+          fill: "#ffffff"
+          stroke: "#cbd5e1"
+          stroke_width: 1.5
+        - shape: circle
+          x: -38.0
+          y: 0.0
+          r: 12.0
+          fill: "#f1f5f9"
+        - shape: icon
+          x: -38.0
+          y: 0.0
+          w: 14.0
+          h: 14.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 10.0
+          y: 4.0
+          text: "{{node_name}}"
+          size: 9.0
+          color: "#0f172a"
+        - shape: text
+          x: 10.0
+          y: -6.0
+          text: "{{status}}"
+          size: 7.0
+          color: "#64748b"

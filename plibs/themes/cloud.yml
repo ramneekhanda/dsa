@@ -1,0 +1,79 @@
+graph_defn:
+  graph_attrs:
+    background: "#f1f5f9"
+    connection_color: "#64748b"
+    text_color: "#0f172a"
+    message_theme:
+      shape: pill
+      bg: "#1e293b"
+      stroke: "#38bdf8"
+      stroke_width: 1.5
+      text_color: "#f8fafc"
+      font_size: 13.0
+    explain_theme:
+      shape: rounded
+      bg: "#ffffff"
+      border: "#94a3b8"
+      border_width: 1.5
+      text_color: "#0f172a"
+      accent: "#2563eb"
+      button_text_color: "#ffffff"
+      shadow_color: "rgba(15, 23, 42, 0.15)"
+      backdrop_color: "rgba(15, 23, 42, 0.45)"
+  node_templates:
+    - id: cloud_card
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 124.0
+          h: 72.0
+          radius: 8.0
+          fill: "#ffffff"
+          stroke: "#cbd5e1"
+          stroke_width: 1.5
+        - shape: rect
+          x: 0.0
+          y: 32.0
+          w: 124.0
+          h: 8.0
+          fill: "{{accent_color}}"
+        - shape: icon
+          x: -42.0
+          y: 12.0
+          w: 22.0
+          h: 22.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 10.0
+          y: 16.0
+          text: "{{node_name}}"
+          size: 10.0
+          color: "#0f172a"
+        - shape: text
+          x: 10.0
+          y: 4.0
+          text: "{{role}}"
+          size: 8.0
+          color: "#64748b"
+        - shape: roundedrect
+          x: 0.0
+          y: -20.0
+          w: 108.0
+          h: 14.0
+          radius: 4.0
+          fill: "{{status_bg}}"
+        - shape: text
+          x: 0.0
+          y: -20.0
+          text: "{{status_text}}"
+          size: 7.5
+          color: "{{status_color}}"
+        - shape: progress
+          style: bar
+          x: 0.0
+          y: -34.0
+          w: 124.0
+          h: 4.0
+          track_color: "#f1f5f9"
+          fill_color: "{{accent_color}}"

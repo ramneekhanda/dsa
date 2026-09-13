@@ -33,19 +33,40 @@ fn black_color_str() -> String {
     "#000000".to_string()
 }
 
+pub fn parse_color_str(s: &str) -> Option<Color> {
+    let s = s.trim();
+    if let Ok(c) = Srgba::hex(s) {
+        return Some(c.into());
+    }
+    if s.starts_with("rgba(") && s.ends_with(')') {
+        let inner = &s[5..s.len() - 1];
+        let parts: Vec<&str> = inner.split(',').map(|p| p.trim()).collect();
+        if parts.len() == 4 {
+            let r = parts[0].parse::<f32>().ok()? / 255.0;
+            let g = parts[1].parse::<f32>().ok()? / 255.0;
+            let b = parts[2].parse::<f32>().ok()? / 255.0;
+            let a = parts[3].parse::<f32>().ok()?;
+            return Some(Color::srgba(r, g, b, a));
+        }
+    } else if s.starts_with("rgb(") && s.ends_with(')') {
+        let inner = &s[4..s.len() - 1];
+        let parts: Vec<&str> = inner.split(',').map(|p| p.trim()).collect();
+        if parts.len() == 3 {
+            let r = parts[0].parse::<f32>().ok()? / 255.0;
+            let g = parts[1].parse::<f32>().ok()? / 255.0;
+            let b = parts[2].parse::<f32>().ok()? / 255.0;
+            return Some(Color::srgb(r, g, b));
+        }
+    }
+    None
+}
+
 fn deserialize_color<'de, D>(d: D) -> Result<Color, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let s = String::deserialize(d).unwrap();
-
-    let srgba = Srgba::hex(s.as_str());
-    if srgba.is_ok() {
-        let color = srgba.unwrap().into();
-        Ok(color)
-    } else {
-        Err(Error::custom("Invalid color"))
-    }
+    let s = String::deserialize(d)?;
+    parse_color_str(&s).ok_or_else(|| Error::custom(format!("Invalid color: {}", s)))
 }
 
 fn serialize_color<S>(c: &Color, s: S) -> Result<S::Ok, S::Error>
@@ -61,14 +82,9 @@ where
 {
     let opt = Option::<String>::deserialize(d)?;
     match opt {
-        Some(s) => {
-            let srgba = Srgba::hex(s.as_str());
-            if let Ok(c) = srgba {
-                Ok(Some(c.into()))
-            } else {
-                Err(Error::custom("Invalid color"))
-            }
-        }
+        Some(s) => parse_color_str(&s)
+            .map(Some)
+            .ok_or_else(|| Error::custom(format!("Invalid color: {}", s))),
         None => Ok(None),
     }
 }
@@ -159,6 +175,105 @@ impl Default for MessageTheme {
     }
 }
 
+fn default_explain_border_width() -> f32 {
+    1.5
+}
+fn default_explain_font_size() -> f32 {
+    13.5
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone, JsonSchema)]
+pub struct ExplainTheme {
+    #[serde(default)]
+    pub shape: MessageBubbleShape,
+
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_optional_color",
+        deserialize_with = "deserialize_optional_color"
+    )]
+    #[schemars(with = "Option<String>")]
+    pub bg: Option<Color>,
+
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_optional_color",
+        deserialize_with = "deserialize_optional_color"
+    )]
+    #[schemars(with = "Option<String>")]
+    pub border: Option<Color>,
+
+    #[serde(default = "default_explain_border_width")]
+    pub border_width: f32,
+
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_optional_color",
+        deserialize_with = "deserialize_optional_color"
+    )]
+    #[schemars(with = "Option<String>")]
+    pub text_color: Option<Color>,
+
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_optional_color",
+        deserialize_with = "deserialize_optional_color"
+    )]
+    #[schemars(with = "Option<String>")]
+    pub accent: Option<Color>,
+
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_optional_color",
+        deserialize_with = "deserialize_optional_color"
+    )]
+    #[schemars(with = "Option<String>")]
+    pub button_text_color: Option<Color>,
+
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_optional_color",
+        deserialize_with = "deserialize_optional_color"
+    )]
+    #[schemars(with = "Option<String>")]
+    pub shadow_color: Option<Color>,
+
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_optional_color",
+        deserialize_with = "deserialize_optional_color"
+    )]
+    #[schemars(with = "Option<String>")]
+    pub backdrop_color: Option<Color>,
+
+    #[serde(default = "default_explain_font_size")]
+    pub font_size: f32,
+}
+
+impl Default for ExplainTheme {
+    fn default() -> Self {
+        Self {
+            shape: MessageBubbleShape::default(),
+            bg: None,
+            border: None,
+            border_width: default_explain_border_width(),
+            text_color: None,
+            accent: None,
+            button_text_color: None,
+            shadow_color: None,
+            backdrop_color: None,
+            font_size: default_explain_font_size(),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct GraphAttrs {
     #[schemars(with = "String", default = "white_color_str")]
@@ -190,6 +305,9 @@ pub struct GraphAttrs {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub message_theme: Option<MessageTheme>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub explain_theme: Option<ExplainTheme>,
 }
 
 impl Default for GraphAttrs {
@@ -200,6 +318,7 @@ impl Default for GraphAttrs {
             title: String::new(),
             text_color: black_color(),
             message_theme: None,
+            explain_theme: None,
         }
     }
 }
@@ -1404,5 +1523,47 @@ graph_defn:
             );
         }
     }
+
+    #[test]
+    fn test_parse_explain_theme() {
+        let yaml = r##"
+graph_defn:
+  graph_attrs:
+    explain_theme:
+      shape: chamfered
+      bg: "#060d17"
+      border: "#00f5ff"
+      border_width: 2.0
+      text_color: "#e0f7fa"
+      accent: "#00f5ff"
+      button_text_color: "#060d17"
+      shadow_color: "rgba(0, 245, 255, 0.3)"
+      backdrop_color: "rgba(7, 11, 25, 0.8)"
+      font_size: 14.5
+  node_types:
+    - id: test_node
+  graph:
+    - name: n1
+      node_type: test_node
+      links: []
+"##
+        .to_string();
+
+        let parsed = parse_graph2(&yaml).expect("Should parse explain_theme in graph_attrs");
+        let explain_theme = parsed
+            .graph_defn
+            .graph_attrs
+            .explain_theme
+            .expect("explain_theme should be present");
+        assert_eq!(explain_theme.shape, MessageBubbleShape::Chamfered);
+        assert_eq!(explain_theme.border_width, 2.0);
+        assert_eq!(explain_theme.font_size, 14.5);
+        assert!(explain_theme.bg.is_some());
+        assert!(explain_theme.border.is_some());
+        assert!(explain_theme.accent.is_some());
+        assert!(explain_theme.shadow_color.is_some());
+        assert!(explain_theme.backdrop_color.is_some());
+    }
 }
+
 

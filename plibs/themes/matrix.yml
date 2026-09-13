@@ -1,0 +1,72 @@
+graph_defn:
+  graph_attrs:
+    background: "#080c0a"
+    connection_color: "#00ff41"
+    text_color: "#e6ffe8"
+    message_theme:
+      shape: box
+      bg: "#051108"
+      stroke: "#00ff41"
+      stroke_width: 1.5
+      text_color: "#00ff41"
+      font_size: 13.5
+    explain_theme:
+      shape: box
+      bg: "#051108"
+      border: "#00ff41"
+      border_width: 1.8
+      text_color: "#e6ffe8"
+      accent: "#00ff41"
+      button_text_color: "#051108"
+      shadow_color: "#00ff4133"
+      backdrop_color: "#080c0ab3"
+      font_size: 13.5
+  node_templates:
+    - id: matrix_blade
+      shapes:
+        - shape: rect
+          x: 0.0
+          y: 0.0
+          w: 126.0
+          h: 46.0
+          fill: "#051108"
+          stroke: "#00ff41"
+          stroke_width: 1.5
+        - shape: rect
+          x: 0.0
+          y: 15.0
+          w: 126.0
+          h: 16.0
+          fill: "#0d2b14"
+        - shape: text
+          x: -18.0
+          y: 15.0
+          text: "[{{node_name}}]"
+          size: 8.5
+          color: "#00ff41"
+        - shape: circle
+          x: 46.0
+          y: 15.0
+          r: 2.5
+          fill: "#00ff41"
+        - shape: text
+          x: 0.0
+          y: -3.0
+          text: "SYS.STREAM.ONLINE"
+          size: 7.5
+          color: "#22c55e"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -15.0
+          w: 104.0
+          h: 3.0
+          segments: 12
+          gap: 1.5
+          track_color: "#000000"
+          fill_color: "#00ff41"
+  node_types:
+    - id: matrix_core
+      attrs:
+        ticks: 2
+        template_ref: matrix_blade
