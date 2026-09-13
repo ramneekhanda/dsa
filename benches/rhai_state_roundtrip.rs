@@ -7,8 +7,8 @@
 //! for the reasoning. Run with `cargo bench`.
 //!
 //! Two state shapes are benchmarked side by side:
-//! - `small_state`: the actual 4-scalar-field shape of the Two-Phase Commit
-//!   example's `coordinator` node (see `web/static/examples/two_phase_commit.yml`).
+//! - `small_state`: a typical 4-scalar-field shape (the kind a two-phase-commit
+//!   coordinator node's state would have).
 //! - `large_state`: a heavier shape (a string field plus a 20-element array)
 //!   representative of a node tracking more history/detail - meant to show
 //!   whether the clone-vs-move gap widens as state gets bigger, since a

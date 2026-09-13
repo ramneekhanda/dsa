@@ -28,6 +28,25 @@ const OVERLAY_Z: f32 = 120.0;
 /// Fallback fill for a shape that specifies neither `fill` nor `stroke`.
 const DEFAULT_FILL: Color = Color::srgb(0.6, 0.6, 0.6);
 
+/// A `DrawCmd::Text` is rasterized at `size * TEXT_SUPERSAMPLE` px and the
+/// entity's `Transform` scaled down by the same factor to compensate, so it
+/// still occupies exactly `size` world units - but the glyph atlas (and the
+/// anti-aliasing baked into it) is generated at twice the resolution before
+/// being shrunk back down by the GPU's (linearly-filtered, by this app's
+/// default `ImagePlugin`) texture sampling. Bevy's text layout rasterizes a
+/// glyph atlas at exactly the requested `font_size` with no supersampling of
+/// its own, so a small `draw()`/template label (the overlay/badge/narration
+/// text this module renders - the default per-node name label, spawned
+/// separately by `node_system::spawn_node` at a much larger fixed size, never
+/// went through this path and isn't affected) reads visibly softer than
+/// larger text at the same anti-aliasing quality; this halves that softness
+/// for free with no schema/author-visible change. Any caller that also
+/// constrains a `spawn_shape`-built `Text2dBounds` (word-wrap) itself, as
+/// `explain_bubble` does, must scale that bounds size by this same factor -
+/// wrapping is computed in the *unscaled* glyph-layout space, before this
+/// function's compensating `Transform` scale is applied.
+pub const TEXT_SUPERSAMPLE: f32 = 2.0;
+
 pub fn render_node_overlays(
     mut commands: Commands,
     mut gd: ResMut<GraphDefinitionRes>,
@@ -55,6 +74,15 @@ pub fn render_node_overlays(
         font = f.clone();
     }
 
+    // Only the names this pass actually rendered get their `overlay_dirty`
+    // cleared below - a node whose entity hasn't been spawned yet this
+    // frame (e.g. a template-seeded overlay - see `graphv2::instantiate_node`
+    // - racing `node_system::create_nodes` on the very same frame a graph
+    // loads) would otherwise have its flag cleared here having never been
+    // drawn at all, silently dropping the overlay for good. Left dirty, it
+    // simply tries again next frame once the entity exists.
+    let mut rendered = Vec::with_capacity(dirty.len());
+
     for name in &dirty {
         for (entity, marker) in existing.iter() {
             if &marker.node_name == name {
@@ -76,17 +104,20 @@ pub fn render_node_overlays(
 
         for (i, cmd) in node.overlay.iter().enumerate() {
             let z = OVERLAY_Z + i as f32 * 0.01;
-            let child = spawn_shape(&mut commands, cmd, z, &font)
+            let child = spawn_shape(&mut commands, cmd, z, &font, &ca)
                 .insert(NodeOverlayShape {
                     node_name: name.clone(),
                 })
                 .id();
             commands.entity(node_entity).add_child(child);
         }
+        rendered.push(name.clone());
     }
 
     for node in gd.graph_defn.node_instances.iter_mut() {
-        node.overlay_dirty = false;
+        if rendered.contains(&node.name) {
+            node.overlay_dirty = false;
+        }
     }
     })(); // TEMPORARY
     prof.overlays_ms += __prof_t0.elapsed().as_secs_f64() * 1000.0; // TEMPORARY
@@ -110,12 +141,15 @@ fn apply_paint(ec: &mut EntityCommands, paint: &Paint) {
 
 /// Spawns one shape entity for `cmd` at local z `z`, with no marker or parent of
 /// its own - the caller inserts whatever marker component ties it to their
-/// lifecycle and parents it wherever it belongs.
+/// lifecycle and parents it wherever it belongs. `ca` is only consulted for a
+/// `DrawCmd::Icon` (to resolve its icon id to a texture); every other shape
+/// ignores it.
 pub(crate) fn spawn_shape<'a>(
     commands: &'a mut Commands,
     cmd: &DrawCmd,
     z: f32,
     font: &Handle<Font>,
+    ca: &CommonAssets,
 ) -> EntityCommands<'a> {
     match cmd {
         DrawCmd::Rect {
@@ -222,13 +256,36 @@ pub(crate) fn spawn_shape<'a>(
                 text.clone(),
                 TextStyle {
                     font: font.clone(),
-                    font_size: *size,
+                    font_size: *size * TEXT_SUPERSAMPLE,
                     color: *color,
                 },
             )
             .with_justify(JustifyText::Center),
-            transform: Transform::from_xyz(*x, *y, z),
+            transform: Transform::from_xyz(*x, *y, z)
+                .with_scale(Vec3::splat(1.0 / TEXT_SUPERSAMPLE)),
             ..default()
         }),
+
+        DrawCmd::Icon { x, y, w, h, icon } => {
+            // Same fallback-to-default-system-icon lookup
+            // `node_system::spawn_node` uses for a node's built-in icon sprite.
+            let mut texture: Handle<Image> = Default::default();
+            if let Some(ResourceType::ImageHandle(img)) = ca.resource_map.get("default_system_icon")
+            {
+                texture = img.clone();
+            }
+            if let Some(ResourceType::ImageHandle(img)) = ca.resource_map.get(icon) {
+                texture = img.clone();
+            }
+            commands.spawn(SpriteBundle {
+                texture,
+                transform: Transform::from_xyz(*x, *y, z),
+                sprite: Sprite {
+                    custom_size: Some(Vec2::new(*w, *h)),
+                    ..Default::default()
+                },
+                ..default()
+            })
+        }
     }
 }

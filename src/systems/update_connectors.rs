@@ -25,7 +25,7 @@ const WALK_MIN_INTERVAL: f32 = 0.5;
 /// The interval used to be a fixed `0.1` world units regardless of path
 /// length - fine for the small, tightly-packed example graphs this was
 /// written against (connectors tens of units long), but on a larger/more
-/// spread-out graph (`web/static/examples/random_mesh_200.yml`'s nodes are
+/// spread-out graph (a several-hundred-node stress-test graph's nodes are
 /// spread across a much larger area - see `node_system::spawn_spread_radius`)
 /// connectors can be many hundreds of units long, so a fixed `0.1` spacing
 /// was generating thousands of sample points per connector - a real,
@@ -228,7 +228,7 @@ pub fn update_connectors(
     // essentially every frame - retracing (bezier rebuild + lyon
     // re-tessellation) *every* connector on *every* frame regardless of
     // whether its own endpoints moved was a real, measurable bottleneck at a
-    // few hundred nodes (see `web/static/examples/random_mesh_200.yml`).
+    // few hundred nodes (a several-hundred-node stress-test graph).
     if !query_changed.is_empty() {
         let moved: HashSet<&str> = query_changed
             .iter()

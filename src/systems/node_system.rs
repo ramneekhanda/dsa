@@ -212,6 +212,7 @@ pub fn on_click(
     mut last_click: ResMut<LastNodeClick>,
     mut node_props: ResMut<NodePropertiesPopup>,
     query_camera: Query<(&Camera, &GlobalTransform), (With<Camera2d>, Without<BubbleCamera>)>,
+    g: Res<GraphDefinitionRes>,
 ) {
     if q.iter().count() == 0 {
         return;
@@ -255,16 +256,56 @@ pub fn on_click(
                     text_rect = text.logical_size;
                 }
             }
-            let x = f32::max(ICON_WIDTH, text_rect.x) + BOUNDING_BOX_PADDING;
-            let y = ICON_HEIGHT + FONT_SIZE + TEXT_DISTANCE_FROM_BOTTOM + BOUNDING_BOX_PADDING;
-            let y_transform = -1.0 * (FONT_SIZE + TEXT_DISTANCE_FROM_BOTTOM) / 2.0;
 
-            let rect = Vec2::new(x, y);
-            let mut vec: Vec<Vec2> = Vec::new();
-            vec.push(Vec2::new(-rect.x / 2.0, -rect.y / 2.0));
-            vec.push(Vec2::new(rect.x / 2.0, -rect.y / 2.0));
-            vec.push(Vec2::new(rect.x / 2.0, rect.y / 2.0));
-            vec.push(Vec2::new(-rect.x / 2.0, rect.y / 2.0));
+            // The default icon+label footprint only actually applies while
+            // it's actually on screen - a node type with a template (see
+            // Attrs::template's doc comment) hides both in favor of its own
+            // overlay entirely, so including this box for one would highlight
+            // empty space no shape is actually drawn in.
+            let this_node = g
+                .graph_defn
+                .node_instances
+                .iter()
+                .find(|n| n.name == node.node_name);
+            let has_template = this_node.is_some_and(|n| n.node_data.attrs.template.is_some());
+            let icon_label_box = (!has_template).then(|| {
+                let half_x = f32::max(ICON_WIDTH, text_rect.x) / 2.0;
+                let y_transform = -1.0 * (FONT_SIZE + TEXT_DISTANCE_FROM_BOTTOM) / 2.0;
+                let half_y = (ICON_HEIGHT + FONT_SIZE + TEXT_DISTANCE_FROM_BOTTOM) / 2.0;
+                (
+                    Vec2::new(-half_x, y_transform - half_y),
+                    Vec2::new(half_x, y_transform + half_y),
+                )
+            });
+
+            // Whatever the node's template/draw() overlay actually occupies
+            // (see `parser::draw::overlay_bounds`'s doc comment) - a template
+            // or a live draw() call can paint well outside the default
+            // icon+label footprint (a wide badge, a shape gallery, ...), so
+            // the highlight needs to grow to fit it rather than clip it.
+            let overlay_box = this_node.and_then(|n| crate::parser::draw::overlay_bounds(&n.overlay));
+
+            let (min, max) = match (icon_label_box, overlay_box) {
+                (Some((min1, max1)), Some((min2, max2))) => (min1.min(min2), max1.max(max2)),
+                (Some(b), None) | (None, Some(b)) => b,
+                // Neither a visible default look nor any overlay shape at
+                // all (a template that resolved to zero shapes, say) - fall
+                // back to a small fixed box rather than a degenerate
+                // zero-size highlight.
+                (None, None) => (Vec2::splat(-ICON_WIDTH / 2.0), Vec2::splat(ICON_WIDTH / 2.0)),
+            };
+            let padding = Vec2::splat(BOUNDING_BOX_PADDING);
+            let min = min - padding;
+            let max = max + padding;
+            let center = (min + max) / 2.0;
+            let size = max - min;
+
+            let vec: Vec<Vec2> = vec![
+                Vec2::new(-size.x / 2.0, -size.y / 2.0),
+                Vec2::new(size.x / 2.0, -size.y / 2.0),
+                Vec2::new(size.x / 2.0, size.y / 2.0),
+                Vec2::new(-size.x / 2.0, size.y / 2.0),
+            ];
             let shape = shapes::RoundedPolygon {
                 points: vec,
                 radius: 4.0,
@@ -276,7 +317,7 @@ pub fn on_click(
                         path: GeometryBuilder::build_as(&shape),
                         spatial: SpatialBundle {
                             transform: Transform {
-                                translation: Vec3::new(0.0, y_transform, 0.0),
+                                translation: center.extend(0.0),
                                 ..Default::default()
                             },
                             ..Default::default()
@@ -387,19 +428,37 @@ fn spawn_node(
         ))
         .id();
 
+    // A node type with a template (`attrs.template`, set directly or via
+    // `template_ref` - already resolved to one flat list by `parse_graph2`)
+    // owns its whole on-canvas look: `systems::node_overlay` draws it (icon
+    // included, via a `TemplateShape::Icon`/`DrawCmd::Icon` if the template
+    // has one) as overlay children of this same node entity, one tick after
+    // this spawn. So the default icon sprite/name label built here are
+    // skipped for it - except the icon sprite still gets spawned fully
+    // transparent (`Color::NONE`), keeping the node clickable/draggable
+    // (bevy_mod_picking's sprite backend needs *some* Sprite to hit-test;
+    // the lyon shapes a template is usually made of aren't pickable, see
+    // `node_overlay`'s module doc) even before the overlay renders, and
+    // regardless of whether the template includes its own icon shape at all.
+    let has_template = node_attrs.template.is_some();
+
     let icon_child = commands
         .spawn((SpriteBundle {
             texture: node_icon.clone(),
             transform: Transform::from_translation(Vec3::new(0., 0., 100.)),
             sprite: Sprite {
                 custom_size: Vec2::new(ICON_WIDTH, ICON_HEIGHT).into(),
+                color: if has_template { Color::NONE } else { Color::WHITE },
                 ..Default::default()
             },
             ..default()
         },))
         .id();
 
-    let text_child = commands.spawn(txt_bndl).id();
+    let mut children = vec![icon_child];
+    if !has_template {
+        children.push(commands.spawn(txt_bndl).id());
+    }
 
     let track_child = commands
         .spawn(SpriteBundle {
@@ -430,7 +489,7 @@ fn spawn_node(
         ))
         .id();
 
-    commands
-        .entity(parent)
-        .push_children(&[icon_child, text_child, track_child, fill_child]);
+    children.push(track_child);
+    children.push(fill_child);
+    commands.entity(parent).push_children(&children);
 }

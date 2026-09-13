@@ -8,10 +8,15 @@
 //!
 //! Supported shapes (the `shape` key selects which):
 //! - `#{ shape: "rect",   x, y, w, h, fill, stroke, stroke_width, radius, opacity }`
+//! - `#{ shape: "roundedrect", ... }` - identical to `rect`, `radius` just defaults
+//!   to `8.0` instead of `0.0`
 //! - `#{ shape: "circle", x, y, r, fill, stroke, stroke_width, opacity }`
 //! - `#{ shape: "line",   x1, y1, x2, y2, stroke, stroke_width }`
 //! - `#{ shape: "polygon"/"polyline", points: [[x,y], ...], fill, stroke, stroke_width }`
 //! - `#{ shape: "text",   x, y, text, size, color }`
+//! - `#{ shape: "icon",   x, y, w, h, icon }` - `icon` is an id from the graph's
+//!   top-level `icons` list (the same id `attrs.icon`/a `send()` payload's `icon`
+//!   key reference); falls back to the default system icon if not found.
 //!
 //! `fill`/`stroke`/`color` are `#rrggbb` (or `#rgb` / `#rrggbbaa`) strings. Numbers
 //! may be ints or floats. Unknown shapes and malformed maps are skipped.
@@ -66,6 +71,20 @@ pub enum DrawCmd {
         size: f32,
         color: Color,
     },
+    /// An icon-registry image, drawn at an arbitrary node-local position/size -
+    /// lets a node template (or a script) place the node's own icon (or any
+    /// other registered icon) as part of a custom look instead of relying on
+    /// the node's fixed default icon sprite. `icon` is resolved against
+    /// `CommonAssets.resource_map` by `systems::node_overlay::spawn_shape`,
+    /// the same lookup `systems::node_system::spawn_node` uses for the
+    /// default icon, falling back to `"default_system_icon"` if not found.
+    Icon {
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        icon: String,
+    },
 }
 
 fn num(map: &rhai::Map, key: &str, default: f32) -> f32 {
@@ -87,7 +106,10 @@ fn text_of(map: &rhai::Map, key: &str) -> Option<String> {
     map.get(key).map(|v| v.to_string())
 }
 
-fn parse_color(s: &str) -> Option<Color> {
+/// `#rrggbb` / `#rgb` / `#rrggbbaa` hex string to `Color` - also reused by
+/// `graphv2::TemplateShape::to_draw_cmd` so a YAML-declared node template
+/// parses colors with the exact same rules `draw()` does.
+pub fn parse_color(s: &str) -> Option<Color> {
     Srgba::hex(s).ok().map(Into::into)
 }
 
@@ -156,6 +178,19 @@ pub fn parse_draw_cmd(value: &Dynamic) -> Option<DrawCmd> {
             radius: num(&map, "radius", 0.0).max(0.0),
             paint: paint_of(&map),
         }),
+        // Same shape as "rect" - just defaults `radius` to something
+        // visibly rounded (8.0) instead of 0.0, so the name's promise holds
+        // even if the caller doesn't pass `radius` at all. `rect` and
+        // `roundedrect` are otherwise identical; `radius: 0` on a
+        // `roundedrect` is a valid (if pointless) way to square it back off.
+        "roundedrect" => Some(DrawCmd::Rect {
+            x: num(&map, "x", 0.0),
+            y: num(&map, "y", 0.0),
+            w: num(&map, "w", 10.0),
+            h: num(&map, "h", 10.0),
+            radius: num(&map, "radius", 8.0).max(0.0),
+            paint: paint_of(&map),
+        }),
         "circle" => Some(DrawCmd::Circle {
             x: num(&map, "x", 0.0),
             y: num(&map, "y", 0.0),
@@ -182,6 +217,13 @@ pub fn parse_draw_cmd(value: &Dynamic) -> Option<DrawCmd> {
             size: num(&map, "size", 14.0).max(1.0),
             color: color_of(&map, "color").unwrap_or(Color::BLACK),
         }),
+        "icon" => Some(DrawCmd::Icon {
+            x: num(&map, "x", 0.0),
+            y: num(&map, "y", 0.0),
+            w: num(&map, "w", 64.0).max(1.0),
+            h: num(&map, "h", 64.0).max(1.0),
+            icon: text_of(&map, "icon").unwrap_or_default(),
+        }),
         _ => None,
     }
 }
@@ -194,4 +236,59 @@ pub fn parse_overlay(shapes: &rhai::Array) -> Vec<DrawCmd> {
         .filter_map(parse_draw_cmd)
         .take(MAX_SHAPES_PER_NODE)
         .collect()
+}
+
+/// Local-space axis-aligned bounding box (min, max corners) of one drawn
+/// shape - used by `node_system::on_click` to size the selection-highlight
+/// rectangle around whatever a node's `draw()`/template overlay actually
+/// occupies, instead of assuming every node is exactly the default
+/// icon+label footprint (a template/`draw()` call can paint well outside
+/// it - a wide badge, a shape gallery, anything). `Text`'s box is only an
+/// estimate (no font metrics are available here, just a char-count heuristic)
+/// - generous enough that the highlight comfortably encloses the label
+/// rather than clipping it.
+pub fn bounds(cmd: &DrawCmd) -> (Vec2, Vec2) {
+    match cmd {
+        DrawCmd::Rect { x, y, w, h, .. } | DrawCmd::Icon { x, y, w, h, .. } => (
+            Vec2::new(x - w / 2.0, y - h / 2.0),
+            Vec2::new(x + w / 2.0, y + h / 2.0),
+        ),
+        DrawCmd::Circle { x, y, r, .. } => (Vec2::new(x - r, y - r), Vec2::new(x + r, y + r)),
+        DrawCmd::Line { x1, y1, x2, y2, .. } => (
+            Vec2::new(x1.min(*x2), y1.min(*y2)),
+            Vec2::new(x1.max(*x2), y1.max(*y2)),
+        ),
+        DrawCmd::Polygon { points, .. } => {
+            let mut min = Vec2::splat(f32::INFINITY);
+            let mut max = Vec2::splat(f32::NEG_INFINITY);
+            for p in points {
+                min = min.min(*p);
+                max = max.max(*p);
+            }
+            if points.is_empty() {
+                (Vec2::ZERO, Vec2::ZERO)
+            } else {
+                (min, max)
+            }
+        }
+        DrawCmd::Text {
+            x, y, text, size, ..
+        } => {
+            let half_w = text.chars().count() as f32 * size * 0.3;
+            let half_h = size * 0.7;
+            (
+                Vec2::new(x - half_w, y - half_h),
+                Vec2::new(x + half_w, y + half_h),
+            )
+        }
+    }
+}
+
+/// Unions [`bounds`] over every shape in a node's overlay - `None` if the
+/// overlay is empty (nothing to add beyond the default icon+label look).
+pub fn overlay_bounds(overlay: &[DrawCmd]) -> Option<(Vec2, Vec2)> {
+    overlay
+        .iter()
+        .map(bounds)
+        .reduce(|(min1, max1), (min2, max2)| (min1.min(min2), max1.max(max2)))
 }

@@ -38,7 +38,7 @@ use crate::components::node::{ExplainBubble, NodeMarker};
 use crate::parser::draw::{DrawCmd, Paint};
 use crate::resources::common_assets::{CommonAssets, ResourceType};
 use crate::resources::narration::PendingExplain;
-use crate::systems::node_overlay::spawn_shape;
+use crate::systems::node_overlay::{spawn_shape, TEXT_SUPERSAMPLE};
 
 /// Local z of the bubble root, relative to its anchor node. Comfortably above
 /// the node's own icon/label/overlay children (which top out around 121) and
@@ -129,7 +129,7 @@ pub fn show_next_explain(
             stroke_width: 0.0,
         },
     };
-    let backdrop = spawn_shape(&mut commands, &backdrop_cmd, BACKDROP_Z, &font)
+    let backdrop = spawn_shape(&mut commands, &backdrop_cmd, BACKDROP_Z, &font, &ca)
         .insert((ExplainBubble, RenderLayers::layer(1)))
         .id();
     commands.entity(node_entity).add_child(backdrop);
@@ -205,7 +205,7 @@ pub fn show_next_explain(
         .iter()
         .enumerate()
     {
-        let child = spawn_shape(&mut commands, cmd, i as f32 * 0.01, &font)
+        let child = spawn_shape(&mut commands, cmd, i as f32 * 0.01, &font, &ca)
             .insert(RenderLayers::layer(1))
             .id();
         commands.entity(root).add_child(child);
@@ -224,10 +224,14 @@ pub fn show_next_explain(
     // z must clear every shape in the shadow/pointer/body loop above (which
     // now runs up to index 3, i.e. z 0.03) or the opaque body rect draws over
     // the text and hides it entirely.
-    let text_entity = spawn_shape(&mut commands, &text_cmd, 0.05, &font)
+    let text_entity = spawn_shape(&mut commands, &text_cmd, 0.05, &font, &ca)
         .insert((
             Text2dBounds {
-                size: Vec2::new(BUBBLE_W - 40.0, BUBBLE_H - 66.0),
+                // Word-wrap is computed in the unscaled glyph-layout space
+                // `spawn_shape` rasterizes text in (see `TEXT_SUPERSAMPLE`'s
+                // doc comment) - scale the wrap width/height the same way it
+                // scaled font_size, or lines would wrap too early.
+                size: Vec2::new(BUBBLE_W - 40.0, BUBBLE_H - 66.0) * TEXT_SUPERSAMPLE,
             },
             RenderLayers::layer(1),
         ))
