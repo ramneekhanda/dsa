@@ -138,9 +138,6 @@ fn setup_app(app: &mut App) {
                     state: LoadingStateOpt::Ready,
                 },
             )),
-            systems::node_system::create_nodes.run_if(resource_equals(LoadingState {
-                state: LoadingStateOpt::Ready,
-            })),
             systems::node_progress::update_tick_progress.run_if(resource_equals(LoadingState {
                 state: LoadingStateOpt::Ready,
             })),
@@ -154,9 +151,6 @@ fn setup_app(app: &mut App) {
                     state: LoadingStateOpt::Ready,
                 }),
             ),
-            systems::node_overlay::render_node_overlays.run_if(resource_equals(LoadingState {
-                state: LoadingStateOpt::Ready,
-            })),
             systems::explain_bubble::show_next_explain.run_if(resource_equals(LoadingState {
                 state: LoadingStateOpt::Ready,
             })),
@@ -170,6 +164,31 @@ fn setup_app(app: &mut App) {
                 state: LoadingStateOpt::Ready,
             })),
         ),
+    )
+    // `create_nodes` reacts to a `GraphChange` with a full despawn-and-respawn-all of
+    // every node entity, via `Commands` - deferred, so without an explicit sync point
+    // here `render_node_overlays`, if it happened to run first in the same frame
+    // (systems in an unordered tuple have no guaranteed relative order - can vary
+    // frame to frame, run to run), would see the *old*, about-to-despawn entities
+    // still present under the same node names, attach that frame's overlay to them,
+    // and mark it clean - only for those entities (overlay children included) to be
+    // despawned a moment later when the queued commands finally apply, leaving the
+    // *new* entities that actually replace them with `overlay_dirty` already false
+    // and so no overlay ever attached. This is the "node/icon sometimes doesn't
+    // render" bug - `apply_deferred` forces `create_nodes`' despawn/respawn to fully
+    // land before `render_node_overlays` ever looks at the world, every frame, making
+    // the outcome deterministic instead of a race.
+    .add_systems(
+        Update,
+        (
+            systems::node_system::create_nodes,
+            apply_deferred,
+            systems::node_overlay::render_node_overlays,
+        )
+            .chain()
+            .run_if(resource_equals(LoadingState {
+                state: LoadingStateOpt::Ready,
+            })),
     );
     #[cfg(target_arch = "wasm32")]
     app.add_systems(Update, handle_browser_resize);
