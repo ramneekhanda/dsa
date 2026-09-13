@@ -1378,6 +1378,7 @@ graph_defn:
             "web/static/tutorial/ch1/05_state_and_logging.yml",
             "web/static/tutorial/ch1/06_putting_it_together.yml",
             "web/static/tutorial/ch1/07_multilevel_routing.yml",
+            "web/static/tutorial/ch1/08_constants_and_scope.yml",
             "web/static/tutorial/ch2/01_draw_basics.yml",
             "web/static/tutorial/ch2/02_shapes.yml",
             "web/static/tutorial/ch2/03_node_templates.yml",

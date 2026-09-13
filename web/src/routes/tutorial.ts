@@ -62,6 +62,12 @@ export const tutorialChapters: TutorialChapter[] = [
         markdown: "07_multilevel_routing.md",
         yaml: "07_multilevel_routing.yml",
       },
+      {
+        id: "1.8",
+        title: "1.8 Constants & State Persistence",
+        markdown: "08_constants_and_scope.md",
+        yaml: "08_constants_and_scope.yml",
+      },
     ],
   },
   {

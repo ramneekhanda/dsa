@@ -45,6 +45,10 @@ const EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../web/static/tutorial/ch1/07_multilevel_routing.yml"),
     ),
     (
+        "1.8 Constants & State Persistence",
+        include_str!("../../web/static/tutorial/ch1/08_constants_and_scope.yml"),
+    ),
+    (
         "2.1 draw() Basics",
         include_str!("../../web/static/tutorial/ch2/01_draw_basics.yml"),
     ),
