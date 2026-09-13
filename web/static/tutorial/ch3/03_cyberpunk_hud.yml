@@ -34,6 +34,12 @@ graph_defn:
 
   graph_attrs:
     title: Cyberpunk Neon HUD Theme
+    message_theme:
+      shape: chamfered
+      bg: "#060d17"
+      stroke: "#00f5ff"
+      stroke_width: 1.5
+      text_color: "#00f5ff"
 
   icons:
     - id: brain_icon

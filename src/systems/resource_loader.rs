@@ -46,8 +46,11 @@ pub fn load_assets(
     mut event_writer: EventWriter<GraphChange>,
 ) {
     if g.is_changed() || g.is_added() {
-        ca.resource_map.clear();
-        load_default_fonts_and_icons(&mut ca, &asset_server);
+        if !ca.resource_map.contains_key("default_font")
+            || !ca.resource_map.contains_key("default_system_icon")
+        {
+            load_default_fonts_and_icons(&mut ca, &asset_server);
+        }
         load_resources_from_file(&mut ca, &asset_server, &g);
     }
 
@@ -62,25 +65,18 @@ pub fn load_assets(
             ResourceType::ImageHandle(f) => uh = f.clone().into(),
         }
 
-        match asset_server.get_load_state(uh.id()).unwrap() {
-            LoadState::Failed(x) => {
+        match asset_server.get_load_state(uh.id()) {
+            Some(LoadState::Failed(x)) => {
                 // one of our assets had an error
                 c_log!("asset load error");
                 c_log!("{}", x.to_string());
                 failed_res_vec.push(res.clone());
             }
-            LoadState::Loaded => {
+            Some(LoadState::Loaded) => {
                 // all assets are now ready
-
-                // this might be a good place to transition into your in-game state
-
-                // remove the resource to drop the tracking handles
-                //commands.remove_resource::<AssetsLoading>();
-                // (note: if you don't have any other handles to the assets
-                // elsewhere, they will get unloaded after this)
             }
             _ => {
-                // NotLoaded/Loading: not fully ready yet
+                // NotLoaded/Loading/None: not fully ready yet
                 still_loading = true;
             }
         }

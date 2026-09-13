@@ -36,6 +36,12 @@ graph_defn:
 
   graph_attrs:
     title: Minimal Capsule Pills Theme
+    message_theme:
+      shape: pill
+      bg: "#0f172a"
+      stroke: "#818cf8"
+      stroke_width: 1.5
+      text_color: "#ffffff"
 
   icons:
     - id: pub_icon

@@ -57,6 +57,7 @@
       })
       .then(() => {
         schema = get_code_schema();
+        loadExample("ch1/02_first_graph.yml");
       });
   });
 
@@ -84,6 +85,10 @@
       .then((response) => response.text())
       .then((data) => {
         code = data;
+        let b = compile_code(data);
+        if (b.error_log && b.error_log.length > 0) {
+          console.log(b.error_log);
+        }
       })
       .catch((error) => {
         console.error("Error:", error);

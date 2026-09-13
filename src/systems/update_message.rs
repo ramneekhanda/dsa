@@ -3,6 +3,7 @@ use bevy_prototype_lyon::prelude::*;
 
 use crate::components::message::*;
 use crate::components::node_connector::*;
+use crate::parser::graphv2::MessageBubbleShape;
 use crate::resources::common_assets::CommonAssets;
 use crate::resources::common_assets::ResourceType;
 use crate::resources::graph_def::{GraphChange, GraphDefinitionRes};
@@ -19,7 +20,7 @@ const BUBBLE_ICON_TEXT_GAP: f32 = 4.0;
 /// Animates each in-flight message's bubble along its connector's cached
 /// walk points (`NodeConnector::walk_cache`).
 ///
-/// Each message's bubble entity tree (rounded-rect + icon + text) is spawned
+/// Each message's bubble entity tree (rounded-rect/pill/box/chamfered + icon + text) is spawned
 /// *once*, the first frame the message exists, and its `Entity` cached on
 /// `Message::bubble_entity`; every later frame just updates that entity's
 /// `Transform` in place. This used to despawn and fully respawn every
@@ -43,10 +44,25 @@ pub fn update_message_path(
         font = f1.clone();
     };
 
+    let msg_theme = gd.graph_defn.graph_attrs.message_theme.as_ref();
+    let shape_kind = msg_theme.map(|t| t.shape).unwrap_or_default();
+    let bg_color = msg_theme
+        .and_then(|t| t.bg)
+        .unwrap_or(gd.graph_defn.graph_attrs.background);
+    let stroke_color = msg_theme
+        .and_then(|t| t.stroke)
+        .unwrap_or(gd.graph_defn.graph_attrs.text_color);
+    let stroke_width = msg_theme.map(|t| t.stroke_width).unwrap_or(1.5);
+    let text_color = msg_theme
+        .and_then(|t| t.text_color)
+        .unwrap_or(gd.graph_defn.graph_attrs.text_color);
+    let font_size = msg_theme.map(|t| t.font_size).unwrap_or(BUBBLE_FONT_SIZE);
+    let icon_size = msg_theme.map(|t| t.icon_size).unwrap_or(BUBBLE_ICON_SIZE);
+
     let text_style = TextStyle {
         font: font.clone(),
-        font_size: BUBBLE_FONT_SIZE,
-        color: gd.graph_defn.graph_attrs.text_color,
+        font_size,
+        color: text_color,
     };
 
     for (mut msgs, mut nc) in query_conn.iter_mut() {
@@ -136,51 +152,93 @@ pub fn update_message_path(
             });
 
             let text_width =
-                (mesg.str.chars().count() as f32) * BUBBLE_FONT_SIZE * BUBBLE_CHAR_WIDTH_FACTOR;
+                (mesg.str.chars().count() as f32) * font_size * BUBBLE_CHAR_WIDTH_FACTOR;
             let content_width = if msg_icon.is_some() {
-                BUBBLE_ICON_SIZE + BUBBLE_ICON_TEXT_GAP + text_width
+                icon_size + BUBBLE_ICON_TEXT_GAP + text_width
             } else {
                 text_width
             };
             let bubble_width = (content_width + 2.0 * BUBBLE_PADDING_X).max(BUBBLE_MIN_WIDTH);
-            let bubble_height = BUBBLE_FONT_SIZE.max(BUBBLE_ICON_SIZE) + 2.0 * BUBBLE_PADDING_Y;
+            let bubble_height = font_size.max(icon_size) + 2.0 * BUBBLE_PADDING_Y;
             let half = Vec2::new(bubble_width / 2.0, bubble_height / 2.0);
-            let bubble_shape = shapes::RoundedPolygon {
-                points: vec![
-                    Vec2::new(-half.x, -half.y),
-                    Vec2::new(half.x, -half.y),
-                    Vec2::new(half.x, half.y),
-                    Vec2::new(-half.x, half.y),
-                ],
-                radius: BUBBLE_CORNER_RADIUS,
-                ..shapes::RoundedPolygon::default()
+
+            let path = match shape_kind {
+                MessageBubbleShape::Rounded => {
+                    GeometryBuilder::build_as(&shapes::RoundedPolygon {
+                        points: vec![
+                            Vec2::new(-half.x, -half.y),
+                            Vec2::new(half.x, -half.y),
+                            Vec2::new(half.x, half.y),
+                            Vec2::new(-half.x, half.y),
+                        ],
+                        radius: BUBBLE_CORNER_RADIUS,
+                        ..shapes::RoundedPolygon::default()
+                    })
+                }
+                MessageBubbleShape::Pill => GeometryBuilder::build_as(&shapes::RoundedPolygon {
+                    points: vec![
+                        Vec2::new(-half.x, -half.y),
+                        Vec2::new(half.x, -half.y),
+                        Vec2::new(half.x, half.y),
+                        Vec2::new(-half.x, half.y),
+                    ],
+                    radius: half.y.min(half.x),
+                    ..shapes::RoundedPolygon::default()
+                }),
+                MessageBubbleShape::Box => GeometryBuilder::build_as(&shapes::RoundedPolygon {
+                    points: vec![
+                        Vec2::new(-half.x, -half.y),
+                        Vec2::new(half.x, -half.y),
+                        Vec2::new(half.x, half.y),
+                        Vec2::new(-half.x, half.y),
+                    ],
+                    radius: 0.0,
+                    ..shapes::RoundedPolygon::default()
+                }),
+                MessageBubbleShape::Chamfered => {
+                    let cut = (half.y * 0.45).min(8.0);
+                    GeometryBuilder::build_as(&shapes::Polygon {
+                        points: vec![
+                            Vec2::new(-half.x + cut, -half.y),
+                            Vec2::new(half.x - cut, -half.y),
+                            Vec2::new(half.x, -half.y + cut),
+                            Vec2::new(half.x, half.y - cut),
+                            Vec2::new(half.x - cut, half.y),
+                            Vec2::new(-half.x + cut, half.y),
+                            Vec2::new(-half.x, half.y - cut),
+                            Vec2::new(-half.x, -half.y + cut),
+                        ],
+                        closed: true,
+                    })
+                }
             };
+
             let bubble_child = commands
                 .spawn((
                     ShapeBundle {
-                        path: GeometryBuilder::build_as(&bubble_shape),
+                        path,
                         ..default()
                     },
-                    Fill::color(gd.graph_defn.graph_attrs.background),
-                    Stroke::new(gd.graph_defn.graph_attrs.text_color, 1.5),
+                    Fill::color(bg_color),
+                    Stroke::new(stroke_color, stroke_width),
                 ))
                 .id();
 
             let content_left = -content_width / 2.0;
             let text_x = if let Some(icon) = &msg_icon {
-                let icon_x = content_left + BUBBLE_ICON_SIZE / 2.0;
+                let icon_x = content_left + icon_size / 2.0;
                 commands.entity(parent).with_children(|p| {
                     p.spawn(SpriteBundle {
                         texture: icon.clone(),
                         transform: Transform::from_translation(Vec3::new(icon_x, 0.0, 1.0)),
                         sprite: Sprite {
-                            custom_size: Vec2::new(BUBBLE_ICON_SIZE, BUBBLE_ICON_SIZE).into(),
+                            custom_size: Vec2::new(icon_size, icon_size).into(),
                             ..Default::default()
                         },
                         ..default()
                     });
                 });
-                content_left + BUBBLE_ICON_SIZE + BUBBLE_ICON_TEXT_GAP + text_width / 2.0
+                content_left + icon_size + BUBBLE_ICON_TEXT_GAP + text_width / 2.0
             } else {
                 0.0
             };

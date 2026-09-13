@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use rhai::Dynamic;
 
 #[derive(Debug, Clone)]
 pub struct Message {

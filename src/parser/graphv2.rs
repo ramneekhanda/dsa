@@ -55,6 +55,110 @@ where
     s.serialize_str(format!("\"{}\"", c.to_srgba().to_hex()).as_str())
 }
 
+fn deserialize_optional_color<'de, D>(d: D) -> Result<Option<Color>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt = Option::<String>::deserialize(d)?;
+    match opt {
+        Some(s) => {
+            let srgba = Srgba::hex(s.as_str());
+            if let Ok(c) = srgba {
+                Ok(Some(c.into()))
+            } else {
+                Err(Error::custom("Invalid color"))
+            }
+        }
+        None => Ok(None),
+    }
+}
+
+fn serialize_optional_color<S>(c: &Option<Color>, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match c {
+        Some(col) => s.serialize_str(format!("\"{}\"", col.to_srgba().to_hex()).as_str()),
+        None => s.serialize_none(),
+    }
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone, Copy, Default, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum MessageBubbleShape {
+    #[default]
+    Rounded,
+    Pill,
+    Box,
+    Chamfered,
+}
+
+fn default_message_stroke_width() -> f32 {
+    1.5
+}
+fn default_message_font_size() -> f32 {
+    16.0
+}
+fn default_message_icon_size() -> f32 {
+    20.0
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone, JsonSchema)]
+pub struct MessageTheme {
+    #[serde(default)]
+    pub shape: MessageBubbleShape,
+
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_optional_color",
+        deserialize_with = "deserialize_optional_color"
+    )]
+    #[schemars(with = "Option<String>")]
+    pub bg: Option<Color>,
+
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_optional_color",
+        deserialize_with = "deserialize_optional_color"
+    )]
+    #[schemars(with = "Option<String>")]
+    pub stroke: Option<Color>,
+
+    #[serde(default = "default_message_stroke_width")]
+    pub stroke_width: f32,
+
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_optional_color",
+        deserialize_with = "deserialize_optional_color"
+    )]
+    #[schemars(with = "Option<String>")]
+    pub text_color: Option<Color>,
+
+    #[serde(default = "default_message_font_size")]
+    pub font_size: f32,
+
+    #[serde(default = "default_message_icon_size")]
+    pub icon_size: f32,
+}
+
+impl Default for MessageTheme {
+    fn default() -> Self {
+        Self {
+            shape: MessageBubbleShape::default(),
+            bg: None,
+            stroke: None,
+            stroke_width: default_message_stroke_width(),
+            text_color: None,
+            font_size: default_message_font_size(),
+            icon_size: default_message_icon_size(),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct GraphAttrs {
     #[schemars(with = "String", default = "white_color_str")]
@@ -73,6 +177,7 @@ pub struct GraphAttrs {
     )]
     pub connection_color: Color,
 
+    #[serde(default)]
     pub title: String,
 
     #[schemars(with = "String", default = "black_color_str")]
@@ -82,6 +187,9 @@ pub struct GraphAttrs {
         deserialize_with = "deserialize_color"
     )]
     pub text_color: Color,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub message_theme: Option<MessageTheme>,
 }
 
 impl Default for GraphAttrs {
@@ -91,6 +199,7 @@ impl Default for GraphAttrs {
             connection_color: black_color(),
             title: String::new(),
             text_color: black_color(),
+            message_theme: None,
         }
     }
 }
@@ -890,6 +999,7 @@ pub struct IconDef {
 pub struct GraphDefinition {
     pub node_types: Vec<NodeType>,
     pub graph: Vec<NodeConnection>,
+    #[serde(default)]
     pub graph_attrs: GraphAttrs,
     #[serde(default)]
     pub icons: Vec<IconDef>,
@@ -1098,3 +1208,155 @@ pub fn compile_ast(engine: &rhai::Engine, node: &mut NodeType) -> Result<bool, r
     }
     Err(ast.err().unwrap())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_message_theme() {
+        let yaml = r##"
+graph_defn:
+  graph_attrs:
+    background: "#0a0e17"
+    text_color: "#f8fafc"
+    message_theme:
+      shape: pill
+      bg: "#1e293b"
+      stroke: "#38bdf8"
+      stroke_width: 2.0
+      text_color: "#ffffff"
+      font_size: 14.0
+      icon_size: 18.0
+  node_types:
+    - id: worker
+  graph:
+    - name: w1
+      node_type: worker
+      links: []
+"##
+        .to_string();
+
+        let parsed = parse_graph2(&yaml).expect("Should parse valid YAML with message_theme");
+        let theme = parsed.graph_defn.graph_attrs.message_theme.expect("message_theme should exist");
+        assert_eq!(theme.shape, MessageBubbleShape::Pill);
+        assert_eq!(theme.stroke_width, 2.0);
+        assert_eq!(theme.font_size, 14.0);
+        assert_eq!(theme.icon_size, 18.0);
+        assert!(theme.bg.is_some());
+        assert!(theme.stroke.is_some());
+        assert!(theme.text_color.is_some());
+    }
+
+    #[test]
+    fn test_parse_message_theme_shapes() {
+        for (shape_str, expected_shape) in [
+            ("rounded", MessageBubbleShape::Rounded),
+            ("pill", MessageBubbleShape::Pill),
+            ("box", MessageBubbleShape::Box),
+            ("chamfered", MessageBubbleShape::Chamfered),
+        ] {
+            let yaml = format!(
+                r#"
+graph_defn:
+  graph_attrs:
+    message_theme:
+      shape: {}
+  node_types:
+    - id: worker
+  graph:
+    - name: w1
+      node_type: worker
+      links: []
+"#,
+                shape_str
+            );
+            let parsed = parse_graph2(&yaml).expect("Should parse valid shape");
+            let theme = parsed.graph_defn.graph_attrs.message_theme.expect("theme");
+            assert_eq!(theme.shape, expected_shape);
+        }
+    }
+
+    #[test]
+    fn test_parse_progress_shapes() {
+        let yaml = r##"
+graph_defn:
+  node_types:
+    - id: server
+      attrs:
+        template:
+          - shape: progress
+            style: ring
+            x: 10
+            y: 20
+            r: 16
+            thickness: 3.0
+            start_angle: 90
+            clockwise: true
+            track_color: "#1e293b"
+            fill_color: "#00f5ff"
+          - shape: progress
+            style: bar
+            x: 0
+            y: -30
+            w: 100
+            h: 6
+            track_color: "#334155"
+            fill_color: "#22c55e"
+          - shape: progress
+            style: pie
+            r: 12
+            fill_color: "#f59e0b"
+          - shape: progress
+            style: segmented
+            w: 80
+            h: 8
+            segments: 5
+            gap: 2
+            fill_color: "#ec4899"
+  graph:
+    - name: s1
+      node_type: server
+      links: []
+"##
+        .to_string();
+
+        let parsed = parse_graph2(&yaml).expect("Should parse progress shapes in template");
+        let node_type = &parsed.graph_defn.node_types[0];
+        let template = node_type.attrs.template.as_ref().expect("template");
+        assert_eq!(template.len(), 4);
+    }
+
+    #[test]
+    fn test_parse_all_tutorial_files() {
+        let tutorial_files = [
+            "web/static/tutorial/ch1/02_first_graph.yml",
+            "web/static/tutorial/ch1/03_messaging.yml",
+            "web/static/tutorial/ch1/04_params_and_icons.yml",
+            "web/static/tutorial/ch1/05_state_and_logging.yml",
+            "web/static/tutorial/ch1/06_putting_it_together.yml",
+            "web/static/tutorial/ch2/01_draw_basics.yml",
+            "web/static/tutorial/ch2/02_shapes.yml",
+            "web/static/tutorial/ch2/03_node_templates.yml",
+            "web/static/tutorial/ch2/04_parametrized_templates.yml",
+            "web/static/tutorial/ch3/01_cloud_cards.yml",
+            "web/static/tutorial/ch3/02_datacenter_rack.yml",
+            "web/static/tutorial/ch3/03_cyberpunk_hud.yml",
+            "web/static/tutorial/ch3/04_capsule_pills.yml",
+            "web/static/tutorial/ch3/05_layered_theming.yml",
+        ];
+
+        for path in tutorial_files {
+            let content = std::fs::read_to_string(path)
+                .unwrap_or_else(|e| panic!("Failed to read {}: {}", path, e));
+            let parsed = parse_graph2(&content)
+                .unwrap_or_else(|e| panic!("Failed to parse tutorial YAML {}: {}", path, e));
+            assert!(
+                !parsed.graph_defn.node_instances.is_empty(),
+                "Tutorial {} should instantiate at least one node",
+                path
+            );
+        }
+    }
+}
+

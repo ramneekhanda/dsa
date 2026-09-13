@@ -16,7 +16,7 @@ pub fn drag(
     // `Camera2dBundle`, so it also matches `Camera2d`. Without `Without<BubbleCamera>`
     // here, `.single()` below finds two entities and panics on every drag - which,
     // since a wasm panic halts the whole Bevy app loop, looks exactly like a freeze.
-    mut query_camera: Query<&mut OrthographicProjection, (With<Camera2d>, Without<BubbleCamera>)>,
+    query_camera: Query<&OrthographicProjection, (With<Camera2d>, Without<BubbleCamera>)>,
 ) {
     let projection = query_camera.single();
     if q.iter().count() == 0 {

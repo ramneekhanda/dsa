@@ -96,4 +96,16 @@ Notice how the `cloud_card` template encapsulates 7 distinct shape primitives in
 - `service_type`: Subtitle clarifying role (e.g. `"Edge / Ingress"`, `"Managed DB"`)
 - `status_text`: Operational badge (e.g. `"HEALTHY • 240 RPS"`, `"REPLICA SYNCED"`)
 
-**Try it**: Click **Load this example** below. Notice how each node renders a polished, production-grade cloud card while messages flow seamlessly across the architecture!
+### Themed Message Bubbles (`message_theme`)
+You can also style in-flight message bubbles at the graph level under `graph_attrs.message_theme` without changing any `send()` calls:
+```yaml
+graph_attrs:
+  message_theme:
+    shape: pill          # "pill" | "rounded" | "box" | "chamfered"
+    bg: "#1e293b"        # dark slate background
+    stroke: "#38bdf8"    # sky blue border
+    stroke_width: 1.5
+    text_color: "#f8fafc"
+```
+
+**Try it**: Click **Load this example** below. Notice how each node renders a polished, production-grade cloud card while messages flow seamlessly in matching pill-themed bubbles across the architecture!

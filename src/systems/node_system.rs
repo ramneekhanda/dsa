@@ -368,7 +368,7 @@ pub fn on_click(
                         },
                         ..Default::default()
                     },
-                    Fill::color(Color::rgba(1.0, 1.0, 1.0, 0.5)),
+                    Fill::color(Color::srgba(1.0, 1.0, 1.0, 0.5)),
                     Stroke::new(Color::BLACK, 2.0),
                     SelectedNodeMarker {
                         node_name: node.node_name.clone(),

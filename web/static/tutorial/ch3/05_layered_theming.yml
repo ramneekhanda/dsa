@@ -29,6 +29,12 @@ graph_defn:
 
   graph_attrs:
     title: Layered & Composed Themes
+    message_theme:
+      shape: rounded
+      bg: "#1e1e24"
+      stroke: "#f59e0b"
+      stroke_width: 1.5
+      text_color: "#fbbf24"
 
   icons:
     - id: server_icon

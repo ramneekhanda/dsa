@@ -47,6 +47,12 @@ graph_defn:
 
   graph_attrs:
     title: Cloud Architecture Theme
+    message_theme:
+      shape: pill
+      bg: "#1e293b"
+      stroke: "#38bdf8"
+      stroke_width: 1.5
+      text_color: "#f8fafc"
 
   icons:
     - id: gateway_icon

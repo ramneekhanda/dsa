@@ -45,6 +45,12 @@ graph_defn:
 
   graph_attrs:
     title: Datacenter Rack Units
+    message_theme:
+      shape: box
+      bg: "#18181b"
+      stroke: "#22c55e"
+      stroke_width: 1.5
+      text_color: "#4ade80"
 
   icons:
     - id: switch_icon
