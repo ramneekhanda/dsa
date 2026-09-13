@@ -76,7 +76,8 @@
     let urls: string[] = [];
     try {
       if (typeof get_import_urls === "function") {
-        urls = get_import_urls(sourceCode) || [];
+        const raw = get_import_urls(sourceCode);
+        urls = typeof raw === "string" ? JSON.parse(raw) : (raw || []);
       }
     } catch (e) {
       console.warn("Failed to scan import urls:", e);
