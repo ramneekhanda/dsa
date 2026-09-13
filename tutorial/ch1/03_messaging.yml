@@ -1,0 +1,37 @@
+fns:
+  - &ping_fn |
+      fn on_init() {}
+      fn on_timer() {
+        log("ping sending");
+        send("pong", #{ display: "ping" });
+      }
+      fn on_msg(msg) {
+        log("ping got: " + msg.display);
+      }
+
+  - &pong_fn |
+      fn on_init() {}
+      fn on_msg(msg) {
+        log("pong got: " + msg.display);
+        send("ping", #{ display: "pong" });
+      }
+
+graph_defn:
+  graph:
+    - name: ping
+      node_type: ping
+      links: [pong]
+    - name: pong
+      node_type: pong
+      links: [ping]
+  graph_attrs:
+    title: Nodes Talking To Each Other
+  node_types:
+    - id: ping
+      fn: *ping_fn
+      attrs:
+        ticks: 3
+    - id: pong
+      fn: *pong_fn
+      attrs:
+        ticks: 3

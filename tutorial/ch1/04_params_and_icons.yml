@@ -1,0 +1,41 @@
+fns:
+  - &greeter_fn |
+      fn on_init() {
+        log("greeter ready, enthusiasm=" + enthusiasm);
+      }
+      fn on_timer() {
+        if shout {
+          log("HELLO #" + enthusiasm);
+        } else {
+          log("hello #" + enthusiasm);
+        }
+      }
+
+graph_defn:
+  graph:
+    - name: greeter
+      node_type: greeter
+      links: []
+  graph_attrs:
+    title: Configurable Node Types
+  icons:
+    - id: greeter_icon
+      url: https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.1/assets/72x72/1f44b.png
+  node_types:
+    - id: greeter
+      fn: *greeter_fn
+      # Double-click the node on the canvas to open its Node Properties
+      # popup - these params become live, editable controls there, and
+      # changing one takes effect immediately (no reload needed).
+      params:
+        - name: enthusiasm
+          type: Integer
+          default: 1
+          min: 1
+          max: 5
+        - name: shout
+          type: Bool
+          default: false
+      attrs:
+        ticks: { min: 2, max: 4, jitter: true }
+        icon: greeter_icon

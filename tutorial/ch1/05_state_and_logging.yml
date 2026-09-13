@@ -1,0 +1,28 @@
+fns:
+  - &counter_fn |
+      fn on_init() {
+        globals.count = 0;
+        globals.failures = 0;
+      }
+      fn on_timer() {
+        globals.count += 1;
+        if random_chance(30) {
+          globals.failures += 1;
+          log("tick " + globals.count + " - simulated failure (" + globals.failures + " so far)");
+        } else {
+          log("tick " + globals.count + " - ok");
+        }
+      }
+
+graph_defn:
+  graph:
+    - name: counter
+      node_type: counter
+      links: []
+  graph_attrs:
+    title: State and Logging
+  node_types:
+    - id: counter
+      fn: *counter_fn
+      attrs:
+        ticks: 2
