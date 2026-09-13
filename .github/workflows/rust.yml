@@ -11,7 +11,6 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -19,28 +18,31 @@ jobs:
     - uses: actions/setup-node@v4
       with:
         node-version: 20
-    - name: add wasm32 target
+    - name: Add wasm32 target
       run: rustup target add wasm32-unknown-unknown
-    - name: install wasm-bindgen-cli
-      run: cargo install wasm-bindgen-cli
-    - name: Install cargo make
-      run: cargo install --force cargo-make
+    - name: Install tools
+      uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-make,wasm-bindgen-cli@0.2.128
     - name: Build everything
       run: cargo make -p production build-all
     - name: Upload production-ready build files
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: production-files
         path: ./package/release
+
   deploy:
     name: Deploy
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
 
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: production-files
           path: ./dist
