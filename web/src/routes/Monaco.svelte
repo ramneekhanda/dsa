@@ -3,6 +3,7 @@
   import type monaco from "monaco-editor";
   import { configureMonacoYaml } from "monaco-yaml";
   import { onMount } from "svelte";
+  import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
   import YamlWorker from "./monaco_yaml.worker.js?worker";
 
   let Monaco: typeof monaco;
@@ -12,17 +13,22 @@
 
   function configureMonaco() {
     if (typeof Monaco !== "undefined" && schema !== "") {
-      configureMonacoYaml(Monaco, {
-        enableSchemaRequest: true,
-        completion: true,
-        schemas: [
-          {
-            fileMatch: ["*.yaml"],
-            schema: JSON.parse(schema),
-            uri: "http://google.com/",
-          },
-        ],
-      });
+      try {
+        configureMonacoYaml(Monaco, {
+          enableSchemaRequest: true,
+          completion: true,
+          validate: true,
+          schemas: [
+            {
+              fileMatch: ["*"],
+              schema: JSON.parse(schema),
+              uri: "inmemory://schema.json",
+            },
+          ],
+        });
+      } catch (e) {
+        console.error("Failed to configure Monaco YAML schema:", e);
+      }
     }
   }
 
@@ -35,14 +41,22 @@
   let debounceTimer: any = null;
 
   export function getCode() {
-    return editor.getValue();
+    return editor ? editor.getValue() : "";
   }
 
   export function setCode(s: string) {
     if (editor == null) {
       return;
     }
-    return editor.getModel().setValue(s);
+    const model = editor.getModel();
+    if (model) {
+      model.setValue(s);
+      if (Monaco) {
+        Monaco.editor.setModelLanguage(model, "yaml");
+      }
+    } else {
+      editor.setValue(s);
+    }
   }
 
   export function setFocus() {
@@ -50,20 +64,16 @@
       return;
     }
     editor.focus();
-  };
-
+  }
 
   onMount(async () => {
     // @ts-ignore
     window.MonacoEnvironment = {
       getWorker: function (_moduleId: any, label: string) {
-        switch (label) {
-          case "yaml":
-            let worker = new YamlWorker();
-            return worker;
-          default:
-            throw new Error(`Unknown label ${label}`);
+        if (label === "yaml") {
+          return new YamlWorker();
         }
+        return new EditorWorker();
       },
     };
 
@@ -73,18 +83,25 @@
       minimap: { enabled: false },
       automaticLayout: true,
       scrollBeyondLastLine: false,
+      language: "yaml",
+      theme: "vs",
       quickSuggestions: {
         other: true,
         comments: false,
         strings: true,
       },
     });
+
     configureMonaco();
-    let yamlModel = Monaco.editor.createModel(
-      value,
-      "yaml",
-      Monaco.Uri.parse("inmemory://mymodel.yaml"),
-    );
+
+    const modelUri = Monaco.Uri.parse("inmemory://mymodel.yaml");
+    let yamlModel = Monaco.editor.getModel(modelUri);
+    if (!yamlModel) {
+      yamlModel = Monaco.editor.createModel(value, "yaml", modelUri);
+    } else {
+      yamlModel.setValue(value);
+      Monaco.editor.setModelLanguage(yamlModel, "yaml");
+    }
     editor.setModel(yamlModel);
 
     editor.onDidChangeModelContent(() => {
