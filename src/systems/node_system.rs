@@ -207,7 +207,7 @@ pub fn on_click(
     mut commands: Commands,
     mut q_selected: Query<(Entity, &SelectedNodeMarker)>,
     mut q: Query<(Entity, &mut Transform, &mut Children, &NodeMarker)>,
-    text_query: Query<&TextLayoutInfo>,
+    text_query: Query<(&Transform, &TextLayoutInfo), Without<NodeMarker>>,
     real_time: Res<Time<Real>>,
     mut last_click: ResMut<LastNodeClick>,
     mut node_props: ResMut<NodePropertiesPopup>,
@@ -252,7 +252,7 @@ pub fn on_click(
 
             let mut text_rect = Vec2::default();
             for child in children.iter() {
-                if let Ok(text) = text_query.get(*child) {
+                if let Ok((_, text)) = text_query.get(*child) {
                     text_rect = text.logical_size;
                 }
             }
@@ -278,12 +278,50 @@ pub fn on_click(
                 )
             });
 
-            // Whatever the node's template/draw() overlay actually occupies
-            // (see `parser::draw::overlay_bounds`'s doc comment) - a template
-            // or a live draw() call can paint well outside the default
-            // icon+label footprint (a wide badge, a shape gallery, ...), so
-            // the highlight needs to grow to fit it rather than clip it.
-            let overlay_box = this_node.and_then(|n| crate::parser::draw::overlay_bounds(&n.overlay));
+            // Whatever the node's template/draw() overlay actually occupies -
+            // a template or a live draw() call can paint well outside the
+            // default icon+label footprint (a wide badge, a shape gallery,
+            // ...), so the highlight needs to grow to fit it rather than
+            // clip it.
+            //
+            // `parser::draw::bounds()` has no font metrics to work with, so for a Text
+            // shape specifically it can only guess a width from the string's
+            // character count - a guess that overestimates badly for longer
+            // strings (comfortably wide-enough for a short label balloons
+            // into a needlessly huge box for a long one), which is exactly
+            // what actually spawning the overlay and measuring its real,
+            // already-computed `TextLayoutInfo` avoids. `spawn_shape` gives
+            // a text child's `Transform.translation` the exact (x, y) its
+            // `DrawCmd::Text` was authored with, so matching on that finds
+            // the right child without needing any extra id/index to do it -
+            // and its `logical_size` has to be scaled back down by the same
+            // `TEXT_SUPERSAMPLE` factor `spawn_shape` shrank the entity's own
+            // `Transform.scale` by, or this would overestimate too, just by
+            // a fixed 2x instead of a growing one.
+            let overlay_box = this_node.and_then(|n| {
+                n.overlay
+                    .iter()
+                    .map(|cmd| {
+                        if let crate::parser::draw::DrawCmd::Text { x, y, .. } = cmd {
+                            let measured = children.iter().find_map(|c| {
+                                let (t, info) = text_query.get(*c).ok()?;
+                                let close = (t.translation.x - x).abs() < 0.01
+                                    && (t.translation.y - y).abs() < 0.01;
+                                close.then(|| {
+                                    let half = (info.logical_size * t.scale.truncate()) / 2.0;
+                                    (
+                                        t.translation.truncate() - half,
+                                        t.translation.truncate() + half,
+                                    )
+                                })
+                            });
+                            measured.unwrap_or_else(|| crate::parser::draw::bounds(cmd))
+                        } else {
+                            crate::parser::draw::bounds(cmd)
+                        }
+                    })
+                    .reduce(|(min1, max1), (min2, max2)| (min1.min(min2), max1.max(max2)))
+            });
 
             let (min, max) = match (icon_label_box, overlay_box) {
                 (Some((min1, max1)), Some((min2, max2))) => (min1.min(min2), max1.max(max2)),

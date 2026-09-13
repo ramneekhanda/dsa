@@ -243,10 +243,12 @@ pub fn parse_overlay(shapes: &rhai::Array) -> Vec<DrawCmd> {
 /// rectangle around whatever a node's `draw()`/template overlay actually
 /// occupies, instead of assuming every node is exactly the default
 /// icon+label footprint (a template/`draw()` call can paint well outside
-/// it - a wide badge, a shape gallery, anything). `Text`'s box is only an
-/// estimate (no font metrics are available here, just a char-count heuristic)
-/// - generous enough that the highlight comfortably encloses the label
-/// rather than clipping it.
+/// it - a wide badge, a shape gallery, anything). Exact for every shape
+/// except `Text`, whose box here is only a character-count estimate (no
+/// font metrics are available in this pure-data function) - `on_click`
+/// prefers the real, already-measured size of the spawned overlay text
+/// entity when it can find one, falling back to this guess only if it
+/// can't (e.g. the overlay hasn't rendered yet this frame).
 pub fn bounds(cmd: &DrawCmd) -> (Vec2, Vec2) {
     match cmd {
         DrawCmd::Rect { x, y, w, h, .. } | DrawCmd::Icon { x, y, w, h, .. } => (
@@ -282,13 +284,4 @@ pub fn bounds(cmd: &DrawCmd) -> (Vec2, Vec2) {
             )
         }
     }
-}
-
-/// Unions [`bounds`] over every shape in a node's overlay - `None` if the
-/// overlay is empty (nothing to add beyond the default icon+label look).
-pub fn overlay_bounds(overlay: &[DrawCmd]) -> Option<(Vec2, Vec2)> {
-    overlay
-        .iter()
-        .map(bounds)
-        .reduce(|(min1, max1), (min2, max2)| (min1.min(min2), max1.max(max2)))
 }
