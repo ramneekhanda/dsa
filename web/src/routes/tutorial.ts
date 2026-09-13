@@ -68,6 +68,12 @@ export const tutorialChapters: TutorialChapter[] = [
         markdown: "08_constants_and_scope.md",
         yaml: "08_constants_and_scope.yml",
       },
+      {
+        id: "1.9",
+        title: "1.9 Interactive Narration (explain)",
+        markdown: "09_interactive_narration.md",
+        yaml: "09_interactive_narration.yml",
+      },
     ],
   },
   {
