@@ -48,6 +48,7 @@ Backend services don't need direct outgoing links back to the original client. T
 fn on_msg(msg) {
   send(msg.from, #{
     type: "RESP",
+    path: msg.path,
     req_id: msg.req_id,
     reply_to: msg.reply_to,
     status: 200,

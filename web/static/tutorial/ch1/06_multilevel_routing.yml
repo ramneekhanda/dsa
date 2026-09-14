@@ -19,7 +19,7 @@ fns:
     }
     fn on_msg(msg) {
       if msg.type == "RESP" {
-        log("Client received response: " + msg.display + " status=" + msg.status);
+        log("Client received response: " + msg.path + " status=" + msg.status);
       }
     }
 
@@ -41,6 +41,7 @@ fns:
         log("Service handling " + msg.path + " #" + msg.req_id);
         send(msg.from, #{
           type: "RESP",
+          path: msg.path,
           req_id: msg.req_id,
           reply_to: msg.reply_to,
           status: 200,
