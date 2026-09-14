@@ -6,13 +6,16 @@ fns:
     // fully-registered engine and does the real drawing; a short tick means the
     // showcase appears almost immediately after load instead of relying on init.
     fn draw_showcase() {
+      // Offset clear of the default icon + name label every node still gets
+      // underneath a draw() overlay (only attrs.template suppresses those).
+      let CARD_Y = 90;
       draw([
-        #{ shape: "rect", w: 140, h: 80, radius: 10, fill: "#ffffff", stroke: "#e2e8f0", stroke_width: 2 },
-        #{ shape: "circle", r: 16, x: -40, y: 10, fill: "#ecfdf5", stroke: "#10b981", stroke_width: 2 },
-        #{ shape: "rect", w: 32, h: 32, radius: 4, x: 0, y: 10, fill: "#eff6ff", stroke: "#3b82f6", stroke_width: 2 },
-        #{ shape: "polygon", points: [[40, 26], [54, -6], [26, -6]], fill: "#fef3c7", stroke: "#f59e0b", stroke_width: 2 },
-        #{ shape: "line", x1: -55, y1: -16, x2: 55, y2: -16, stroke: "#cbd5e1", stroke_width: 1 },
-        #{ shape: "text", text: "Shapes Showcase", y: -26, color: "#334155", size: 11 }
+        #{ shape: "rect", w: 140, h: 80, radius: 10, y: CARD_Y, fill: "#ffffff", stroke: "#e2e8f0", stroke_width: 2 },
+        #{ shape: "circle", r: 16, x: -40, y: CARD_Y + 10, fill: "#ecfdf5", stroke: "#10b981", stroke_width: 2 },
+        #{ shape: "rect", w: 32, h: 32, radius: 4, x: 0, y: CARD_Y + 10, fill: "#eff6ff", stroke: "#3b82f6", stroke_width: 2 },
+        #{ shape: "polygon", points: [[40, CARD_Y + 26], [54, CARD_Y - 6], [26, CARD_Y - 6]], fill: "#fef3c7", stroke: "#f59e0b", stroke_width: 2 },
+        #{ shape: "line", x1: -55, y1: CARD_Y - 16, x2: 55, y2: CARD_Y - 16, stroke: "#cbd5e1", stroke_width: 1 },
+        #{ shape: "text", text: "Shapes Showcase", y: CARD_Y - 26, color: "#334155", size: 11 }
       ]);
     }
     fn on_init() {

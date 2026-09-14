@@ -40,10 +40,13 @@ fns:
     }
 
     fn update_ui(name, status, color) {
+      // Offset clear of the default icon + name label every node still gets
+      // underneath a draw() overlay (only attrs.template suppresses those).
+      let CARD_Y = 80;
       draw([
-        #{ shape: "rect", w: 130, h: 55, radius: 8, fill: "#ffffff", stroke: color, stroke_width: 2 },
-        #{ shape: "text", text: name, y: 10, color: "#1e293b", size: 11 },
-        #{ shape: "text", text: status, y: -10, color: color, size: 10 }
+        #{ shape: "rect", w: 130, h: 55, radius: 8, y: CARD_Y, fill: "#ffffff", stroke: color, stroke_width: 2 },
+        #{ shape: "text", text: name, y: CARD_Y + 10, color: "#1e293b", size: 11 },
+        #{ shape: "text", text: status, y: CARD_Y - 10, color: color, size: 10 }
       ]);
     }
 
