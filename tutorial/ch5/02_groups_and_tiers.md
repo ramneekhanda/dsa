@@ -12,21 +12,21 @@ Define `groups:` at the root of your YAML:
 
 ```yaml
 groups:
-  frontend:
+  ingress:
     title: "Edge & Ingress Tier"
     direction: tb        # Top-to-bottom column inside this group
     style:
-      bg: "#1e293b"      # Container background color
-      border: "#38bdf8"  # Border stroke color
+      bg: "#f0f9ff"      # Soft light sky background
+      border: "#0284c7"  # Sky border stroke
       border_width: 2.0
       radius: 14.0       # Rounded corners
 
-  backend:
-    title: "Application Core"
+  compute:
+    title: "Service Mesh"
     direction: tb
     style:
-      bg: "#0f172a"
-      border: "#a855f7"
+      bg: "#faf5ff"      # Soft light purple background
+      border: "#9333ea"  # Purple border stroke
       border_width: 2.0
       radius: 14.0
 
@@ -34,8 +34,8 @@ groups:
     title: "Data Persistence"
     direction: tb
     style:
-      bg: "#111827"
-      border: "#10b981"
+      bg: "#ecfdf5"      # Soft light emerald background
+      border: "#059669"  # Emerald border stroke
       border_width: 2.0
       radius: 14.0
 ```
@@ -50,13 +50,13 @@ Assign each node to its respective tier using the `group:` property in `graph:`:
 graph:
   - name: client
     node_type: client
-    group: frontend
+    group: ingress
     links: [gateway]
 
-  - name: auth_service
-    node_type: service
-    group: backend
-    links: [user_db]
+  - name: auth
+    node_type: auth_svc
+    group: compute
+    links: [users_db]
 ```
 
 ---
