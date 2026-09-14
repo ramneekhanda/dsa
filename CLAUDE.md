@@ -103,7 +103,7 @@ most important file to read first:
   `AST`** (`compile_ast`), then instantiates a `Node` per graph entry (looking up its
   `NodeType`, creating a per-node Rhai `Scope` and a `Timer` from `attrs.ticks`), and runs
   `on_init` once per node via `init_scope` to seed each node's persistent `state`
-  (`Dynamic`, stored under the `globals` scope variable).
+  (`Dynamic`, stored under the `state` scope variable).
 - `schemars` derives (`JsonSchema` on nearly everything) are what generate the JSON Schema
   served to Monaco (`get_code_schema` in `src/systems/ingest_code.rs`) for live YAML
   autocomplete/validation in the editor — changing these structs changes the editor's schema.
@@ -186,8 +186,8 @@ instead of replacing it.
 
 Every frame, `execute_rhai_engine`:
 1. Ticks each node's `Timer`; when it fires and the node has a compiled script, calls
-   `on_timer(context)` with the node's params pushed into scope and its `state` bound as
-   `globals`.
+   `on_timer(context)` with the node's params pushed into scope and its persisted state
+   bound as `state`.
 2. Drains each connector's `msg_delivered` queue and calls `on_msg(msg)` on the receiving
    node for each delivered message.
 3. Rhai scripts call the registered host functions (all `register_fn`'d in
@@ -207,11 +207,12 @@ Every frame, `execute_rhai_engine`:
    and two auto-keying shorthands, `explain(text)`/`explain(text, opts)`, that reuse
    `text` itself as the dedup `key` (`opts` is accepted but currently unused/ignored in
    all three variants that take it).
-4. `state` (the Rhai `globals` map) round-trips through the node's persistent `Dynamic` field
-   across calls — this is how a node keeps memory between ticks/messages. Both call sites
-   (`on_timer` and `on_msg`) move `state` into/out of the `Scope` rather than cloning it -
-   `scope.push_dynamic("globals", std::mem::take(&mut node.state))` going in,
-   `node.state = scope.remove::<Dynamic>("globals").unwrap_or_default()` coming out. This
+4. `state` — a Rhai scope variable bound to the node's persistent `Dynamic` field
+   (`Node::state`) — round-trips across calls — this is how a node keeps memory between
+   ticks/messages (`state.count += 1`, etc.). Both call sites (`on_timer` and `on_msg`,
+   plus `init_scope` for `on_init`) move it into/out of the `Scope` rather than cloning
+   it - `scope.push_dynamic("state", std::mem::take(&mut node.state))` going in,
+   `node.state = scope.remove::<Dynamic>("state").unwrap_or_default()` coming out. This
    matters because `Dynamic::clone` is a *deep* clone (it recurses into every
    string/array/map a node's state contains), while a move is O(1) regardless of what's
    inside - `benches/rhai_state_roundtrip.rs` (`cargo bench`) measures the old clone-based
@@ -219,6 +220,18 @@ Every frame, `execute_rhai_engine`:
    3.6-4.7x faster (more for bigger state), a 26-39% reduction in total per-tick call cost.
    Safe to do because the entry doesn't need to survive the call either way - the next line,
    `scope.rewind(init_size)`, discards it regardless.
+   **Earlier regression (fixed):** for a while, both call sites pushed *two* scope
+   variables - `globals` and `state` - seeded from the same clone, then guessed which one
+   to keep afterward by checking whether `state` looked like a non-empty map. That heuristic
+   only worked on the very first state-mutating call; after that, `state` was always a
+   non-empty map regardless of whether the script touched it (globals-writing scripts
+   never wrote through `state`, so it just kept holding the stale pre-call snapshot), so
+   the heuristic kept "winning" with stale data and silently discarding every subsequent
+   `globals.x = ...` mutation. Scripts written against `state.x = ...` were unaffected
+   (that's the variable actually being written), which is why some tutorial examples
+   looked fine and others (anything using `globals`) appeared permanently stuck after
+   their first tick. Fixed by removing the `globals` binding entirely - `state` is now the
+   only name, so there's nothing to disambiguate.
 5. The Rhai compile/eval engines (`parse_graph2` and `initialize_engine`) both raise
    `set_max_expr_depths` to 256 — the default in-function limit of 32 is too low for
    realistic handlers (e.g. a map literal containing an inline `if`).

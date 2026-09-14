@@ -25,17 +25,17 @@ graph_defn:
           status_text: "QUEUE // STANDARD"
       fn: |
         fn on_init() {
-          globals.buffer = [];
+          state.buffer = [];
         }
         fn on_timer() {
-          if globals.buffer.len() > 0 && links.len() > 0 {
-            let item = globals.buffer.remove(0);
+          if state.buffer.len() > 0 && links.len() > 0 {
+            let item = state.buffer.remove(0);
             send(links[0], item);
           }
         }
         fn on_msg(from, msg) {
-          globals.buffer.push(msg);
-          log("SQS enqueued item (queue depth: " + globals.buffer.len() + ")");
+          state.buffer.push(msg);
+          log("SQS enqueued item (queue depth: " + state.buffer.len() + ")");
         }
 
     - id: sns_topic

@@ -1,28 +1,28 @@
 fns:
   - &client_fn |
     fn on_init() {
-      globals.seq = 0;
+      state.seq = 0;
     }
     fn on_timer() {
-      globals.seq += 1;
-      send("worker", #{ id: globals.seq });
+      state.seq += 1;
+      send("worker", #{ id: state.seq });
     }
 
   - &worker_fn |
     fn on_init() {
-      globals.queue = [];
-      redraw_meter(globals.queue.len());
+      state.queue = [];
+      redraw_meter(state.queue.len());
     }
     fn on_msg(msg) {
-      globals.queue.push(msg.id);
-      redraw_meter(globals.queue.len());
+      state.queue.push(msg.id);
+      redraw_meter(state.queue.len());
     }
     fn on_timer() {
-      if globals.queue.len() > 0 {
-        let item = globals.queue.remove(0);
+      if state.queue.len() > 0 {
+        let item = state.queue.remove(0);
         log("Worker processed item #" + item);
       }
-      redraw_meter(globals.queue.len());
+      redraw_meter(state.queue.len());
     }
     fn redraw_meter(count) {
       let color = if count >= 3 { "#ef4444" } else if count > 0 { "#f59e0b" } else { "#10b981" };

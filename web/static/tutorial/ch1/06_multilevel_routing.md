@@ -17,9 +17,9 @@ When a client sends a request to the gateway, it specifies the target `path` and
 send("gateway", #{
   type: "REQ",
   path: "/auth",
-  req_id: globals.req_id,
+  req_id: state.req_id,
   reply_to: "client",
-  display: "/auth #" + globals.req_id
+  display: "/auth #" + state.req_id
 });
 ```
 

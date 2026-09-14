@@ -25,17 +25,17 @@ graph_defn:
           status_text: "SERVERLESS // ACTIVE"
       fn: |
         fn on_init() {
-          globals.invocations = 0;
+          state.invocations = 0;
         }
         fn on_timer() {}
         fn on_msg(from, msg) {
-          globals.invocations += 1;
-          log("Lambda " + node_name + " invoked (" + globals.invocations + "): " + msg);
+          state.invocations += 1;
+          log("Lambda " + node_name + " invoked (" + state.invocations + "): " + msg);
           if links.len() > 0 {
             send(links[0], #{
               source: node_name,
               data: msg,
-              invocations: globals.invocations
+              invocations: state.invocations
             });
           }
         }
@@ -54,12 +54,12 @@ graph_defn:
           status_text: "t4g.xlarge // RUNNING"
       fn: |
         fn on_init() {
-          globals.req_count = 0;
+          state.req_count = 0;
         }
         fn on_timer() {}
         fn on_msg(from, msg) {
-          globals.req_count += 1;
-          log("EC2 " + node_name + " processed request #" + globals.req_count);
+          state.req_count += 1;
+          log("EC2 " + node_name + " processed request #" + state.req_count);
           if links.len() > 0 {
             send(links[0], msg);
           }
@@ -79,7 +79,7 @@ graph_defn:
           status_text: "TASKS 3/3 HEALTHY"
       fn: |
         fn on_init() {
-          globals.tasks = 3;
+          state.tasks = 3;
         }
         fn on_timer() {}
         fn on_msg(from, msg) {

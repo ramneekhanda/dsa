@@ -6,22 +6,22 @@ imports:
 fns:
   - &dns_fn |
     fn on_init() {
-      globals.req = 0;
+      state.req = 0;
     }
     fn on_timer() {
-      globals.req += 1;
-      log("DNS resolving request #" + globals.req);
-      send("alb_ingress", #{ id: globals.req, path: "/api/order" });
+      state.req += 1;
+      log("DNS resolving request #" + state.req);
+      send("alb_ingress", #{ id: state.req, path: "/api/order" });
     }
 
   - &alb_fn |
     fn on_init() {
-      globals.idx = 0;
+      state.idx = 0;
     }
     fn on_msg(msg) {
       let targets = ["ecs_task_1", "ecs_task_2"];
-      let t = targets[globals.idx % targets.len()];
-      globals.idx += 1;
+      let t = targets[state.idx % targets.len()];
+      state.idx += 1;
       log("ALB forwarding Req #" + msg.id + " -> " + t);
       send(t, msg);
     }

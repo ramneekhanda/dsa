@@ -8,19 +8,19 @@ node_types:
   - id: client
     fn: |
       fn on_init() {
-        globals.req_id = 0;
-        globals.retries = 0;
+        state.req_id = 0;
+        state.retries = 0;
       }
       fn on_timer() {
-        globals.req_id += 1;
-        send("server", #{ req_id: globals.req_id, display: "req #" + globals.req_id, icon: "request_icon" });
+        state.req_id += 1;
+        send("server", #{ req_id: state.req_id, display: "req #" + state.req_id, icon: "request_icon" });
       }
       fn on_msg(msg) {
         if msg.ok {
           log("client got a reply for #" + msg.req_id);
         } else {
-          globals.retries += 1;
-          log("client got an error for #" + msg.req_id + " - retrying (" + globals.retries + " so far)");
+          state.retries += 1;
+          log("client got an error for #" + msg.req_id + " - retrying (" + state.retries + " so far)");
           send("server", #{ req_id: msg.req_id, display: "retry #" + msg.req_id, icon: "request_icon" });
         }
       }
@@ -48,7 +48,7 @@ node_types:
 ```
 
 Nothing here is new - `links`/`send`/`on_msg` from chapter 3, `params` from chapter 4,
-`globals`/`random_chance` from chapter 5 - only combined into something that actually
+`state`/`random_chance` from chapter 5 - only combined into something that actually
 resembles a real distributed system's failure-handling behavior.
 
 **Try it**: load this chapter's example and run it. Then, while it's running,

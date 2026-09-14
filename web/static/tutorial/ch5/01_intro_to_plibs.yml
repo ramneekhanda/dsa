@@ -5,11 +5,11 @@ imports:
 fns:
   - &client_fn |
     fn on_init() {
-      globals.seq = 0;
+      state.seq = 0;
     }
     fn on_timer() {
-      globals.seq += 1;
-      send("lambda_exec", #{ action: "process_job", id: globals.seq });
+      state.seq += 1;
+      send("lambda_exec", #{ action: "process_job", id: state.seq });
     }
 
 graph_defn:

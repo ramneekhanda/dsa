@@ -1,36 +1,36 @@
 fns:
   - &client_fn |
       fn on_init() {
-        globals.req_id = 0;
-        globals.received = 0;
+        state.req_id = 0;
+        state.received = 0;
       }
       fn on_timer() {
-        globals.req_id += 1;
-        let path = if globals.req_id % 2 == 1 { "/auth" } else { "/data" };
-        log("client sending " + path + " request #" + globals.req_id);
+        state.req_id += 1;
+        let path = if state.req_id % 2 == 1 { "/auth" } else { "/data" };
+        log("client sending " + path + " request #" + state.req_id);
         send("gateway", #{
           type: "REQ",
           path: path,
-          req_id: globals.req_id,
+          req_id: state.req_id,
           reply_to: "client",
-          display: path + " #" + globals.req_id,
+          display: path + " #" + state.req_id,
           icon: "request_icon"
         });
       }
       fn on_msg(msg) {
         if msg.type == "RESP" {
-          globals.received += 1;
+          state.received += 1;
           log("client received response for #" + msg.req_id + " [" + msg.service + "] status=" + msg.status);
         }
       }
 
   - &gateway_fn |
       fn on_init() {
-        globals.routed = 0;
+        state.routed = 0;
       }
       fn on_msg(msg) {
         if msg.type == "REQ" {
-          globals.routed += 1;
+          state.routed += 1;
           log("gateway routing " + msg.path + " #" + msg.req_id + " downstream");
           if msg.path == "/auth" {
             send("auth_svc", msg);

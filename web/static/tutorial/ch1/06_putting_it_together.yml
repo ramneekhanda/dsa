@@ -1,36 +1,36 @@
 fns:
   - &client_fn |
       fn on_init() {
-        globals.req_id = 0;
-        globals.retries = 0;
+        state.req_id = 0;
+        state.retries = 0;
       }
       fn on_timer() {
-        globals.req_id += 1;
-        log("client sending request #" + globals.req_id);
-        send("server", #{ req_id: globals.req_id, display: "req #" + globals.req_id, icon: "request_icon" });
+        state.req_id += 1;
+        log("client sending request #" + state.req_id);
+        send("server", #{ req_id: state.req_id, display: "req #" + state.req_id, icon: "request_icon" });
       }
       fn on_msg(msg) {
         if msg.ok {
           log("client got a reply for #" + msg.req_id);
         } else {
-          globals.retries += 1;
-          log("client got an error for #" + msg.req_id + " - retrying (" + globals.retries + " so far)");
+          state.retries += 1;
+          log("client got an error for #" + msg.req_id + " - retrying (" + state.retries + " so far)");
           send("server", #{ req_id: msg.req_id, display: "retry #" + msg.req_id, icon: "request_icon" });
         }
       }
 
   - &server_fn |
       fn on_init() {
-        globals.served = 0;
+        state.served = 0;
       }
       fn on_msg(msg) {
-        globals.served += 1;
+        state.served += 1;
         // flaky flips a coin each request; unreliable_pct controls the odds.
         let ok = true;
         if flaky {
           ok = !random_chance(unreliable_pct);
         }
-        log("server handling #" + msg.req_id + " (" + globals.served + " total, ok=" + ok + ")");
+        log("server handling #" + msg.req_id + " (" + state.served + " total, ok=" + ok + ")");
         send("client", #{ req_id: msg.req_id, ok: ok, display: "reply #" + msg.req_id, icon: "response_icon" });
       }
 

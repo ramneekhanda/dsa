@@ -1,14 +1,14 @@
 fns:
   - &client_fn |
     fn on_init() {
-      globals.req_id = 0;
+      state.req_id = 0;
     }
     fn on_timer() {
-      globals.req_id += 1;
-      log("Client sending Request #" + globals.req_id);
+      state.req_id += 1;
+      log("Client sending Request #" + state.req_id);
       send("load_balancer", #{
         type: "REQ",
-        id: globals.req_id,
+        id: state.req_id,
         reply_to: "client"
       });
     }
@@ -20,18 +20,18 @@ fns:
 
   - &lb_fn |
     fn on_init() {
-      globals.idx = 0;
-      globals.total_routed = 0;
-      update_ui(globals.total_routed);
+      state.idx = 0;
+      state.total_routed = 0;
+      update_ui(state.total_routed);
     }
     fn on_msg(msg) {
       if msg.type == "REQ" {
         let workers = ["worker_1", "worker_2", "worker_3"];
-        let target = workers[globals.idx % workers.len()];
-        globals.idx += 1;
-        globals.total_routed += 1;
+        let target = workers[state.idx % workers.len()];
+        state.idx += 1;
+        state.total_routed += 1;
         log("LB routing Req #" + msg.id + " -> " + target);
-        update_ui(globals.total_routed);
+        update_ui(state.total_routed);
         send(target, msg);
       } else if msg.type == "RESP" {
         send(msg.reply_to, msg);
@@ -50,14 +50,14 @@ fns:
 
   - &worker_fn |
     fn on_init() {
-      globals.jobs_done = 0;
-      update_ui(node_name, globals.jobs_done);
+      state.jobs_done = 0;
+      update_ui(node_name, state.jobs_done);
     }
     fn on_msg(msg) {
       if msg.type == "REQ" {
-        globals.jobs_done += 1;
+        state.jobs_done += 1;
         log(node_name + " processed Req #" + msg.id);
-        update_ui(node_name, globals.jobs_done);
+        update_ui(node_name, state.jobs_done);
         send(msg.from, #{
           type: "RESP",
           id: msg.id,

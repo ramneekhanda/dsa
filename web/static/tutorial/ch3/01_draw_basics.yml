@@ -1,12 +1,12 @@
 fns:
   - &meter_fn |
     fn on_init() {
-      globals.load = 25;
-      update_visuals(globals.load);
+      state.load = 25;
+      update_visuals(state.load);
     }
     fn on_timer() {
-      globals.load = (globals.load + 25) % 100;
-      update_visuals(globals.load);
+      state.load = (state.load + 25) % 100;
+      update_visuals(state.load);
     }
     fn update_visuals(pct) {
       let bar_w = pct * 1.0;

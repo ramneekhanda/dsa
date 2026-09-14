@@ -1,16 +1,16 @@
 fns:
   - &client_fn |
     fn on_init() {
-      globals.tx = 0;
+      state.tx = 0;
     }
     fn on_timer() {
-      globals.tx += 1;
-      log("Client initiating Write TX #" + globals.tx);
+      state.tx += 1;
+      log("Client initiating Write TX #" + state.tx);
       send("primary_db", #{
         type: "WRITE",
-        tx: globals.tx,
+        tx: state.tx,
         key: "user_bal",
-        val: 100 + globals.tx,
+        val: 100 + state.tx,
         reply_to: "client"
       });
     }
@@ -22,14 +22,14 @@ fns:
 
   - &primary_fn |
     fn on_init() {
-      globals.store = #{};
-      globals.pending_tx = #{};
+      state.store = #{};
+      state.pending_tx = #{};
       update_ui("PRIMARY (READY)", "#10b981");
     }
     fn on_msg(msg) {
       if msg.type == "WRITE" {
-        globals.store[msg.key] = msg.val;
-        globals.pending_tx[msg.tx.to_string()] = #{
+        state.store[msg.key] = msg.val;
+        state.pending_tx[msg.tx.to_string()] = #{
           reply_to: msg.reply_to,
           acks: 0
         };
@@ -39,10 +39,10 @@ fns:
         send("replica_2", #{ type: "REPLICATE", tx: msg.tx, key: msg.key, val: msg.val });
       } else if msg.type == "ACK" {
         let key = msg.tx.to_string();
-        if globals.pending_tx.contains(key) {
-          globals.pending_tx[key].acks += 1;
-          if globals.pending_tx[key].acks == 2 {
-            let reply_to = globals.pending_tx[key].reply_to;
+        if state.pending_tx.contains(key) {
+          state.pending_tx[key].acks += 1;
+          if state.pending_tx[key].acks == 2 {
+            let reply_to = state.pending_tx[key].reply_to;
             log("Primary achieved Quorum for TX #" + msg.tx + " -> confirming to client");
             update_ui("COMMITTED #" + msg.tx, "#10b981");
             send(reply_to, #{ type: "WRITE_OK", tx: msg.tx });
@@ -63,16 +63,16 @@ fns:
 
   - &replica_fn |
     fn on_init() {
-      globals.store = #{};
-      globals.replicated_count = 0;
-      update_ui(node_name, globals.replicated_count);
+      state.store = #{};
+      state.replicated_count = 0;
+      update_ui(node_name, state.replicated_count);
     }
     fn on_msg(msg) {
       if msg.type == "REPLICATE" {
-        globals.store[msg.key] = msg.val;
-        globals.replicated_count += 1;
+        state.store[msg.key] = msg.val;
+        state.replicated_count += 1;
         log(node_name + " synced TX #" + msg.tx);
-        update_ui(node_name, globals.replicated_count);
+        update_ui(node_name, state.replicated_count);
         send(msg.from, #{ type: "ACK", tx: msg.tx });
       }
     }

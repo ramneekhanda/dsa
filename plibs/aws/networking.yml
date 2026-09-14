@@ -25,14 +25,14 @@ graph_defn:
           status_text: "HTTP /v1/* // 200 OK"
       fn: |
         fn on_init() {
-          globals.requests = 0;
+          state.requests = 0;
         }
         fn on_timer() {}
         fn on_msg(from, msg) {
-          globals.requests += 1;
-          log("API Gateway received request #" + globals.requests + ": " + msg);
+          state.requests += 1;
+          log("API Gateway received request #" + state.requests + ": " + msg);
           if links.len() > 0 {
-            let target = links[globals.requests % links.len()];
+            let target = links[state.requests % links.len()];
             send(target, msg);
           }
         }
@@ -51,13 +51,13 @@ graph_defn:
           status_text: "TARGETS: 2 HEALTHY"
       fn: |
         fn on_init() {
-          globals.idx = 0;
+          state.idx = 0;
         }
         fn on_timer() {}
         fn on_msg(from, msg) {
           if links.len() > 0 {
-            let target = links[globals.idx % links.len()];
-            globals.idx += 1;
+            let target = links[state.idx % links.len()];
+            state.idx += 1;
             send(target, msg);
           }
         }
@@ -76,16 +76,16 @@ graph_defn:
           status_text: "EDGE POP // GLOBAL"
       fn: |
         fn on_init() {
-          globals.cache = [];
+          state.cache = [];
         }
         fn on_timer() {}
         fn on_msg(from, msg) {
           let key = "" + msg;
-          if globals.cache.contains(key) {
+          if state.cache.contains(key) {
             log("CloudFront Edge HIT: " + key);
           } else {
             log("CloudFront Edge MISS - forwarding to origin");
-            globals.cache.push(key);
+            state.cache.push(key);
             if links.len() > 0 {
               send(links[0], msg);
             }

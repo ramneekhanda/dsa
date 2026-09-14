@@ -1,39 +1,39 @@
 fns:
   - &coord_fn |
     fn on_init() {
-      globals.tx_id = 0;
-      globals.votes = [];
+      state.tx_id = 0;
+      state.votes = [];
       update_ui("IDLE", "#64748b");
     }
     fn on_timer() {
-      globals.tx_id += 1;
-      globals.votes = [];
-      log("Coordinator starting 2PC for TX #" + globals.tx_id);
+      state.tx_id += 1;
+      state.votes = [];
+      log("Coordinator starting 2PC for TX #" + state.tx_id);
       update_ui("PHASE 1: PREPARING", "#f59e0b");
       explain(
         "2pc_phase1",
         "**Phase 1 (Prepare)**: Coordinator broadcasts `PREPARE` to all participant databases."
       );
-      send("db_cohort_1", #{ type: "PREPARE", tx_id: globals.tx_id });
-      send("db_cohort_2", #{ type: "PREPARE", tx_id: globals.tx_id });
+      send("db_cohort_1", #{ type: "PREPARE", tx_id: state.tx_id });
+      send("db_cohort_2", #{ type: "PREPARE", tx_id: state.tx_id });
     }
     fn on_msg(msg) {
       if msg.type == "VOTE" {
-        globals.votes.push(msg.vote);
-        if globals.votes.len() == 2 {
+        state.votes.push(msg.vote);
+        if state.votes.len() == 2 {
           let all_yes = true;
-          for v in globals.votes {
+          for v in state.votes {
             if v != "YES" { all_yes = false; }
           }
           if all_yes {
-            log("Coordinator received unanimous YES -> GLOBAL_COMMIT for TX #" + globals.tx_id);
+            log("Coordinator received unanimous YES -> GLOBAL_COMMIT for TX #" + state.tx_id);
             update_ui("PHASE 2: COMMITTED", "#10b981");
             explain(
               "2pc_phase2",
               "**Phase 2 (Commit)**: All cohorts voted YES. Coordinator issues `GLOBAL_COMMIT`."
             );
-            send("db_cohort_1", #{ type: "GLOBAL_COMMIT", tx_id: globals.tx_id });
-            send("db_cohort_2", #{ type: "GLOBAL_COMMIT", tx_id: globals.tx_id });
+            send("db_cohort_1", #{ type: "GLOBAL_COMMIT", tx_id: state.tx_id });
+            send("db_cohort_2", #{ type: "GLOBAL_COMMIT", tx_id: state.tx_id });
           }
         }
       }
@@ -51,7 +51,7 @@ fns:
 
   - &cohort_fn |
     fn on_init() {
-      globals.status = "READY";
+      state.status = "READY";
       update_ui(node_name, "READY", "#64748b");
     }
     fn on_msg(msg) {

@@ -94,15 +94,13 @@ pub fn execute_rhai_engine(
             let init_size = scope.len();
             populate_scope(scope, &node.node_data.params);
             // Move `state` into/out of the scope rather than cloning it -
-            // `get_value`/`set_value` would deep-clone the whole `globals` map on
+            // `get_value`/`set_value` would deep-clone the whole `state` map on
             // every tick for every node; `push_dynamic`/`remove::<Dynamic>` instead
             // transfer ownership (the same move-not-clone trick `set_links_const`
             // below already uses for `links`), which is free regardless of how big
             // or nested a node's state is. Safe because the entry doesn't need to
             // survive the call - `scope.rewind` below discards it either way.
-            let state_val = node.state.clone();
-            scope.push_dynamic("globals", state_val.clone());
-            scope.push_dynamic("state", state_val);
+            scope.push_dynamic("state", std::mem::take(&mut node.state));
 
             if let Err(e) =
                 engine.call_fn_with_options::<()>(options, scope, &node.ast, "on_timer", ())
@@ -121,13 +119,7 @@ pub fn execute_rhai_engine(
             for msg in local_log_store.write().unwrap().drain(..) {
                 crate::wasm::browser::emit_log_event(&node.name, &msg);
             }
-            let g = scope.remove::<Dynamic>("globals").unwrap_or_default();
-            let s = scope.remove::<Dynamic>("state").unwrap_or_default();
-            if !s.is_unit() && s.is_map() && s.as_map_ref().map(|m| !m.is_empty()).unwrap_or(false) {
-                node.state = s;
-            } else {
-                node.state = g;
-            }
+            node.state = scope.remove::<Dynamic>("state").unwrap_or_default();
             scope.rewind(init_size);
             if let Some(shapes) = draw_store.write().unwrap().take() {
                 node.overlay = crate::parser::draw::parse_overlay(&shapes);
@@ -155,9 +147,7 @@ pub fn execute_rhai_engine(
                     let scope = &mut node.scope;
                     let init_size = scope.len();
                     populate_scope(scope, &node.node_data.params);
-                    let state_val = node.state.clone();
-                    scope.push_dynamic("globals", state_val.clone());
-                    scope.push_dynamic("state", state_val);
+                    scope.push_dynamic("state", std::mem::take(&mut node.state));
                     let mut call_res = engine.call_fn_with_options::<()>(
                         CallFnOptions::new().eval_ast(false).rewind_scope(false),
                         scope,
@@ -223,13 +213,7 @@ pub fn execute_rhai_engine(
                     for msg in local_log_store.write().unwrap().drain(..) {
                         crate::wasm::browser::emit_log_event(&node.name, &msg);
                     }
-                    let g = scope.remove::<Dynamic>("globals").unwrap_or_default();
-                    let s = scope.remove::<Dynamic>("state").unwrap_or_default();
-                    if !s.is_unit() && s.is_map() && s.as_map_ref().map(|m| !m.is_empty()).unwrap_or(false) {
-                        node.state = s;
-                    } else {
-                        node.state = g;
-                    }
+                    node.state = scope.remove::<Dynamic>("state").unwrap_or_default();
                     scope.rewind(init_size);
                     if let Some(shapes) = draw_store.write().unwrap().take() {
                         node.overlay = crate::parser::draw::parse_overlay(&shapes);
@@ -327,7 +311,7 @@ fn drain_topology_ops(
 
 /// Replaces the `links` constant in a node's Rhai scope with `links`'s current
 /// value. `links` was pushed as a Rhai *constant* in `init_scope` and stays that way
-/// across ticks (only `globals` is meant to be host-mutable); `Scope::set_value`
+/// across ticks (only `state` is meant to be host-mutable); `Scope::set_value`
 /// panics on a read-only entry, so the entry has to be removed and reinserted -
 /// `Scope::remove` is a plain Rust API and doesn't go through Rhai's read-only
 /// enforcement (that lives in the interpreter's eval path, not in the `Scope` data

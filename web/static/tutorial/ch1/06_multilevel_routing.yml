@@ -1,20 +1,20 @@
 fns:
   - &client_fn |
     fn on_init() {
-      globals.req_id = 0;
+      state.req_id = 0;
       log("Client initialized");
     }
     fn on_timer() {
-      globals.req_id += 1;
-      let path = if globals.req_id % 2 == 1 { "/auth" } else { "/data" };
+      state.req_id += 1;
+      let path = if state.req_id % 2 == 1 { "/auth" } else { "/data" };
       let req = #{
         type: "REQ",
         path: path,
-        req_id: globals.req_id,
+        req_id: state.req_id,
         reply_to: "client",
-        display: path + " #" + globals.req_id
+        display: path + " #" + state.req_id
       };
-      log("Client sending " + path + " request #" + globals.req_id);
+      log("Client sending " + path + " request #" + state.req_id);
       send("gateway", req);
     }
     fn on_msg(msg) {

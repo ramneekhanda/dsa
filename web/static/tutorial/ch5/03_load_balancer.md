@@ -17,8 +17,8 @@ The load balancer maintains an index pointer into its worker list:
 ```rhai
 fn on_msg(msg) {
   if msg.type == "REQ" {
-    let target = links[globals.idx % links.len()];
-    globals.idx += 1;
+    let target = links[state.idx % links.len()];
+    state.idx += 1;
     send(target, msg);
   }
 }

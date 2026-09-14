@@ -25,14 +25,14 @@ graph_defn:
           status_text: "PROVISIONED // ACTIVE"
       fn: |
         fn on_init() {
-          globals.items = #{};
-          globals.write_count = 0;
+          state.items = #{};
+          state.write_count = 0;
         }
         fn on_timer() {}
         fn on_msg(from, msg) {
-          globals.write_count += 1;
-          globals.items["item_" + globals.write_count] = msg;
-          log("DynamoDB PutItem #" + globals.write_count + " from " + from);
+          state.write_count += 1;
+          state.items["item_" + state.write_count] = msg;
+          log("DynamoDB PutItem #" + state.write_count + " from " + from);
         }
 
     - id: s3_bucket
@@ -49,12 +49,12 @@ graph_defn:
           status_text: "STANDARD TIER // OK"
       fn: |
         fn on_init() {
-          globals.objects = 0;
+          state.objects = 0;
         }
         fn on_timer() {}
         fn on_msg(from, msg) {
-          globals.objects += 1;
-          log("S3 PutObject #" + globals.objects + ": " + msg);
+          state.objects += 1;
+          log("S3 PutObject #" + state.objects + ": " + msg);
         }
 
     - id: rds_aurora
@@ -71,10 +71,10 @@ graph_defn:
           status_text: "CLUSTER // WRITER"
       fn: |
         fn on_init() {
-          globals.tx_count = 0;
+          state.tx_count = 0;
         }
         fn on_timer() {}
         fn on_msg(from, msg) {
-          globals.tx_count += 1;
-          log("Aurora SQL Commit #" + globals.tx_count);
+          state.tx_count += 1;
+          log("Aurora SQL Commit #" + state.tx_count);
         }

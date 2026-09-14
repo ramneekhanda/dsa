@@ -29,13 +29,13 @@ graph_defn:
         ticks: 1
       fn: |
         fn on_init() {
-          globals.idx = 0;
+          state.idx = 0;
         }
         fn on_timer() {}
         fn on_message(msg) {
           if links.len() == 0 { return; }
-          let target = links[globals.idx % links.len()];
-          globals.idx += 1;
+          let target = links[state.idx % links.len()];
+          state.idx += 1;
           send(target, msg);
         }
     - id: weighted_lb
@@ -43,13 +43,13 @@ graph_defn:
         ticks: 1
       fn: |
         fn on_init() {
-          globals.count = 0;
+          state.count = 0;
         }
         fn on_timer() {}
         fn on_message(msg) {
           if links.len() == 0 { return; }
-          let target = links[globals.count % links.len()];
-          globals.count += 1;
+          let target = links[state.count % links.len()];
+          state.count += 1;
           send(target, msg);
         }
 "##;
@@ -62,13 +62,13 @@ graph_defn:
         ticks: 1
       fn: |
         fn on_init() {
-          globals.status = "CLOSED";
-          globals.failures = 0;
-          globals.threshold = 3;
+          state.status = "CLOSED";
+          state.failures = 0;
+          state.threshold = 3;
         }
         fn on_timer() {}
         fn on_message(msg) {
-          if globals.status == "OPEN" {
+          if state.status == "OPEN" {
             log("Circuit breaker OPEN - dropping message");
             return;
           }
@@ -86,15 +86,15 @@ graph_defn:
         ticks: 1
       fn: |
         fn on_init() {
-          globals.store = #{};
+          state.store = #{};
         }
         fn on_timer() {}
         fn on_message(msg) {
-          if globals.store.contains(msg) {
+          if state.store.contains(msg) {
             log("Cache HIT for: " + msg);
           } else {
             log("Cache MISS for: " + msg);
-            globals.store[msg] = true;
+            state.store[msg] = true;
             if links.len() > 0 {
               send(links[0], msg);
             }

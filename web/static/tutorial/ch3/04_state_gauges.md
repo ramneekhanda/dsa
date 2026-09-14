@@ -10,7 +10,7 @@ When a node receives work or processes items, calculate shape dimensions dynamic
 
 ```rhai
 fn update_meter() {
-  let q_len = globals.queue.len();
+  let q_len = state.queue.len();
   let status_color = if q_len > 3 { "#ef4444" } else if q_len > 0 { "#f59e0b" } else { "#10b981" };
   let bar_w = (q_len as f32) * 18.0;
 
