@@ -57,14 +57,14 @@ pub fn update_group_boxes(
             .border
             .as_deref()
             .and_then(parse_color_str)
-            .unwrap_or(Color::srgba(0.58, 0.64, 0.72, 0.45)); // Slate 400
+            .unwrap_or(Color::srgba(0.58, 0.64, 0.72, 0.85)); // Slate 400
 
         let bg_color = gb
             .style
             .bg
             .as_deref()
             .and_then(parse_color_str)
-            .unwrap_or(Color::srgba(0.95, 0.96, 0.98, 0.4)); // Translucent tint
+            .unwrap_or(Color::srgba(0.96, 0.97, 0.99, 0.75)); // Crisp light translucent tint
 
         let rect_shape = shapes::RoundedPolygon {
             points: vec![
@@ -100,7 +100,7 @@ pub fn update_group_boxes(
 
         // Render group title label if present
         if let Some(ref title) = gb.title {
-            let title_color = border_color.with_alpha(0.9);
+            let title_color = border_color.with_alpha(1.0);
             let label = commands
                 .spawn(Text2dBundle {
                     text: Text::from_section(

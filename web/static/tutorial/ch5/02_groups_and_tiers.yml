@@ -41,8 +41,8 @@ groups:
     title: "Edge & Ingress Tier"
     direction: tb
     style:
-      bg: "#1e293b"
-      border: "#38bdf8"
+      bg: "#f0f9ff"
+      border: "#0284c7"
       border_width: 2.0
       radius: 14.0
 
@@ -50,8 +50,8 @@ groups:
     title: "Service Mesh"
     direction: tb
     style:
-      bg: "#0f172a"
-      border: "#a855f7"
+      bg: "#faf5ff"
+      border: "#9333ea"
       border_width: 2.0
       radius: 14.0
 
@@ -59,8 +59,8 @@ groups:
     title: "Data Persistence"
     direction: tb
     style:
-      bg: "#111827"
-      border: "#10b981"
+      bg: "#ecfdf5"
+      border: "#059669"
       border_width: 2.0
       radius: 14.0
 
