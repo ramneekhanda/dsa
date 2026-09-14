@@ -434,34 +434,13 @@ pub fn show_next_explain(
                     },
                 )
                 .with_justify(JustifyText::Center),
-                transform: Transform::from_xyz(-6.0, button_y, 0.07),
+                transform: Transform::from_xyz(0.0, button_y, 0.07),
                 ..default()
             },
             RenderLayers::layer(1),
         ))
         .id();
     commands.entity(root).add_child(label);
-
-    let arrow_mesh = GeometryBuilder::build_as(&shapes::Polygon {
-        points: vec![
-            Vec2::new(-3.0, -4.5),
-            Vec2::new(4.0, 0.0),
-            Vec2::new(-3.0, 4.5),
-        ],
-        closed: true,
-    });
-    let arrow = commands
-        .spawn((
-            ShapeBundle {
-                path: arrow_mesh,
-                spatial: SpatialBundle::from_transform(Transform::from_xyz(32.0, button_y, 0.07)),
-                ..default()
-            },
-            Fill::color(button_text_color),
-            RenderLayers::layer(1),
-        ))
-        .id();
-    commands.entity(root).add_child(arrow);
 
     let mut icon: Handle<Image> = Default::default();
     if let Some(ResourceType::ImageHandle(i)) = ca.resource_map.get("default_system_icon") {
