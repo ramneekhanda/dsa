@@ -1,12 +1,12 @@
 [env]
 CARGO_PROFILE = "release"
-CARGO_BUILD = "cargo build --release --target wasm32-unknown-unknown"
-WASM_BUILD = "wasm-bindgen --no-typescript --target web --out-dir ./package/wasm/ --out-name dsa ./target/wasm32-unknown-unknown/release/dsa.wasm"
+CARGO_BUILD = "RUSTC=\"$(rustup which rustc)\" cargo build --release --target wasm32-unknown-unknown"
+WASM_BUILD = "PATH=\"$HOME/.cargo/bin:$PATH\" wasm-bindgen --no-typescript --target web --out-dir ./package/wasm/ --out-name dsa ./target/wasm32-unknown-unknown/release/dsa.wasm"
 
 [env.development]
 CARGO_PROFILE = "dev"
-CARGO_BUILD = "cargo build --profile dev --target wasm32-unknown-unknown"
-WASM_BUILD = "wasm-bindgen --no-typescript --target web --out-dir ./package/wasm/ --out-name dsa ./target/wasm32-unknown-unknown/debug/dsa.wasm"
+CARGO_BUILD = "RUSTC=\"$(rustup which rustc)\" cargo build --profile dev --target wasm32-unknown-unknown"
+WASM_BUILD = "PATH=\"$HOME/.cargo/bin:$PATH\" wasm-bindgen --no-typescript --target web --out-dir ./package/wasm/ --out-name dsa ./target/wasm32-unknown-unknown/debug/dsa.wasm"
 
 [tasks.npm-install]
 private = true

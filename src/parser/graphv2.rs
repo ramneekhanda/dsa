@@ -1058,6 +1058,7 @@ pub struct NodeParams {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
 pub struct NodeType {
+    #[serde(alias = "name")]
     pub id: String,
     #[serde(rename = "fn")]
     pub func: Option<String>,
