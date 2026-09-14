@@ -1775,6 +1775,10 @@ graph_defn:
             "web/static/tutorial/ch4/04_aws_database_messaging.yml",
             "web/static/tutorial/ch4/05_aws_full_architecture.yml",
             "web/static/tutorial/ch4/06_authoring_plibs.yml",
+            "web/static/tutorial/ch5/01_hierarchical_layouts.yml",
+            "web/static/tutorial/ch5/02_groups_and_tiers.yml",
+            "web/static/tutorial/ch5/03_grid_and_circular.yml",
+            "web/static/tutorial/ch5/04_manual_and_offsets.yml",
         ];
 
         for path in tutorial_files {

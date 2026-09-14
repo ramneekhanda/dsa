@@ -199,4 +199,36 @@ export const tutorialChapters: TutorialChapter[] = [
       },
     ],
   },
+  {
+    id: "ch5",
+    title: "Chapter 5: Layout & Architecture",
+    dir: "ch5",
+    lessons: [
+      {
+        id: "5.1",
+        title: "5.1 Hierarchical Pipelines",
+        markdown: "01_hierarchical_layouts.md",
+        yaml: "01_hierarchical_layouts.yml",
+      },
+      {
+        id: "5.2",
+        title: "5.2 Groups & Architecture Tiers",
+        markdown: "02_groups_and_tiers.md",
+        yaml: "02_groups_and_tiers.yml",
+      },
+      {
+        id: "5.3",
+        title: "5.3 Grid & Circular Rings",
+        markdown: "03_grid_and_circular.md",
+        yaml: "03_grid_and_circular.yml",
+      },
+      {
+        id: "5.4",
+        title: "5.4 Manual Mode & Fine-Tuning",
+        markdown: "04_manual_and_offsets.md",
+        yaml: "04_manual_and_offsets.yml",
+      },
+    ],
+  },
 ];
+
