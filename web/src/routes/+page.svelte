@@ -24,11 +24,29 @@
 
   function onLogEvent(e: Event) {
     var customEvent = e as CustomEvent;
+    let detail = customEvent.detail;
+    let node = "dsa";
+    let message = typeof detail === "string" ? detail : JSON.stringify(detail);
+    if (typeof detail === "object" && detail !== null) {
+      node = detail.node ?? "dsa";
+      message = detail.message ?? "";
+    } else if (typeof detail === "string") {
+      try {
+        const parsed = JSON.parse(detail);
+        if (parsed && typeof parsed === "object") {
+          node = parsed.node ?? "dsa";
+          message = parsed.message ?? detail;
+        }
+      } catch {
+        node = "dsa";
+        message = detail;
+      }
+    }
     let more_data = {} as Panels.LogMessageType;
     more_data.time = new Date().toLocaleTimeString();
-    more_data.message = customEvent.detail;
+    more_data.message = message;
     more_data.severity = "info";
-    more_data.node = "dsa";
+    more_data.node = node;
     data.unshift(more_data);
   }
 

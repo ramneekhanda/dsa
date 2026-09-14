@@ -9,7 +9,6 @@ use crate::parser::graphv2::{
 };
 use crate::resources::graph_def::{GraphDefinitionRes, NodeAdded, NodeRemoved, NodeTicked};
 use crate::resources::narration::{ExplainEntry, PendingExplain};
-use crate::stdlib::rhai_lib::rhai_log;
 use bevy::prelude::*;
 use rand::Rng;
 use rhai::{CallFnOptions, Dynamic, Engine, Scope};
@@ -54,6 +53,7 @@ pub fn execute_rhai_engine(
     // `PendingExplain` resource once we have the caller's name in hand.
     let local_explain_store = Arc::new(RwLock::new(Vec::<(String, String)>::new()));
     let mut pending_explain_frame: Vec<(String, String, String)> = Vec::new();
+    let local_log_store = Arc::new(RwLock::new(Vec::<String>::new()));
 
     let engine = initialize_engine(
         &local_message_store,
@@ -62,6 +62,7 @@ pub fn execute_rhai_engine(
         &local_despawn_store,
         &local_link_store,
         &local_explain_store,
+        &local_log_store,
     );
     let gd = &mut graph_defn.graph_defn;
 
@@ -116,6 +117,9 @@ pub fn execute_rhai_engine(
                     ));
                 });
                 local_message_store.write().unwrap().clear();
+            }
+            for msg in local_log_store.write().unwrap().drain(..) {
+                crate::wasm::browser::emit_log_event(&node.name, &msg);
             }
             let g = scope.remove::<Dynamic>("globals").unwrap_or_default();
             let s = scope.remove::<Dynamic>("state").unwrap_or_default();
@@ -216,6 +220,9 @@ pub fn execute_rhai_engine(
                         });
                         local_message_store.write().unwrap().clear();
                     }
+                    for msg in local_log_store.write().unwrap().drain(..) {
+                        crate::wasm::browser::emit_log_event(&node.name, &msg);
+                    }
                     let g = scope.remove::<Dynamic>("globals").unwrap_or_default();
                     let s = scope.remove::<Dynamic>("state").unwrap_or_default();
                     if !s.is_unit() && s.is_map() && s.as_map_ref().map(|m| !m.is_empty()).unwrap_or(false) {
@@ -254,7 +261,7 @@ pub fn execute_rhai_engine(
     for name in apply_despawns(gd, pending_despawns) {
         node_removed_writer.send(NodeRemoved { name });
     }
-    for name in apply_spawns(gd, &engine, pending_spawns, &draw_store) {
+    for name in apply_spawns(gd, &engine, pending_spawns, &draw_store, &local_log_store) {
         node_added_writer.send(NodeAdded { name });
     }
     for (node_name, key, text) in pending_explain_frame {
@@ -374,6 +381,7 @@ fn apply_spawns(
     engine: &Engine,
     pending: Vec<(String, String, String, Vec<String>)>,
     draw_store: &Arc<RwLock<Option<rhai::Array>>>,
+    local_log_store: &Arc<RwLock<Vec<String>>>,
 ) -> Vec<String> {
     let mut spawned = Vec::new();
     for (requester, name, node_type_id, links) in pending {
@@ -415,6 +423,9 @@ fn apply_spawns(
         if let Some(shapes) = draw_store.write().unwrap().take() {
             node.overlay = crate::parser::draw::parse_overlay(&shapes);
             node.overlay_dirty = true;
+        }
+        for msg in local_log_store.write().unwrap().drain(..) {
+            crate::wasm::browser::emit_log_event(&node.name, &msg);
         }
 
         gd.graph.push(NodeConnection {
@@ -480,6 +491,7 @@ fn initialize_engine(
     despawn_store: &Arc<RwLock<Vec<String>>>,
     link_store: &Arc<RwLock<Vec<(bool, String)>>>,
     explain_store: &Arc<RwLock<Vec<(String, String)>>>,
+    log_store: &Arc<RwLock<Vec<String>>>,
 ) -> Engine {
     let mut engine = Engine::new();
     // Match the compile-time limit raised in `parser::graphv2::parse_graph2`.
@@ -491,9 +503,19 @@ fn initialize_engine(
     let dsp = despawn_store.clone();
     let lk_add = link_store.clone();
     let lk_rm = link_store.clone();
-    let ex = explain_store.clone();
+    let ls1 = log_store.clone();
+    let ls2 = log_store.clone();
+    let ls3 = log_store.clone();
     engine
-        .register_fn("log", rhai_log)
+        .register_fn("log", move |s: String| {
+            ls1.write().unwrap().push(s);
+        })
+        .register_fn("log", move |s: Dynamic| {
+            ls2.write().unwrap().push(s.to_string());
+        })
+        .register_fn("log", move |a: Dynamic, b: Dynamic| {
+            ls3.write().unwrap().push(format!("{} {}", a, b));
+        })
         .register_fn("send", move |to: String, msg: Dynamic| {
             let mut store = ms.write().unwrap();
             store.push((to, msg));
