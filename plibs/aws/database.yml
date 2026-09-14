@@ -1,0 +1,80 @@
+imports:
+  - from: "plibs:themes/cloud"
+
+graph_defn:
+  icons:
+    - id: aws_dynamodb
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/Database/DynamoDB.png"
+    - id: aws_s3
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/Storage/SimpleStorageService.png"
+    - id: aws_rds
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/Database/Aurora.png"
+
+  node_types:
+    - id: dynamodb
+      attrs:
+        ticks: 2
+        template_ref: cloud_card
+        icon: aws_dynamodb
+        params:
+          icon: "aws_dynamodb"
+          accent_color: "#2563eb"
+          role: "Amazon DynamoDB"
+          status_bg: "#eff6ff"
+          status_color: "#1d4ed8"
+          status_text: "PROVISIONED // ACTIVE"
+      fn: |
+        fn on_init() {
+          globals.items = #{};
+          globals.write_count = 0;
+        }
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          globals.write_count += 1;
+          globals.items["item_" + globals.write_count] = msg;
+          log("DynamoDB PutItem #" + globals.write_count + " from " + from);
+        }
+
+    - id: s3_bucket
+      attrs:
+        ticks: 2
+        template_ref: cloud_card
+        icon: aws_s3
+        params:
+          icon: "aws_s3"
+          accent_color: "#16a34a"
+          role: "Amazon S3"
+          status_bg: "#f0fdf4"
+          status_color: "#15803d"
+          status_text: "STANDARD TIER // OK"
+      fn: |
+        fn on_init() {
+          globals.objects = 0;
+        }
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          globals.objects += 1;
+          log("S3 PutObject #" + globals.objects + ": " + msg);
+        }
+
+    - id: rds_aurora
+      attrs:
+        ticks: 2
+        template_ref: cloud_card
+        icon: aws_rds
+        params:
+          icon: "aws_rds"
+          accent_color: "#0284c7"
+          role: "Aurora PostgreSQL"
+          status_bg: "#f0f9ff"
+          status_color: "#0369a1"
+          status_text: "CLUSTER // WRITER"
+      fn: |
+        fn on_init() {
+          globals.tx_count = 0;
+        }
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          globals.tx_count += 1;
+          log("Aurora SQL Commit #" + globals.tx_count);
+        }

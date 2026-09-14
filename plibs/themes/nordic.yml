@@ -1,0 +1,74 @@
+graph_defn:
+  graph_attrs:
+    background: "#242933"
+    connection_color: "#88c0d0"
+    text_color: "#eceff4"
+    message_theme:
+      shape: rounded
+      bg: "#2e3440"
+      stroke: "#88c0d0"
+      stroke_width: 1.5
+      text_color: "#e5e9f0"
+      font_size: 13.0
+    explain_theme:
+      shape: rounded
+      bg: "#2e3440"
+      border: "#88c0d0"
+      border_width: 1.5
+      text_color: "#eceff4"
+      accent: "#a3be8c"
+      button_text_color: "#242933"
+      shadow_color: "#88c0d033"
+      backdrop_color: "#242933b3"
+      font_size: 13.5
+  node_templates:
+    - id: nord_card
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 120.0
+          h: 56.0
+          radius: 8.0
+          fill: "#2e3440"
+          stroke: "#4c566a"
+          stroke_width: 1.5
+        - shape: roundedrect
+          x: 0.0
+          y: 20.0
+          w: 120.0
+          h: 16.0
+          radius: 8.0
+          fill: "#3b4252"
+        - shape: text
+          x: -16.0
+          y: 20.0
+          text: "{{node_name}}"
+          size: 8.5
+          color: "#eceff4"
+        - shape: circle
+          x: 44.0
+          y: 20.0
+          r: 3.5
+          fill: "#a3be8c"
+        - shape: text
+          x: 0.0
+          y: -2.0
+          text: "{{status_text}}"
+          size: 8.0
+          color: "#88c0d0"
+        - shape: progress
+          style: bar
+          x: 0.0
+          y: -18.0
+          w: 96.0
+          h: 4.0
+          track_color: "#3b4252"
+          fill_color: "#81a1c1"
+  node_types:
+    - id: nord_service
+      attrs:
+        ticks: 2
+        template_ref: nord_card
+        params:
+          status_text: "NORDIC // READY"

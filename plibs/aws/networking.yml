@@ -1,0 +1,93 @@
+imports:
+  - from: "plibs:themes/cloud"
+
+graph_defn:
+  icons:
+    - id: aws_api_gw
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/NetworkingContentDelivery/APIGateway.png"
+    - id: aws_alb
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/NetworkingContentDelivery/ElasticLoadBalancingApplicationLoadBalancer.png"
+    - id: aws_cloudfront
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/NetworkingContentDelivery/CloudFront.png"
+
+  node_types:
+    - id: api_gateway
+      attrs:
+        ticks: 2
+        template_ref: cloud_card
+        icon: aws_api_gw
+        params:
+          icon: "aws_api_gw"
+          accent_color: "#a855f7"
+          role: "API Gateway"
+          status_bg: "#faf5ff"
+          status_color: "#7e22ce"
+          status_text: "HTTP /v1/* // 200 OK"
+      fn: |
+        fn on_init() {
+          globals.requests = 0;
+        }
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          globals.requests += 1;
+          log("API Gateway received request #" + globals.requests + ": " + msg);
+          if links.len() > 0 {
+            let target = links[globals.requests % links.len()];
+            send(target, msg);
+          }
+        }
+
+    - id: alb
+      attrs:
+        ticks: 2
+        template_ref: cloud_card
+        icon: aws_alb
+        params:
+          icon: "aws_alb"
+          accent_color: "#8b5cf6"
+          role: "Application LB"
+          status_bg: "#f5f3ff"
+          status_color: "#6d28d9"
+          status_text: "TARGETS: 2 HEALTHY"
+      fn: |
+        fn on_init() {
+          globals.idx = 0;
+        }
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          if links.len() > 0 {
+            let target = links[globals.idx % links.len()];
+            globals.idx += 1;
+            send(target, msg);
+          }
+        }
+
+    - id: cloudfront
+      attrs:
+        ticks: 2
+        template_ref: cloud_card
+        icon: aws_cloudfront
+        params:
+          icon: "aws_cloudfront"
+          accent_color: "#3b82f6"
+          role: "CloudFront CDN"
+          status_bg: "#eff6ff"
+          status_color: "#1d4ed8"
+          status_text: "EDGE POP // GLOBAL"
+      fn: |
+        fn on_init() {
+          globals.cache = [];
+        }
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          let key = "" + msg;
+          if globals.cache.contains(key) {
+            log("CloudFront Edge HIT: " + key);
+          } else {
+            log("CloudFront Edge MISS - forwarding to origin");
+            globals.cache.push(key);
+            if links.len() > 0 {
+              send(links[0], msg);
+            }
+          }
+        }

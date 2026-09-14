@@ -1,0 +1,5 @@
+imports:
+  - from: "plibs:aws/compute"
+  - from: "plibs:aws/networking"
+  - from: "plibs:aws/database"
+  - from: "plibs:aws/messaging"

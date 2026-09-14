@@ -1,0 +1,74 @@
+graph_defn:
+  graph_attrs:
+    background: "#fdf6e3"
+    connection_color: "#268bd2"
+    text_color: "#073642"
+    message_theme:
+      shape: pill
+      bg: "#eee8d5"
+      stroke: "#268bd2"
+      stroke_width: 1.5
+      text_color: "#073642"
+      font_size: 13.0
+    explain_theme:
+      shape: pill
+      bg: "#fdf6e3"
+      border: "#268bd2"
+      border_width: 1.5
+      text_color: "#073642"
+      accent: "#cb4b16"
+      button_text_color: "#fdf6e3"
+      shadow_color: "#07364226"
+      backdrop_color: "#07364240"
+      font_size: 13.5
+  node_templates:
+    - id: solar_card
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 120.0
+          h: 56.0
+          radius: 12.0
+          fill: "#eee8d5"
+          stroke: "#93a1a1"
+          stroke_width: 1.5
+        - shape: roundedrect
+          x: 0.0
+          y: 18.0
+          w: 120.0
+          h: 18.0
+          radius: 12.0
+          fill: "#e0d6b9"
+        - shape: text
+          x: -16.0
+          y: 18.0
+          text: "{{node_name}}"
+          size: 8.5
+          color: "#073642"
+        - shape: circle
+          x: 44.0
+          y: 18.0
+          r: 3.5
+          fill: "#2aa198"
+        - shape: text
+          x: 0.0
+          y: -2.0
+          text: "{{status_text}}"
+          size: 8.0
+          color: "#657b83"
+        - shape: progress
+          style: bar
+          x: 0.0
+          y: -18.0
+          w: 96.0
+          h: 4.0
+          track_color: "#e0d6b9"
+          fill_color: "#268bd2"
+  node_types:
+    - id: solar_node
+      attrs:
+        ticks: 2
+        template_ref: solar_card
+        params:
+          status_text: "SOLAR // ACTIVE"

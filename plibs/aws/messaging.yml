@@ -1,0 +1,83 @@
+imports:
+  - from: "plibs:themes/cloud"
+
+graph_defn:
+  icons:
+    - id: aws_sqs
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/ApplicationIntegration/SimpleQueueService.png"
+    - id: aws_sns
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/ApplicationIntegration/SimpleNotificationService.png"
+    - id: aws_eventbridge
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/ApplicationIntegration/EventBridge.png"
+
+  node_types:
+    - id: sqs_queue
+      attrs:
+        ticks: 2
+        template_ref: cloud_card
+        icon: aws_sqs
+        params:
+          icon: "aws_sqs"
+          accent_color: "#f97316"
+          role: "Amazon SQS"
+          status_bg: "#fff7ed"
+          status_color: "#c2410c"
+          status_text: "QUEUE // STANDARD"
+      fn: |
+        fn on_init() {
+          globals.buffer = [];
+        }
+        fn on_timer() {
+          if globals.buffer.len() > 0 && links.len() > 0 {
+            let item = globals.buffer.remove(0);
+            send(links[0], item);
+          }
+        }
+        fn on_msg(from, msg) {
+          globals.buffer.push(msg);
+          log("SQS enqueued item (queue depth: " + globals.buffer.len() + ")");
+        }
+
+    - id: sns_topic
+      attrs:
+        ticks: 2
+        template_ref: cloud_card
+        icon: aws_sns
+        params:
+          icon: "aws_sns"
+          accent_color: "#f43f5e"
+          role: "Amazon SNS"
+          status_bg: "#fff1f2"
+          status_color: "#be123c"
+          status_text: "TOPIC // BROADCAST"
+      fn: |
+        fn on_init() {}
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          log("SNS broadcasting message to " + links.len() + " subscribers");
+          for target in links {
+            send(target, msg);
+          }
+        }
+
+    - id: eventbridge
+      attrs:
+        ticks: 2
+        template_ref: cloud_card
+        icon: aws_eventbridge
+        params:
+          icon: "aws_eventbridge"
+          accent_color: "#e11d48"
+          role: "EventBridge Bus"
+          status_bg: "#fff1f2"
+          status_color: "#be123c"
+          status_text: "EVENT ROUTER // ACTIVE"
+      fn: |
+        fn on_init() {}
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          log("EventBridge routed event: " + msg);
+          for target in links {
+            send(target, msg);
+          }
+        }
