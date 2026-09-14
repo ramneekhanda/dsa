@@ -40,9 +40,9 @@ fns:
     }
     fn update_ui(status, color) {
       draw([
-        #{ shape: "rect", w: 150, h: 60, radius: 8, bg: "#ffffff", border: color, border_width: 2 },
-        #{ shape: "text", text: "COORDINATOR", y: 12, color: "#1e293b", font_size: 11, bold: true },
-        #{ shape: "text", text: status, y: -10, color: color, font_size: 9, bold: true }
+        #{ shape: "rect", w: 150, h: 60, radius: 8, fill: "#ffffff", stroke: color, stroke_width: 2 },
+        #{ shape: "text", text: "COORDINATOR", y: 12, color: "#1e293b", size: 11 },
+        #{ shape: "text", text: status, y: -10, color: color, size: 9 }
       ]);
     }
 
@@ -63,9 +63,9 @@ fns:
     }
     fn update_ui(name, status, color) {
       draw([
-        #{ shape: "rect", w: 130, h: 55, radius: 8, bg: "#ffffff", border: color, border_width: 2 },
-        #{ shape: "text", text: name, y: 10, color: "#1e293b", font_size: 10, bold: true },
-        #{ shape: "text", text: status, y: -10, color: color, font_size: 9, bold: true }
+        #{ shape: "rect", w: 130, h: 55, radius: 8, fill: "#ffffff", stroke: color, stroke_width: 2 },
+        #{ shape: "text", text: name, y: 10, color: "#1e293b", size: 10 },
+        #{ shape: "text", text: status, y: -10, color: color, size: 9 }
       ]);
     }
 

@@ -52,9 +52,9 @@ fns:
     }
     fn update_ui(status, color) {
       draw([
-        #{ shape: "rect", w: 140, h: 55, radius: 8, bg: "#ffffff", border: color, border_width: 2 },
-        #{ shape: "text", text: "PRIMARY DB", y: 10, color: "#1e293b", font_size: 11, bold: true },
-        #{ shape: "text", text: status, y: -10, color: color, font_size: 9, bold: true }
+        #{ shape: "rect", w: 140, h: 55, radius: 8, fill: "#ffffff", stroke: color, stroke_width: 2 },
+        #{ shape: "text", text: "PRIMARY DB", y: 10, color: "#1e293b", size: 11 },
+        #{ shape: "text", text: status, y: -10, color: color, size: 9 }
       ]);
     }
 
@@ -75,9 +75,9 @@ fns:
     }
     fn update_ui(name, replicated_count) {
       draw([
-        #{ shape: "rect", w: 130, h: 50, radius: 8, bg: "#ffffff", border: "#6366f1", border_width: 2 },
-        #{ shape: "text", text: name, y: 8, color: "#3730a3", font_size: 10, bold: true },
-        #{ shape: "text", text: "Syncs: " + replicated_count, y: -8, color: "#64748b", font_size: 9 }
+        #{ shape: "rect", w: 130, h: 50, radius: 8, fill: "#ffffff", stroke: "#6366f1", stroke_width: 2 },
+        #{ shape: "text", text: name, y: 8, color: "#3730a3", size: 10 },
+        #{ shape: "text", text: "Syncs: " + replicated_count, y: -8, color: "#64748b", size: 9 }
       ]);
     }
 

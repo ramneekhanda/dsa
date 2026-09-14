@@ -39,9 +39,9 @@ fns:
     }
     fn update_ui(total_routed) {
       draw([
-        #{ shape: "rect", w: 140, h: 55, radius: 8, bg: "#ffffff", border: "#6366f1", border_width: 2 },
-        #{ shape: "text", text: "LOAD BALANCER", y: 10, color: "#4338ca", font_size: 10, bold: true },
-        #{ shape: "text", text: "Total: " + total_routed + " reqs", y: -10, color: "#64748b", font_size: 10 }
+        #{ shape: "rect", w: 140, h: 55, radius: 8, fill: "#ffffff", stroke: "#6366f1", stroke_width: 2 },
+        #{ shape: "text", text: "LOAD BALANCER", y: 10, color: "#4338ca", size: 10 },
+        #{ shape: "text", text: "Total: " + total_routed + " reqs", y: -10, color: "#64748b", size: 10 }
       ]);
     }
 
@@ -65,9 +65,9 @@ fns:
     }
     fn update_ui(name, jobs_done) {
       draw([
-        #{ shape: "rect", w: 130, h: 50, radius: 8, bg: "#ffffff", border: "#10b981", border_width: 2 },
-        #{ shape: "text", text: name, y: 8, color: "#047857", font_size: 10, bold: true },
-        #{ shape: "text", text: "Done: " + jobs_done, y: -8, color: "#64748b", font_size: 10 }
+        #{ shape: "rect", w: 130, h: 50, radius: 8, fill: "#ffffff", stroke: "#10b981", stroke_width: 2 },
+        #{ shape: "text", text: name, y: 8, color: "#047857", size: 10 },
+        #{ shape: "text", text: "Done: " + jobs_done, y: -8, color: "#64748b", size: 10 }
       ]);
     }
 

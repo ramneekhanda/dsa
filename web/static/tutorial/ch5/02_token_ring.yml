@@ -3,12 +3,19 @@ fns:
     fn on_init() {
       globals.has_token = false;
       globals.cycles = 0;
-      update_ui(node_name, "IDLE", "#94a3b8");
 
-      // Node 1 starts the token circulation
+      // Node 1 starts the token circulation. State setup must finish before
+      // any update_ui()/draw() call: draw() throws (function not registered
+      // on the bare parse-time engine used for the very first on_init - see
+      // instantiate_node's doc comment) and Rhai aborts the rest of the
+      // function on an unhandled error, so a draw() call placed earlier
+      // would silently skip this block on every node, including node_1,
+      // permanently deadlocking the ring.
       if node_name == "node_1" {
         globals.has_token = true;
         update_ui(node_name, "INITIAL TOKEN", "#10b981");
+      } else {
+        update_ui(node_name, "IDLE", "#94a3b8");
       }
     }
 
@@ -34,9 +41,9 @@ fns:
 
     fn update_ui(name, status, color) {
       draw([
-        #{ shape: "rect", w: 130, h: 55, radius: 8, bg: "#ffffff", border: color, border_width: 2 },
-        #{ shape: "text", text: name, y: 10, color: "#1e293b", font_size: 11, bold: true },
-        #{ shape: "text", text: status, y: -10, color: color, font_size: 10, bold: true }
+        #{ shape: "rect", w: 130, h: 55, radius: 8, fill: "#ffffff", stroke: color, stroke_width: 2 },
+        #{ shape: "text", text: name, y: 10, color: "#1e293b", size: 11 },
+        #{ shape: "text", text: status, y: -10, color: color, size: 10 }
       ]);
     }
 
