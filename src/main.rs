@@ -181,6 +181,7 @@ fn setup_app(app: &mut App) {
             systems::node_system::create_nodes,
             apply_deferred,
             systems::node_overlay::render_node_overlays,
+            systems::group_overlay::update_group_boxes,
         )
             .chain()
             .run_if(resource_equals(LoadingState {

@@ -329,6 +329,18 @@ pub fn merge_graph_definitions(
             base.graph.push(conn);
         }
     }
+
+    // 6. Merge layout if base does not have one
+    if base.layout.is_none() && imported.layout.is_some() {
+        base.layout = imported.layout;
+    }
+
+    // 7. Merge groups (deduplicated by id)
+    for group in imported.groups {
+        if !base.groups.iter().any(|g| g.id == group.id) {
+            base.groups.push(group);
+        }
+    }
 }
 
 fn resolve_file_recursive(

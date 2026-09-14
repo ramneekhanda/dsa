@@ -432,6 +432,12 @@ fn apply_spawns(
             name: name.clone(),
             node_type: node_type_id,
             links: valid_links,
+            group: None,
+            rank: None,
+            order: None,
+            offset: None,
+            pos: None,
+            draggable: None,
         });
         gd.node_instances.push(node);
         c_log!("{} spawned {}", requester, name);

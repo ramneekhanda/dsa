@@ -1,5 +1,5 @@
 use crate::components::camera::BubbleCamera;
-use crate::components::node::{DragState, NodeMarker};
+use crate::components::node::{DragState, LayoutLocked, NodeMarker};
 use crate::systems::background_grid::GRID_SPACING;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -10,7 +10,7 @@ fn snap(value: f32) -> f32 {
 
 pub fn drag(
     e: Listener<Pointer<Drag>>,
-    mut q: Query<(&mut Transform, &mut DragState, &Children, &NodeMarker)>,
+    mut q: Query<(&mut Transform, &mut DragState, &Children, &NodeMarker), Without<LayoutLocked>>,
     // `With<Camera2d>` alone used to be unambiguous, but the narration-bubble
     // compositing camera (`BubbleCamera`, see `systems::radial_blur`) is also a
     // `Camera2dBundle`, so it also matches `Camera2d`. Without `Without<BubbleCamera>`

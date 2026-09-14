@@ -73,3 +73,7 @@ pub struct ExplainBubble;
 pub struct DragState {
     pub raw: Vec2,
 }
+
+/// Marks a node whose position is managed by the layout system and cannot be manually dragged.
+#[derive(Component, Debug, Default)]
+pub struct LayoutLocked;

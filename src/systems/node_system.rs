@@ -16,7 +16,6 @@ use crate::resources::ui_state::{LastNodeClick, NodePropertiesPopup};
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 use bevy_tweening::{lens::*, *};
-use rand::Rng;
 use std::time::Duration;
 
 const ICON_WIDTH: f32 = 64.0;
@@ -51,9 +50,11 @@ pub fn create_nodes(
         }
         let mut z = 0.;
         let g_attrs: &GraphAttrs = &g.graph_defn.graph_attrs;
-        let node_count = g.graph_defn.node_instances.len();
+        let layout = crate::systems::layout::compute_graph_layout(&g.graph_defn);
         for node in g.graph_defn.node_instances.iter() {
-            spawn_node(z, node, &mut commands, &ca, g_attrs, node_count);
+            let pos = layout.node_positions.get(&node.name).copied().unwrap_or(Vec2::ZERO);
+            let locked = !layout.draggable;
+            spawn_node(z, node, &mut commands, &ca, g_attrs, pos, locked);
             z += 1.;
         }
         // a full rebuild already reflects any adds/removes queued this same frame
@@ -87,7 +88,7 @@ pub fn create_nodes(
     }
     let g_attrs: &GraphAttrs = &g.graph_defn.graph_attrs;
     let mut z = query.iter().count() as f32;
-    let node_count = g.graph_defn.node_instances.len();
+    let layout = crate::systems::layout::compute_graph_layout(&g.graph_defn);
     for added in added_reader.read() {
         if let Some(node) = g
             .graph_defn
@@ -95,7 +96,9 @@ pub fn create_nodes(
             .iter()
             .find(|n| n.name == added.name)
         {
-            spawn_node(z, node, &mut commands, &ca, g_attrs, node_count);
+            let pos = layout.node_positions.get(&node.name).copied().unwrap_or(Vec2::ZERO);
+            let locked = !layout.draggable;
+            spawn_node(z, node, &mut commands, &ca, g_attrs, pos, locked);
             z += 1.;
         }
     }
@@ -404,7 +407,8 @@ fn spawn_node(
     commands: &mut Commands,
     ca: &Res<CommonAssets>,
     g_attrs: &GraphAttrs,
-    node_count: usize,
+    target_pos: Vec2,
+    locked: bool,
 ) {
     let mut font: Handle<Font> = Default::default();
     if let Some(ResourceType::FontHandle(f1)) = ca.resource_map.get("default_font") {
@@ -430,10 +434,8 @@ fn spawn_node(
         true
     });
 
-    let mut rng = rand::thread_rng();
-    let spread = spawn_spread_radius(node_count);
-    let x = rng.gen_range(-spread..spread);
-    let y = rng.gen_range(-spread..spread);
+    let x = target_pos.x;
+    let y = target_pos.y;
 
     let tween: Tween<Transform> = Tween::new(
         EaseFunction::QuadraticInOut,
@@ -452,25 +454,29 @@ fn spawn_node(
         ..default()
     };
 
-    let parent = commands
-        .spawn((
-            SpatialBundle {
-                transform: Transform::from_translation(Vec3::new(0., 0., 100.)),
-                ..Default::default()
-            },
-            NodeMarker {
-                node_type: node.node_data.id.clone(),
-                node_name: node.name.clone(),
-                ..Default::default()
-            },
-            DragState {
-                raw: Vec2::new(x, y),
-            },
-            On::<Pointer<Click>>::run(on_click),
-            On::<Pointer<Drag>>::run(drag::drag),
-            Animator::new(tween),
-        ))
-        .id();
+    let mut entity_cmds = commands.spawn((
+        SpatialBundle {
+            transform: Transform::from_translation(Vec3::new(0., 0., 100.)),
+            ..Default::default()
+        },
+        NodeMarker {
+            node_type: node.node_data.id.clone(),
+            node_name: node.name.clone(),
+            ..Default::default()
+        },
+        DragState {
+            raw: Vec2::new(x, y),
+        },
+        On::<Pointer<Click>>::run(on_click),
+        On::<Pointer<Drag>>::run(drag::drag),
+        Animator::new(tween),
+    ));
+
+    if locked {
+        entity_cmds.insert(crate::components::node::LayoutLocked);
+    }
+
+    let parent = entity_cmds.id();
 
     // A node type with a template (`attrs.template`, set directly or via
     // `template_ref` - already resolved to one flat list by `parse_graph2`)

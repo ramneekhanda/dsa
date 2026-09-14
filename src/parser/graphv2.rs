@@ -1101,11 +1101,240 @@ impl std::cmp::PartialEq for Node {
     }
 }
 
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone, Copy, Default, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum LayoutType {
+    #[default]
+    Hierarchical,
+    Grid,
+    Circular,
+    Manual,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone, Copy, Default, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum LayoutDirection {
+    #[default]
+    Lr,
+    Tb,
+    Rl,
+    Bt,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone, JsonSchema)]
+pub struct LayoutConfig {
+    #[serde(default)]
+    pub r#type: LayoutType,
+    #[serde(default)]
+    pub direction: LayoutDirection,
+    #[serde(default)]
+    pub rank_spacing: Option<f32>,
+    #[serde(default)]
+    pub node_spacing: Option<f32>,
+    #[serde(default)]
+    pub group_spacing: Option<f32>,
+    #[serde(default)]
+    pub draggable: Option<bool>,
+}
+
+impl Default for LayoutConfig {
+    fn default() -> Self {
+        Self {
+            r#type: LayoutType::Hierarchical,
+            direction: LayoutDirection::Lr,
+            rank_spacing: Some(260.0),
+            node_spacing: Some(140.0),
+            group_spacing: Some(320.0),
+            draggable: Some(false),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone, JsonSchema, Default)]
+pub struct GroupLayoutConfig {
+    #[serde(default)]
+    pub direction: Option<LayoutDirection>,
+    #[serde(default)]
+    pub spacing: Option<f32>,
+    #[serde(default)]
+    pub columns: Option<usize>,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone, JsonSchema, Default)]
+pub struct GroupStyle {
+    #[serde(default, rename = "box")]
+    pub r#box: Option<bool>,
+    #[serde(default)]
+    pub border: Option<String>,
+    #[serde(default)]
+    pub border_width: Option<f32>,
+    #[serde(default)]
+    pub border_style: Option<String>,
+    #[serde(default)]
+    pub bg: Option<String>,
+    #[serde(default)]
+    pub padding: Option<f32>,
+    #[serde(default)]
+    pub radius: Option<f32>,
+}
+
+#[derive(Deserialize)]
+struct GroupDefHelper {
+    #[serde(default)]
+    id: Option<String>,
+    #[serde(default)]
+    title: Option<String>,
+    #[serde(default)]
+    direction: Option<LayoutDirection>,
+    #[serde(default)]
+    layout: Option<GroupLayoutConfig>,
+    #[serde(default)]
+    style: Option<GroupStyle>,
+    #[serde(default)]
+    nodes: Vec<String>,
+}
+
+pub fn deserialize_groups<'de, D>(deserializer: D) -> Result<Vec<GroupDef>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    struct GroupsVisitor;
+
+    impl<'de> serde::de::Visitor<'de> for GroupsVisitor {
+        type Value = Vec<GroupDef>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("a list or map of group definitions")
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: serde::de::SeqAccess<'de>,
+        {
+            let mut groups = Vec::new();
+            while let Some(raw) = seq.next_element::<serde_yaml::Value>()? {
+                if let Ok(helper) = serde_yaml::from_value::<GroupDefHelper>(raw.clone()) {
+                    if let Some(id) = helper.id {
+                        let mut layout = helper.layout.unwrap_or_default();
+                        if helper.direction.is_some() {
+                            layout.direction = helper.direction;
+                        }
+                        let layout_opt = if layout.direction.is_some()
+                            || layout.spacing.is_some()
+                            || layout.columns.is_some()
+                        {
+                            Some(layout)
+                        } else {
+                            None
+                        };
+                        groups.push(GroupDef {
+                            id,
+                            title: helper.title,
+                            layout: layout_opt,
+                            style: helper.style,
+                            nodes: helper.nodes,
+                        });
+                        continue;
+                    }
+                }
+                if let Some(map) = raw.as_mapping() {
+                    for (k, v) in map {
+                        let id = k.as_str().unwrap_or_default().to_string();
+                        if let Ok(helper) = serde_yaml::from_value::<GroupDefHelper>(v.clone()) {
+                            let mut layout = helper.layout.unwrap_or_default();
+                            if helper.direction.is_some() {
+                                layout.direction = helper.direction;
+                            }
+                            let layout_opt = if layout.direction.is_some()
+                                || layout.spacing.is_some()
+                                || layout.columns.is_some()
+                            {
+                                Some(layout)
+                            } else {
+                                None
+                            };
+                            groups.push(GroupDef {
+                                id,
+                                title: helper.title,
+                                layout: layout_opt,
+                                style: helper.style,
+                                nodes: helper.nodes,
+                            });
+                        }
+                    }
+                }
+            }
+            Ok(groups)
+        }
+
+        fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
+        where
+            M: serde::de::MapAccess<'de>,
+        {
+            let mut groups = Vec::new();
+            while let Some((key, val)) = access.next_entry::<String, serde_yaml::Value>()? {
+                if let Ok(helper) = serde_yaml::from_value::<GroupDefHelper>(val.clone()) {
+                    let mut layout = helper.layout.unwrap_or_default();
+                    if helper.direction.is_some() {
+                        layout.direction = helper.direction;
+                    }
+                    let layout_opt = if layout.direction.is_some()
+                        || layout.spacing.is_some()
+                        || layout.columns.is_some()
+                    {
+                        Some(layout)
+                    } else {
+                        None
+                    };
+                    groups.push(GroupDef {
+                        id: key,
+                        title: helper.title,
+                        layout: layout_opt,
+                        style: helper.style,
+                        nodes: helper.nodes,
+                    });
+                } else if let Ok(mut g) = serde_yaml::from_value::<GroupDef>(val.clone()) {
+                    g.id = key;
+                    groups.push(g);
+                }
+            }
+            Ok(groups)
+        }
+    }
+
+    deserializer.deserialize_any(GroupsVisitor)
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone, JsonSchema, Default)]
+pub struct GroupDef {
+    pub id: String,
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub layout: Option<GroupLayoutConfig>,
+    #[serde(default)]
+    pub style: Option<GroupStyle>,
+    #[serde(default)]
+    pub nodes: Vec<String>,
+}
+
 #[derive(Debug, Default, PartialEq, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct NodeConnection {
     pub name: String,
     pub node_type: String,
     pub links: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub group: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rank: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub order: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub offset: Option<[f32; 2]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pos: Option<[f32; 2]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub draggable: Option<bool>,
 }
 
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize, Clone, JsonSchema)]
@@ -1120,6 +1349,14 @@ pub struct GraphDefinition {
     pub theme: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub imports: Vec<crate::parser::imports::ImportDef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub layout: Option<LayoutConfig>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_groups",
+        skip_serializing_if = "Vec::is_empty"
+    )]
+    pub groups: Vec<GroupDef>,
     #[serde(default)]
     pub node_types: Vec<NodeType>,
     #[serde(default)]
@@ -1144,6 +1381,14 @@ pub struct File {
     pub theme: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub imports: Vec<crate::parser::imports::ImportDef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub layout: Option<LayoutConfig>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_groups",
+        skip_serializing_if = "Vec::is_empty"
+    )]
+    pub groups: Vec<GroupDef>,
     #[serde(default)]
     pub graph_defn: GraphDefinition,
 
@@ -1167,6 +1412,12 @@ pub fn parse_graph2_with_sources(
 
     let data = crate::parser::imports::resolve_file_imports(graph_code, external_sources);
     if let Ok(mut m_data) = data {
+        if m_data.graph_defn.layout.is_none() && m_data.layout.is_some() {
+            m_data.graph_defn.layout = m_data.layout.clone();
+        }
+        if m_data.graph_defn.groups.is_empty() && !m_data.groups.is_empty() {
+            m_data.graph_defn.groups = m_data.groups.clone();
+        }
         for node_type in m_data.graph_defn.node_types.iter_mut() {
             let res = compile_ast(&engine, node_type);
             if res.is_err() {
@@ -1578,6 +1829,67 @@ graph_defn:
         assert!(explain_theme.accent.is_some());
         assert!(explain_theme.shadow_color.is_some());
         assert!(explain_theme.backdrop_color.is_some());
+    }
+
+    #[test]
+    fn test_parse_groups_mapping_and_sequence() {
+        let yaml_map = r##"
+layout:
+  type: hierarchical
+  direction: lr
+
+groups:
+  frontend:
+    title: "Edge Tier"
+    direction: tb
+    style:
+      bg: "#1e293b"
+      border: "#38bdf8"
+  backend:
+    title: "Application Core"
+    direction: lr
+
+graph:
+  - name: api
+    type: api
+    group: frontend
+    links: []
+  - name: srv
+    type: srv
+    group: backend
+    links: []
+"##
+        .to_string();
+
+        let parsed_map = parse_graph2(&yaml_map).expect("Should parse map syntax for groups");
+        assert_eq!(parsed_map.graph_defn.groups.len(), 2);
+        assert_eq!(parsed_map.graph_defn.groups[0].id, "frontend");
+        assert_eq!(parsed_map.graph_defn.groups[0].title.as_deref(), Some("Edge Tier"));
+        assert_eq!(
+            parsed_map.graph_defn.groups[0].layout.as_ref().and_then(|l| l.direction),
+            Some(LayoutDirection::Tb)
+        );
+
+        let yaml_seq = r##"
+groups:
+  - id: g1
+    title: "Group 1"
+    direction: rl
+graph:
+  - name: n1
+    type: t1
+    group: g1
+    links: []
+"##
+        .to_string();
+
+        let parsed_seq = parse_graph2(&yaml_seq).expect("Should parse sequence syntax for groups");
+        assert_eq!(parsed_seq.graph_defn.groups.len(), 1);
+        assert_eq!(parsed_seq.graph_defn.groups[0].id, "g1");
+        assert_eq!(
+            parsed_seq.graph_defn.groups[0].layout.as_ref().and_then(|l| l.direction),
+            Some(LayoutDirection::Rl)
+        );
     }
 }
 

@@ -4,7 +4,9 @@ pub mod browser_resize;
 pub mod clearcolor;
 pub mod drag;
 pub mod explain_bubble;
+pub mod group_overlay;
 pub mod ingest_code;
+pub mod layout;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod native_examples;
 pub mod node_overlay;
