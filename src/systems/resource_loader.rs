@@ -30,7 +30,9 @@ fn load_resources_from_file(
     asset_server: &Res<AssetServer>,
     g: &Res<GraphDefinitionRes>,
 ) {
+    c_log!("load_resources_from_file: found {} icons", g.graph_defn.icons.len());
     for icon in &g.graph_defn.icons {
+        c_log!("  inserting icon '{}' -> '{}'", icon.id, icon.url);
         ca.resource_map.insert(
             icon.id.clone(),
             ResourceType::ImageHandle(asset_server.load(icon.url.clone())),

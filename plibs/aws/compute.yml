@@ -8,7 +8,7 @@ graph_defn:
     - id: aws_ec2
       url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/Compute/EC2.png"
     - id: aws_ecs
-      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/Compute/ElasticContainerService.png"
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/Containers/ElasticContainerService.png"
 
   node_types:
     - id: lambda_func

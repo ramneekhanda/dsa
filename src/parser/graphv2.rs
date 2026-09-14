@@ -970,7 +970,7 @@ pub struct Attrs {
     /// matching builtin if both set the same key - e.g. to have a template
     /// show a different icon than the node's actual on-canvas icon. See
     /// `NodeTemplateDef`'s doc comment for the overall mechanism.
-    #[serde(default)]
+    #[serde(default, alias = "params")]
     pub template_params: Option<HashMap<String, String>>,
 }
 

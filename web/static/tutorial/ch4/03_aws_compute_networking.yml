@@ -12,10 +12,7 @@ fns:
       globals.req_id += 1;
       if globals.req_id <= 4 {
         send("edge_cdn", #{ path: "/api/orders", req: globals.req_id });
-        explain(
-          "ingress_demo",
-          "Traffic generator sending HTTP request #" + globals.req_id + " to CloudFront CDN and API Gateway."
-        );
+        log("Traffic generator sending HTTP request #" + globals.req_id + " to CloudFront CDN and API Gateway.");
       }
     }
 

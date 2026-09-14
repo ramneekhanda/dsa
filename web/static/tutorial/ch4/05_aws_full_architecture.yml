@@ -9,12 +9,9 @@ fns:
     }
     fn on_timer() {
       globals.order_seq += 1;
-      if globals.order_seq <= 3 {
+      if globals.order_seq <= 4 {
         send("cf_cdn", #{ action: "checkout", cart_id: "CART-" + globals.order_seq, total: 149.99 });
-        explain(
-          "customer_checkout",
-          "Customer submits checkout request #" + globals.order_seq + " routed through CloudFront CDN to API Gateway."
-        );
+        log("Customer submits checkout request #" + globals.order_seq + " routed through CloudFront CDN to API Gateway.");
       }
     }
 
