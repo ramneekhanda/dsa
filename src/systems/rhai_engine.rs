@@ -99,7 +99,9 @@ pub fn execute_rhai_engine(
             // below already uses for `links`), which is free regardless of how big
             // or nested a node's state is. Safe because the entry doesn't need to
             // survive the call - `scope.rewind` below discards it either way.
-            scope.push_dynamic("globals", std::mem::take(&mut node.state));
+            let state_val = node.state.clone();
+            scope.push_dynamic("globals", state_val.clone());
+            scope.push_dynamic("state", state_val);
 
             if let Err(e) =
                 engine.call_fn_with_options::<()>(options, scope, &node.ast, "on_timer", ())
@@ -115,7 +117,13 @@ pub fn execute_rhai_engine(
                 });
                 local_message_store.write().unwrap().clear();
             }
-            node.state = scope.remove::<Dynamic>("globals").unwrap_or_default();
+            let g = scope.remove::<Dynamic>("globals").unwrap_or_default();
+            let s = scope.remove::<Dynamic>("state").unwrap_or_default();
+            if !s.is_unit() && s.is_map() && s.as_map_ref().map(|m| !m.is_empty()).unwrap_or(false) {
+                node.state = s;
+            } else {
+                node.state = g;
+            }
             scope.rewind(init_size);
             if let Some(shapes) = draw_store.write().unwrap().take() {
                 node.overlay = crate::parser::draw::parse_overlay(&shapes);
@@ -143,9 +151,9 @@ pub fn execute_rhai_engine(
                     let scope = &mut node.scope;
                     let init_size = scope.len();
                     populate_scope(scope, &node.node_data.params);
-                    // See the matching comment in the `on_timer` branch above - move,
-                    // don't clone, `state` through the scope.
-                    scope.push_dynamic("globals", std::mem::take(&mut node.state));
+                    let state_val = node.state.clone();
+                    scope.push_dynamic("globals", state_val.clone());
+                    scope.push_dynamic("state", state_val);
                     let mut call_res = engine.call_fn_with_options::<()>(
                         CallFnOptions::new().eval_ast(false).rewind_scope(false),
                         scope,
@@ -166,6 +174,32 @@ pub fn execute_rhai_engine(
                             }
                         }
                     }
+                    if let Err(ref e) = call_res {
+                        if let rhai::EvalAltResult::ErrorFunctionNotFound(f, _) = &**e {
+                            if f.starts_with("on_msg") || f.starts_with("on_message") {
+                                call_res = engine.call_fn_with_options::<()>(
+                                    CallFnOptions::new().eval_ast(false).rewind_scope(false),
+                                    scope,
+                                    &node.ast,
+                                    "on_msg",
+                                    (msg.node_from.clone(), msg.obj.clone()),
+                                );
+                            }
+                        }
+                    }
+                    if let Err(ref e) = call_res {
+                        if let rhai::EvalAltResult::ErrorFunctionNotFound(f, _) = &**e {
+                            if f.starts_with("on_msg") || f.starts_with("on_message") {
+                                call_res = engine.call_fn_with_options::<()>(
+                                    CallFnOptions::new().eval_ast(false).rewind_scope(false),
+                                    scope,
+                                    &node.ast,
+                                    "on_message",
+                                    (msg.node_from.clone(), msg.obj.clone()),
+                                );
+                            }
+                        }
+                    }
                     if let Err(e) = call_res {
                         if let rhai::EvalAltResult::ErrorFunctionNotFound(_, _) = &*e {
                             // Function not defined on node, which is normal if node doesn't handle messages
@@ -182,7 +216,13 @@ pub fn execute_rhai_engine(
                         });
                         local_message_store.write().unwrap().clear();
                     }
-                    node.state = scope.remove::<Dynamic>("globals").unwrap_or_default();
+                    let g = scope.remove::<Dynamic>("globals").unwrap_or_default();
+                    let s = scope.remove::<Dynamic>("state").unwrap_or_default();
+                    if !s.is_unit() && s.is_map() && s.as_map_ref().map(|m| !m.is_empty()).unwrap_or(false) {
+                        node.state = s;
+                    } else {
+                        node.state = g;
+                    }
                     scope.rewind(init_size);
                     if let Some(shapes) = draw_store.write().unwrap().take() {
                         node.overlay = crate::parser::draw::parse_overlay(&shapes);
@@ -511,14 +551,26 @@ fn initialize_engine(
         })
         .register_fn("unlink", move |peer: String| {
             lk_rm.write().unwrap().push((false, peer));
-        })
-        // Show a pausing narration bubble pointing at the calling node, the first
-        // time `key` is ever seen this run - every later call with that key,
-        // from any node, is a no-op. See `resources::narration::PendingExplain`
-        // and `systems::explain_bubble`.
-        .register_fn("explain", move |key: String, text: String| {
-            ex.write().unwrap().push((key, text));
         });
+        let ex1 = explain_store.clone();
+        let ex2 = explain_store.clone();
+        let ex3 = explain_store.clone();
+        let ex4 = explain_store.clone();
+        engine
+            .register_fn("explain", move |key: String, text: String| {
+                ex1.write().unwrap().push((key, text));
+            })
+            .register_fn("explain", move |key: String, text: String, _opts: Dynamic| {
+                ex2.write().unwrap().push((key, text));
+            })
+            .register_fn("explain", move |text: String| {
+                let key = text.clone();
+                ex3.write().unwrap().push((key, text));
+            })
+            .register_fn("explain", move |text: String, _opts: Dynamic| {
+                let key = text.clone();
+                ex4.write().unwrap().push((key, text));
+            });
 
     engine
 }

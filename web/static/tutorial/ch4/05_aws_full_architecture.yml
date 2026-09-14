@@ -5,16 +5,15 @@ imports:
 fns:
   - &user_client_fn |
     fn on_init() {
-      state.order_seq = 0;
+      globals.order_seq = 0;
     }
     fn on_timer() {
-      state.order_seq += 1;
-      if state.order_seq <= 3 {
-        send("cf_cdn", #{ action: "checkout", cart_id: "CART-" + state.order_seq, total: 149.99 });
+      globals.order_seq += 1;
+      if globals.order_seq <= 3 {
+        send("cf_cdn", #{ action: "checkout", cart_id: "CART-" + globals.order_seq, total: 149.99 });
         explain(
-          "Customer Checkout",
-          "Customer submits checkout request #" + state.order_seq + " routed through CloudFront CDN to API Gateway.",
-          #{ pause: true }
+          "customer_checkout",
+          "Customer submits checkout request #" + globals.order_seq + " routed through CloudFront CDN to API Gateway."
         );
       }
     }

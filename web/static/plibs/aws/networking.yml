@@ -170,15 +170,16 @@ graph_defn:
         template_ref: aws_cloudfront_card
       fn: |
         fn on_init() {
-          globals.cache = #{};
+          globals.cache = [];
         }
         fn on_timer() {}
         fn on_msg(from, msg) {
-          if globals.cache.contains(msg) {
-            log("CloudFront Edge HIT: " + msg);
+          let key = "" + msg;
+          if globals.cache.contains(key) {
+            log("CloudFront Edge HIT: " + key);
           } else {
             log("CloudFront Edge MISS - forwarding to origin");
-            globals.cache[msg] = true;
+            globals.cache.push(key);
             if links.len() > 0 {
               send(links[0], msg);
             }

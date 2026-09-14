@@ -6,16 +6,15 @@ imports:
 fns:
   - &event_source_fn |
     fn on_init() {
-      state.id = 0;
+      globals.id = 0;
     }
     fn on_timer() {
-      state.id += 1;
-      if state.id <= 3 {
-        send("events", #{ event_type: "OrderPlaced", order_id: "ORD-" + state.id, amount: 99.0 });
+      globals.id += 1;
+      if globals.id <= 3 {
+        send("events", #{ event_type: "OrderPlaced", order_id: "ORD-" + globals.id, amount: 99.0 });
         explain(
-          "Event Driven Fan-out",
-          "EventBridge receives OrderPlaced event #" + state.id + " and fans out to SQS and DynamoDB.",
-          #{ pause: true }
+          "event_fanout",
+          "EventBridge receives OrderPlaced event #" + globals.id + " and fans out to SQS and DynamoDB."
         );
       }
     }

@@ -5,17 +5,16 @@ imports:
 fns:
   - &client_fn |
     fn on_init() {
-      state.count = 0;
+      globals.count = 0;
       log("Client initialized in Nordic theme");
     }
     fn on_timer() {
-      state.count += 1;
-      if state.count <= 3 {
-        send("lambda_exec", #{ action: "process_job", id: state.count });
+      globals.count += 1;
+      if globals.count <= 3 {
+        send("lambda_exec", #{ action: "process_job", id: globals.count });
         explain(
-          "Nordic Theme & AWS Compute Library",
-          "This client node dispatches jobs to an AWS Lambda function imported from **`plibs:aws/compute`**.",
-          #{ pause: true }
+          "nordic_intro",
+          "This client node dispatches jobs to an AWS Lambda function imported from **`plibs:aws/compute`**."
         );
       }
     }

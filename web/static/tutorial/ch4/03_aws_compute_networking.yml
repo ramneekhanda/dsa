@@ -6,16 +6,15 @@ imports:
 fns:
   - &traffic_gen_fn |
     fn on_init() {
-      state.req_id = 0;
+      globals.req_id = 0;
     }
     fn on_timer() {
-      state.req_id += 1;
-      if state.req_id <= 4 {
-        send("edge_cdn", #{ path: "/api/orders", req: state.req_id });
+      globals.req_id += 1;
+      if globals.req_id <= 4 {
+        send("edge_cdn", #{ path: "/api/orders", req: globals.req_id });
         explain(
-          "AWS Edge & Compute Ingress",
-          "Traffic generator sending HTTP request #" + state.req_id + " to CloudFront CDN and API Gateway.",
-          #{ pause: true }
+          "ingress_demo",
+          "Traffic generator sending HTTP request #" + globals.req_id + " to CloudFront CDN and API Gateway."
         );
       }
     }

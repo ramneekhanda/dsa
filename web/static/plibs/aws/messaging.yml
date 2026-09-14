@@ -123,7 +123,7 @@ graph_defn:
         }
         fn on_timer() {
           if globals.buffer.len() > 0 && links.len() > 0 {
-            let item = globals.buffer.shift();
+            let item = globals.buffer.remove(0);
             send(links[0], item);
           }
         }

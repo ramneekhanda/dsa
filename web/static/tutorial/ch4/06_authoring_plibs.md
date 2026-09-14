@@ -29,7 +29,9 @@ fns:
   - &sec_gw_fn |
     fn on_message(from_node, msg) {
       log("Inspecting message from " + from_node);
-      send_all(msg);
+      for target in links {
+        send(target, msg);
+      }
     }
 
 # 4. Default Node Types

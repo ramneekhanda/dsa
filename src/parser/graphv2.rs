@@ -1345,9 +1345,17 @@ pub fn init_scope(engine: &rhai::Engine, node: &mut Node) {
     let init_size = scope.len();
     let options = CallFnOptions::new().eval_ast(false).rewind_scope(false);
 
-    scope.set_value("globals", node.state.clone());
+    let state_val = node.state.clone();
+    scope.push_dynamic("globals", state_val.clone());
+    scope.push_dynamic("state", state_val);
     let _ = engine.call_fn_with_options::<()>(options, scope, &node.ast, "on_init", ());
-    node.state = scope.get_value::<Dynamic>("globals").unwrap();
+    let g = scope.remove::<Dynamic>("globals").unwrap_or_default();
+    let s = scope.remove::<Dynamic>("state").unwrap_or_default();
+    if !s.is_unit() && s.is_map() && s.as_map_ref().map(|m| !m.is_empty()).unwrap_or(false) {
+        node.state = s;
+    } else {
+        node.state = g;
+    }
 
     c_log!("scope size: {}", scope.len());
     c_log!("scope: {:?}", scope);
