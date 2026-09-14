@@ -437,17 +437,35 @@ fn compute_hierarchical_layout(
                     start_x + (r as f32 * rank_spacing)
                 };
 
-                let total_h: f32 = layer
-                    .iter()
-                    .map(|&idx| macro_elements[idx].size.y.max(group_spacing * 0.8))
-                    .sum();
-                let mut cur_y = total_h / 2.0;
+                let k = layer.len();
+                if k == 0 {
+                    continue;
+                } else if k == 1 {
+                    macro_centers.insert(layer[0], Vec2::new(rank_x, 0.0));
+                    continue;
+                }
 
-                for &m_idx in layer {
-                    let m_size = &macro_elements[m_idx].size;
-                    let m_y = cur_y - m_size.y / 2.0;
-                    macro_centers.insert(m_idx, Vec2::new(rank_x, m_y));
-                    cur_y -= m_size.y.max(node_spacing);
+                let mut steps: Vec<f32> = Vec::new();
+                for i in 0..k - 1 {
+                    let is_g1 = macro_elements[layer[i]].is_group;
+                    let is_g2 = macro_elements[layer[i + 1]].is_group;
+                    let step = if !is_g1 && !is_g2 {
+                        node_spacing
+                    } else {
+                        (macro_elements[layer[i]].size.y + macro_elements[layer[i + 1]].size.y) / 2.0
+                            + (group_spacing - 140.0).max(30.0)
+                    };
+                    steps.push(step);
+                }
+
+                let total_span: f32 = steps.iter().sum();
+                let mut cur_y = total_span / 2.0;
+
+                for (i, &m_idx) in layer.iter().enumerate() {
+                    if i > 0 {
+                        cur_y -= steps[i - 1];
+                    }
+                    macro_centers.insert(m_idx, Vec2::new(rank_x, cur_y));
                 }
             }
         }
@@ -467,17 +485,35 @@ fn compute_hierarchical_layout(
                     start_y - (r as f32 * rank_spacing)
                 };
 
-                let total_w: f32 = layer
-                    .iter()
-                    .map(|&idx| macro_elements[idx].size.x.max(group_spacing * 0.8))
-                    .sum();
-                let mut cur_x = -total_w / 2.0;
+                let k = layer.len();
+                if k == 0 {
+                    continue;
+                } else if k == 1 {
+                    macro_centers.insert(layer[0], Vec2::new(0.0, rank_y));
+                    continue;
+                }
 
-                for &m_idx in layer {
-                    let m_size = &macro_elements[m_idx].size;
-                    let m_x = cur_x + m_size.x / 2.0;
-                    macro_centers.insert(m_idx, Vec2::new(m_x, rank_y));
-                    cur_x += m_size.x.max(node_spacing);
+                let mut steps: Vec<f32> = Vec::new();
+                for i in 0..k - 1 {
+                    let is_g1 = macro_elements[layer[i]].is_group;
+                    let is_g2 = macro_elements[layer[i + 1]].is_group;
+                    let step = if !is_g1 && !is_g2 {
+                        node_spacing
+                    } else {
+                        (macro_elements[layer[i]].size.x + macro_elements[layer[i + 1]].size.x) / 2.0
+                            + (group_spacing - 140.0).max(30.0)
+                    };
+                    steps.push(step);
+                }
+
+                let total_span: f32 = steps.iter().sum();
+                let mut cur_x = -total_span / 2.0;
+
+                for (i, &m_idx) in layer.iter().enumerate() {
+                    if i > 0 {
+                        cur_x += steps[i - 1];
+                    }
+                    macro_centers.insert(m_idx, Vec2::new(cur_x, rank_y));
                 }
             }
         }
@@ -705,5 +741,49 @@ mod tests {
         let layout = compute_graph_layout(&gd);
         let pos = layout.node_positions.get("n1").unwrap();
         assert!(pos.x.is_finite());
+    }
+
+    #[test]
+    fn test_rank_sep_and_node_sep_yaml_parsing() {
+        let yaml = r#"
+graph_defn:
+  layout:
+    type: hierarchical
+    direction: lr
+    rank_sep: 350
+    node_sep: 180
+  graph:
+    - name: a
+      node_type: t
+      links: [b, c]
+    - name: b
+      node_type: t
+      links: [d]
+    - name: c
+      node_type: t
+      links: [d]
+    - name: d
+      node_type: t
+      links: []
+"#;
+        let parsed: crate::parser::graphv2::File =
+            serde_yaml::from_str(yaml).expect("Failed to parse YAML");
+        let layout_cfg = parsed.graph_defn.layout.as_ref().unwrap();
+        assert_eq!(layout_cfg.rank_spacing, Some(350.0));
+        assert_eq!(layout_cfg.node_spacing, Some(180.0));
+
+        let computed = compute_graph_layout(&parsed.graph_defn);
+        let pos_a = computed.node_positions.get("a").unwrap();
+        let pos_b = computed.node_positions.get("b").unwrap();
+        let pos_c = computed.node_positions.get("c").unwrap();
+        let _pos_d = computed.node_positions.get("d").unwrap();
+
+        // Distance between rank 0 (a) and rank 1 (b) should be 350
+        let rank_dist = (pos_b.x - pos_a.x).abs();
+        assert!((rank_dist - 350.0).abs() < 1.0);
+
+        // Distance between b and c (node_sep in same rank) should be 180
+        let node_dist = (pos_b.y - pos_c.y).abs();
+        assert!((node_dist - 180.0).abs() < 1.0);
     }
 }

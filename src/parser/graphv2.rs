@@ -1127,11 +1127,32 @@ pub struct LayoutConfig {
     pub r#type: LayoutType,
     #[serde(default)]
     pub direction: LayoutDirection,
-    #[serde(default)]
+    #[serde(
+        default,
+        alias = "rank_sep",
+        alias = "rank_spacing",
+        alias = "rank_separation",
+        alias = "rankSep",
+        alias = "rankSpacing"
+    )]
     pub rank_spacing: Option<f32>,
-    #[serde(default)]
+    #[serde(
+        default,
+        alias = "node_sep",
+        alias = "node_spacing",
+        alias = "node_separation",
+        alias = "nodeSep",
+        alias = "nodeSpacing"
+    )]
     pub node_spacing: Option<f32>,
-    #[serde(default)]
+    #[serde(
+        default,
+        alias = "group_sep",
+        alias = "group_spacing",
+        alias = "group_separation",
+        alias = "groupSep",
+        alias = "groupSpacing"
+    )]
     pub group_spacing: Option<f32>,
     #[serde(default)]
     pub draggable: Option<bool>,
@@ -1154,9 +1175,16 @@ impl Default for LayoutConfig {
 pub struct GroupLayoutConfig {
     #[serde(default)]
     pub direction: Option<LayoutDirection>,
-    #[serde(default)]
+    #[serde(
+        default,
+        alias = "sep",
+        alias = "node_sep",
+        alias = "node_spacing",
+        alias = "nodeSep",
+        alias = "nodeSpacing"
+    )]
     pub spacing: Option<f32>,
-    #[serde(default)]
+    #[serde(default, alias = "cols", alias = "col")]
     pub columns: Option<usize>,
 }
 
@@ -1186,6 +1214,14 @@ struct GroupDefHelper {
     title: Option<String>,
     #[serde(default)]
     direction: Option<LayoutDirection>,
+    #[serde(
+        default,
+        alias = "sep",
+        alias = "node_sep",
+        alias = "node_spacing",
+        alias = "nodeSep"
+    )]
+    spacing: Option<f32>,
     #[serde(default)]
     layout: Option<GroupLayoutConfig>,
     #[serde(default)]
@@ -1219,6 +1255,9 @@ where
                         if helper.direction.is_some() {
                             layout.direction = helper.direction;
                         }
+                        if helper.spacing.is_some() {
+                            layout.spacing = helper.spacing;
+                        }
                         let layout_opt = if layout.direction.is_some()
                             || layout.spacing.is_some()
                             || layout.columns.is_some()
@@ -1244,6 +1283,9 @@ where
                             let mut layout = helper.layout.unwrap_or_default();
                             if helper.direction.is_some() {
                                 layout.direction = helper.direction;
+                            }
+                            if helper.spacing.is_some() {
+                                layout.spacing = helper.spacing;
                             }
                             let layout_opt = if layout.direction.is_some()
                                 || layout.spacing.is_some()
@@ -1277,6 +1319,9 @@ where
                     let mut layout = helper.layout.unwrap_or_default();
                     if helper.direction.is_some() {
                         layout.direction = helper.direction;
+                    }
+                    if helper.spacing.is_some() {
+                        layout.spacing = helper.spacing;
                     }
                     let layout_opt = if layout.direction.is_some()
                         || layout.spacing.is_some()
