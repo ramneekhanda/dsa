@@ -25,4 +25,4 @@ graph_defn:
     - id: counter
       fn: *counter_fn
       attrs:
-        ticks: 2
+        ticks: 4

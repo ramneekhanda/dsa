@@ -25,7 +25,7 @@ node_types:
         type: Bool
         default: false
     attrs:
-      ticks: { min: 2, max: 4, jitter: true }
+      ticks: { min: 4, max: 6, jitter: true }
       icon: greeter_icon
 ```
 

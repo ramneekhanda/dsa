@@ -58,9 +58,9 @@ graph_defn:
   node_types:
     - id: source
       attrs:
-        ticks: 2
+        ticks: 4
       fn: *source_fn
     - id: worker
       attrs:
-        ticks: 1
+        ticks: 3600
       fn: *worker_fn

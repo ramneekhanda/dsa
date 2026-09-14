@@ -72,7 +72,7 @@ graph_defn:
     - id: client
       fn: *client_fn
       attrs:
-        ticks: 2
+        ticks: 4
     - id: gateway
       fn: *gateway_fn
     - id: service

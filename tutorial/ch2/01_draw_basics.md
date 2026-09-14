@@ -38,7 +38,7 @@ node_types:
         viz(globals.on, globals.ticks);
       }
     attrs:
-      ticks: 2
+      ticks: 4
 ```
 
 Three things worth internalizing early, because they explain a lot of surprising

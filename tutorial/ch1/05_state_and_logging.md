@@ -23,7 +23,7 @@ node_types:
         }
       }
     attrs:
-      ticks: 2
+      ticks: 4
 ```
 
 Seed `globals` in `on_init` (it starts out empty otherwise) and read/write it anywhere

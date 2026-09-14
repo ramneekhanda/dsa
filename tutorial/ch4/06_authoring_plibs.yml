@@ -60,7 +60,7 @@ graph_defn:
       template: custom_waf_card
       fn: *client_source_fn
       attrs:
-        ticks: 2
+        ticks: 4
         title: "TRAFFIC INGRESS"
     - id: waf_shield
       template: custom_waf_card

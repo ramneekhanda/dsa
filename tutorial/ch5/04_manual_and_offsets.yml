@@ -33,7 +33,7 @@ graph_defn:
     - id: client
       fn: *ping_fn
       attrs:
-        ticks: 2
+        ticks: 4
     - id: server
       fn: *server_fn
     - id: db

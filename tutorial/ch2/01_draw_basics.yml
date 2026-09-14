@@ -34,4 +34,4 @@ graph_defn:
     - id: light
       fn: *light_fn
       attrs:
-        ticks: 2
+        ticks: 4
