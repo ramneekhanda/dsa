@@ -49,22 +49,22 @@ fns:
   - &cohort_fn |
     fn on_init() {
       globals.status = "READY";
-      update_ui("READY", "#64748b");
+      update_ui(node_name, "READY", "#64748b");
     }
     fn on_msg(msg) {
       if msg.type == "PREPARE" {
         log(node_name + " received PREPARE for TX #" + msg.tx_id + " -> voting YES");
-        update_ui("VOTED YES", "#f59e0b");
+        update_ui(node_name, "VOTED YES", "#f59e0b");
         send(msg.from, #{ type: "VOTE", tx_id: msg.tx_id, vote: "YES" });
       } else if msg.type == "GLOBAL_COMMIT" {
         log(node_name + " COMMITTED TX #" + msg.tx_id);
-        update_ui("COMMITTED", "#10b981");
+        update_ui(node_name, "COMMITTED", "#10b981");
       }
     }
-    fn update_ui(status, color) {
+    fn update_ui(name, status, color) {
       draw([
         #{ shape: "rect", w: 130, h: 55, radius: 8, bg: "#ffffff", border: color, border_width: 2 },
-        #{ shape: "text", text: node_name, y: 10, color: "#1e293b", font_size: 10, bold: true },
+        #{ shape: "text", text: name, y: 10, color: "#1e293b", font_size: 10, bold: true },
         #{ shape: "text", text: status, y: -10, color: color, font_size: 9, bold: true }
       ]);
     }

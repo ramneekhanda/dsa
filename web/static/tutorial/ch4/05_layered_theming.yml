@@ -12,9 +12,25 @@ graph_defn:
     connection_color: "#6366f1"
   node_types:
     - id: source
-      attrs: { ticks: 4 }
+      attrs:
+        ticks: 4
+        template_ref: cloud_card
+        template_params:
+          role: "Producer"
+          status_text: "ACTIVE"
+          status_bg: "#dcfce7"
+          status_color: "#16a34a"
+          accent_color: "#6366f1"
     - id: destination
-      attrs: { ticks: 3600 }
+      attrs:
+        ticks: 3600
+        template_ref: cloud_card
+        template_params:
+          role: "Consumer"
+          status_text: "READY"
+          status_bg: "#e0e7ff"
+          status_color: "#4f46e5"
+          accent_color: "#6366f1"
   graph:
     - name: source_node
       node_type: source

@@ -9,7 +9,7 @@ fns:
     }
 
   - &gateway_fn |
-    fn on_message(from, msg) {
+    fn on_msg(msg) {
       if msg.id % 2 == 0 {
         send("worker_a", msg);
       } else {
@@ -18,12 +18,12 @@ fns:
     }
 
   - &worker_fn |
-    fn on_message(from, msg) {
+    fn on_msg(msg) {
       send("sink", #{ id: msg.id, processed_by: node_name });
     }
 
   - &sink_fn |
-    fn on_message(from, msg) {
+    fn on_msg(msg) {
       log(`Received ${msg.id} processed by ${msg.processed_by}`);
     }
 

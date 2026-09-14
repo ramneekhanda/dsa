@@ -62,22 +62,22 @@ fns:
     fn on_init() {
       globals.store = #{};
       globals.replicated_count = 0;
-      update_ui();
+      update_ui(node_name, globals.replicated_count);
     }
     fn on_msg(msg) {
       if msg.type == "REPLICATE" {
         globals.store[msg.key] = msg.val;
         globals.replicated_count += 1;
         log(node_name + " synced TX #" + msg.tx);
-        update_ui();
+        update_ui(node_name, globals.replicated_count);
         send(msg.from, #{ type: "ACK", tx: msg.tx });
       }
     }
-    fn update_ui() {
+    fn update_ui(name, replicated_count) {
       draw([
         #{ shape: "rect", w: 130, h: 50, radius: 8, bg: "#ffffff", border: "#6366f1", border_width: 2 },
-        #{ shape: "text", text: node_name, y: 8, color: "#3730a3", font_size: 10, bold: true },
-        #{ shape: "text", text: "Syncs: " + globals.replicated_count, y: -8, color: "#64748b", font_size: 9 }
+        #{ shape: "text", text: name, y: 8, color: "#3730a3", font_size: 10, bold: true },
+        #{ shape: "text", text: "Syncs: " + replicated_count, y: -8, color: "#64748b", font_size: 9 }
       ]);
     }
 

@@ -3,12 +3,12 @@ fns:
     fn on_init() {
       globals.has_token = false;
       globals.cycles = 0;
-      update_ui("IDLE", "#94a3b8");
+      update_ui(node_name, "IDLE", "#94a3b8");
 
       // Node 1 starts the token circulation
       if node_name == "node_1" {
         globals.has_token = true;
-        update_ui("INITIAL TOKEN", "#10b981");
+        update_ui(node_name, "INITIAL TOKEN", "#10b981");
       }
     }
 
@@ -17,7 +17,7 @@ fns:
         globals.cycles += 1;
         log(node_name + " passing token (cycle " + globals.cycles + ")");
         globals.has_token = false;
-        update_ui("IDLE", "#94a3b8");
+        update_ui(node_name, "IDLE", "#94a3b8");
         let next_node = links[0];
         send(next_node, #{ type: "TOKEN", seq: globals.cycles });
       }
@@ -28,14 +28,14 @@ fns:
         globals.has_token = true;
         globals.cycles = msg.seq;
         log(node_name + " ACQUIRED TOKEN (cycle " + msg.seq + ")");
-        update_ui("CRITICAL SECTION", "#6366f1");
+        update_ui(node_name, "CRITICAL SECTION", "#6366f1");
       }
     }
 
-    fn update_ui(status, color) {
+    fn update_ui(name, status, color) {
       draw([
         #{ shape: "rect", w: 130, h: 55, radius: 8, bg: "#ffffff", border: color, border_width: 2 },
-        #{ shape: "text", text: node_name, y: 10, color: "#1e293b", font_size: 11, bold: true },
+        #{ shape: "text", text: name, y: 10, color: "#1e293b", font_size: 11, bold: true },
         #{ shape: "text", text: status, y: -10, color: color, font_size: 10, bold: true }
       ]);
     }

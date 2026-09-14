@@ -9,9 +9,21 @@ graph_defn:
     title: "Datacenter Rack Units Theme"
   node_types:
     - id: server
-      attrs: { ticks: 4 }
+      attrs:
+        ticks: 4
+        template_ref: rack_blade
+        template_params:
+          ip_addr: "10.0.1.11"
+          led_pwr: "#22c55e"
+          led_act: "#facc15"
     - id: switch
-      attrs: { ticks: 3600 }
+      attrs:
+        ticks: 3600
+        template_ref: rack_blade
+        template_params:
+          ip_addr: "10.0.1.1"
+          led_pwr: "#22c55e"
+          led_act: "#38bdf8"
   graph:
     - name: top_of_rack_switch
       node_type: switch

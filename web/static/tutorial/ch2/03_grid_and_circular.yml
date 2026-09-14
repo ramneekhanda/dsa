@@ -8,12 +8,12 @@ fns:
       log(`Leader origin passing token #${state.token}`);
       send(links[0], #{ token: state.token, hops: 0 });
     }
-    fn on_message(from, msg) {
+    fn on_msg(msg) {
       log(`Token #${msg.token} completed full ring circuit (${msg.hops} hops)!`);
     }
 
   - &ring_node_fn |
-    fn on_message(from, msg) {
+    fn on_msg(msg) {
       msg.hops += 1;
       log(`Relaying token #${msg.token} to ${links[0]}`);
       send(links[0], msg);

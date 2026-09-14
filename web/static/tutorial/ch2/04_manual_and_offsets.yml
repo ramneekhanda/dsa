@@ -9,13 +9,13 @@ fns:
     }
 
   - &server_fn |
-    fn on_message(from, msg) {
+    fn on_msg(msg) {
       send("db", msg);
       send("monitor", msg);
     }
 
   - &monitor_fn |
-    fn on_message(from, msg) {
+    fn on_msg(msg) {
       log(`[TELEMETRY] Monitored event ${msg.seq}`);
     }
 

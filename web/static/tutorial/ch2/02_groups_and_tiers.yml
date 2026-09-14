@@ -9,24 +9,24 @@ fns:
     }
 
   - &gateway_fn |
-    fn on_message(from, msg) {
+    fn on_msg(msg) {
       send("auth", msg);
       send("orders", msg);
     }
 
   - &auth_fn |
-    fn on_message(from, msg) {
+    fn on_msg(msg) {
       send("users_db", #{ req: msg.req, validated: true });
     }
 
   - &orders_fn |
-    fn on_message(from, msg) {
+    fn on_msg(msg) {
       send("orders_db", #{ req: msg.req, status: "created" });
       send("cache", #{ key: `req_${msg.req}`, val: "cached" });
     }
 
   - &noop_fn |
-    fn on_message(from, msg) {
+    fn on_msg(msg) {
       log(`Persisted: ${msg}`);
     }
 

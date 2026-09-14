@@ -9,9 +9,17 @@ graph_defn:
     title: "Minimal Capsule Theme"
   node_types:
     - id: entrypoint
-      attrs: { ticks: 4 }
+      attrs:
+        ticks: 4
+        template_ref: minimal_pill
+        template_params:
+          status: "entry"
     - id: microservice
-      attrs: { ticks: 3600 }
+      attrs:
+        ticks: 3600
+        template_ref: minimal_pill
+        template_params:
+          status: "running"
   graph:
     - name: web_client
       node_type: entrypoint

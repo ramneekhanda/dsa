@@ -2,14 +2,13 @@ fns:
   - &meter_fn |
     fn on_init() {
       globals.load = 25;
-      update_visuals();
+      update_visuals(globals.load);
     }
     fn on_timer() {
       globals.load = (globals.load + 25) % 100;
-      update_visuals();
+      update_visuals(globals.load);
     }
-    fn update_visuals() {
-      let pct = globals.load;
+    fn update_visuals(pct) {
       let bar_w = pct * 1.0;
       draw([
         #{ shape: "rect", w: 140, h: 60, radius: 8, bg: "#ffffff", border: "#6366f1", border_width: 2 },

@@ -107,6 +107,80 @@ most important file to read first:
 - `schemars` derives (`JsonSchema` on nearly everything) are what generate the JSON Schema
   served to Monaco (`get_code_schema` in `src/systems/ingest_code.rs`) for live YAML
   autocomplete/validation in the editor — changing these structs changes the editor's schema.
+- `NodeType.id` (`#[serde(alias = "name")]`) accepts either `id:` or `name:` in a
+  `node_types` entry — added so hand-written and import-merged YAML (see imports below,
+  which key/dedup `node_types` by `id`) can use whichever reads better without a schema
+  fork; `parse_graph2`/`merge_graph_definitions` only ever see the normalized `id`.
+
+### Imports & module presets (`src/parser/imports.rs`, `plibs/`)
+
+A graph can pull in reusable `node_types`/`icons`/`node_templates`/`layout`/`groups` from
+another YAML document instead of redefining them inline — `graph_defn.imports` (or the
+top-level shorthand `imports:`) is a list of `ImportDef { from, import: Option<Vec<String>>,
+as: Option<String> }`. `from` is either a built-in preset name/shorthand (resolved by
+`get_builtin_preset`, matched case-insensitively against a long alias list — e.g.
+`theme:cyberpunk`/`cyberpunk`/`plibs:themes/cyberpunk` all hit the same
+`include_str!("../../plibs/themes/cyberpunk.yml")`) or a remote `http(s)://` URL. There's
+also a bare `theme: <name>` shorthand on `File`/`GraphDefinition` that's sugar for an
+`ImportDef` with no `import`/`as` filter, resolved the same way.
+- **Preset families under `plibs/`**: `themes/` (cyberpunk, cloud, datacenter, minimal,
+  synthwave, nordic, dracula, matrix, solarized_light — each a `node_templates` +
+  `graph_attrs.message_theme`/`explain_theme` bundle), `aws/` (compute/networking/database/
+  messaging/all — icon + node_type libraries for cloud-architecture diagrams), and a few
+  fully inline Rust-string stdlib presets in `imports.rs` itself (`stdlib:load_balancer`
+  → `round_robin_lb`/`weighted_lb`, `stdlib:circuit_breaker`, `stdlib:cache` → `lru_cache`)
+  that don't warrant their own `plibs/` file.
+- **Remote imports are resolved outside Rust**: `resolve_file_imports` takes an
+  `external_sources: &HashMap<String, String>` (URL → already-fetched YAML text) rather
+  than fetching itself — `scan_import_urls` does a fast heuristic line-scan (falls back to
+  a full `File` parse) so the frontend/wasm caller can `fetch()` every referenced URL first
+  and hand the results back in; an unresolved `http(s)://` import is a hard parse error.
+- `resolve_file_recursive` recurses per import (depth-capped at 8, same
+  cyclic/runaway-growth concern as `MAX_NODES`) and folds each resolved import into the
+  base `GraphDefinition` via `merge_graph_definitions`: **local definitions always win** —
+  `graph_attrs` fields only fill in if still at their default, `node_types`/`icons`/
+  `node_templates`/`groups` are deduplicated by id (an existing local `node_type` with a
+  blank `func` still inherits the imported one's script), `layout` only fills in if the
+  base has none, and `graph` instances merge by `name`.
+- `import: [ids...]` filters which `node_types` a given import contributes; `as: alias`
+  renames the (single, if `import` names exactly one type) imported type's `id` to `alias`,
+  or prefixes multiple (`alias_<original_id>`) — see `test_selective_import_and_aliasing`
+  in `imports.rs`'s test module for the exact renaming rule.
+
+### Layout engine & group boxes (`src/systems/layout.rs`, `src/systems/group_overlay.rs`)
+
+`compute_graph_layout` is a pure function (`GraphDefinition -> ComputedLayout`, no ECS/Bevy
+state) that assigns every node an `(x, y)` from `graph_defn.layout: Option<LayoutConfig>`
+(`LayoutType::Manual | Circular | Grid | Hierarchical`, default `Manual`) — called both by
+`node_system::create_nodes` for initial placement and, wherever it's re-run, to re-derive
+group bounding boxes. A `NodeConnection.pos: Option<[f32; 2]>` always wins outright
+regardless of layout mode (an explicit per-node pin); `.offset` nudges the computed position
+instead of replacing it.
+- **Hierarchical** (`compute_hierarchical_layout`) is the real layout engine: nodes are
+  first collapsed into `MacroElement`s — either a standalone node or an entire `GroupDef`
+  (from `graph_defn.groups`, membership via `GroupDef.nodes` or a node's own `group:`
+  field) treated as one macro-box — then ranked by longest-path topological layering over
+  macro-to-macro edges (derived from `links`, cycles fall back to incremental ranks so a
+  cyclic graph still lays out instead of hanging), ordered within a rank by explicit
+  `order`/`rank` overrides or macro index, and finally projected into world space along
+  `LayoutConfig.direction` (`Lr`/`Rl`/`Tb`/`Bt`) with spacing from `get_rank_sep()`/
+  `get_node_sep()`/`get_group_sep()` (defaults 260/140/320, each backed by a
+  `rank_sep`/`node_sep`/`group_sep` field with a long list of `serde(alias = ...)` spellings
+  — `rank_spacing`, `rankSep`, `rank-sep`, etc. — so hand-written YAML doesn't have to guess
+  the canonical name). A group's own internal layout direction defaults to the *opposite*
+  of the global direction (an `Lr` pipeline stacks its groups' members `Tb`) unless
+  `GroupDef.layout.direction` overrides it, and can set its own member spacing via
+  `GroupLayoutConfig.sep`/`get_spacing`.
+- **Circular**/**Grid** are simpler single-pass placements (ellipse by index, or a
+  `sqrt(n)`-column matrix); both still honor an explicit `.pos`/`.offset` per node.
+- `ComputedLayout.group_boxes: Vec<GroupBoxBounds>` (only populated by the hierarchical
+  path) is what `group_overlay::update_group_boxes` renders: on `GraphChange`, it
+  despawn-recursive's every existing `GroupBoxMarker` entity and respawns one lyon
+  `RoundedPolygon` (+ an optional uppercased title `Text2d`) per box, at `GROUP_BOX_Z = 2.0`
+  — behind connectors (z=10) and nodes (z=100+) but in front of the background grid (z=0).
+  Box visibility/style come from `GroupDef.style: Option<GroupStyle>` (`r#box: Some(false)`
+  skips rendering the box entirely — useful for a group used only to drive layout grouping,
+  not a visible container — plus `radius`/`border_width`/`bg`/`border`/`padding`).
 
 ### Runtime tick loop (`src/systems/rhai_engine.rs`)
 
@@ -116,13 +190,23 @@ Every frame, `execute_rhai_engine`:
    `globals`.
 2. Drains each connector's `msg_delivered` queue and calls `on_msg(msg)` on the receiving
    node for each delivered message.
-3. Rhai scripts call the registered host functions `log(s)` (→ `stdlib::rhai_lib::rhai_log` →
-   `log_dsa_event!`), `send(to, msg)` (pushes into a thread-local message store), and
-   `random_chance(percent)` (returns `true` with roughly that % probability, for scripts
-   simulating flaky/failing behavior without a manually-toggled param), and
-   `draw(shapes)` (see below) to talk back to the engine; `send_messages` fans sent
-   messages out to the `Messages` component on whichever `NodeConnector` links the two
-   node names, becoming an in-flight `Message` with a 3s timer.
+3. Rhai scripts call the registered host functions (all `register_fn`'d in
+   `rhai_engine.rs`, ~line 515 on) to talk back to the engine: `log(s)` — three
+   overloads (`String`, `Dynamic`, and a 2-arg `Dynamic, Dynamic` that space-joins —
+   `log(a, b)`) all funnel into a thread-local `log_store` drained after the handler and
+   forwarded via `log_dsa_event!`; `send(to, msg)` (pushes into a thread-local message
+   store — `send_messages` fans it out to the `Messages` component on whichever
+   `NodeConnector` links the two node names, becoming an in-flight `Message` with a 3s
+   timer); `draw(shapes)` (see below); `random_chance(percent)` (returns `true` with
+   roughly that % probability, for scripts simulating flaky/failing behavior without a
+   manually-toggled param); `random_int(min, max)` (returns an integer in `[min, max)`,
+   e.g. `random_int(0, links.len())` to pick a random peer — degenerate `max <= min`
+   returns `min` instead of panicking, so a node with no links doesn't crash calling it);
+   `spawn_node`/`despawn`/`link`/`unlink` (see the topology-changes section below); and
+   `explain(...)` — four overloads: `explain(key, text)`, `explain(key, text, opts)`,
+   and two auto-keying shorthands, `explain(text)`/`explain(text, opts)`, that reuse
+   `text` itself as the dedup `key` (`opts` is accepted but currently unused/ignored in
+   all three variants that take it).
 4. `state` (the Rhai `globals` map) round-trips through the node's persistent `Dynamic` field
    across calls — this is how a node keeps memory between ticks/messages. Both call sites
    (`on_timer` and `on_msg`) move `state` into/out of the `Scope` rather than cloning it -
@@ -315,6 +399,10 @@ shows through):
   from `msg_inflight` to `msg_delivered` once the timer finishes (picked up by
   `rhai_engine::execute_rhai_engine` next frame to trigger `on_msg`).
 - `zoom_panel.rs` / `drag.rs` handle Ctrl/Cmd-scroll zoom and node dragging.
+- `node_progress.rs`'s `update_tick_progress` drives per-node progress-bar overlays
+  (`TickProgressFill` components: `Bar`/`Ring`/`Pie`/`Segmented` kinds) off
+  `node.timer.fraction_remaining()` each frame — a purely visual "time until next tick"
+  indicator, independent of `draw()`'s overlay shapes.
 - `explain_bubble.rs` / `radial_blur.rs` implement the `explain()` narration-bubble system —
   see the dedicated section above.
 - `browser_resize.rs` (wasm-only, `#[cfg(target_arch = "wasm32")]` in `systems/mod.rs`) keeps
@@ -343,6 +431,29 @@ from inside a running simulation back into the frontend's UI log, so grep for
 - `panels.ts` builds the `dockview-core` layout (editor, canvas, log table via
   `tabulator-tables`).
 - Styling is Tailwind + daisyUI (`tailwind.config.js`, `app.css`).
+
+### Tutorial / Learn panel (`web/static/tutorial/`, `web/src/routes/tutorial.ts`, `Help.svelte`, `src/systems/native_examples.rs`)
+
+`tutorial.ts` is a static, hand-maintained index of chapters/lessons
+(`TutorialChapter { id, title, dir, lessons: TutorialLesson[] }`) — each lesson pairs a
+markdown file with an optional runnable YAML snippet, both fetched at runtime from
+`static/tutorial/<dir>/` (mirrors the older Examples menu's `fetch()`-from-`static/examples/`
+pattern, not bundled into the wasm/JS build). Currently five chapters: ch1 Fundamentals,
+ch2 Layout & Architecture, ch3 Custom Visuals & Node Overlays, ch4 Theming & Visual Styling,
+ch5 Distributed Algorithms & plibs (imports/presets). `Help.svelte` renders the two-level
+chapter/lesson nav plus the markdown (via `carta-md`, `sanitizer: false` — safe only because
+content always comes from this repo's own static files, never user/network input) and a
+"Load this example" button that calls back into `+page.svelte`'s example-loading path
+(same one `panels.ts` wires the old Examples menu to) with `<dir>/<yaml>`.
+- **Native parity**: a plain `cargo run` has no browser/Monaco/Learn panel at all, so
+  `native_examples.rs`'s `examples_picker` (a `bevy_egui` window, collapsed by default like
+  `ui::graph_properties_viewer`) is a flattened developer-convenience mirror — one button
+  per lesson that has YAML, embedding each file via `include_str!` (so the native binary
+  doesn't depend on the process's working directory) and running it through the same
+  `compile_code()` path the browser uses. Its `EXAMPLES` list has to be kept in sync with
+  `tutorial.ts` by hand (there's no shared source of truth between Rust and TS here); a
+  lesson with no YAML (e.g. ch1's intro) is omitted from both, same reasoning. `DEFAULT_EXAMPLE`
+  (`EXAMPLES[0].1`) is also what `load_native_demo_on_startup` seeds the native app with.
 
 ### Desktop shell (`web/src-tauri/`)
 

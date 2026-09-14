@@ -11,28 +11,31 @@ fns:
   - &worker_fn |
     fn on_init() {
       globals.queue = [];
-      redraw_meter();
+      redraw_meter(globals.queue.len());
     }
     fn on_msg(msg) {
       globals.queue.push(msg.id);
-      redraw_meter();
+      redraw_meter(globals.queue.len());
     }
     fn on_timer() {
       if globals.queue.len() > 0 {
         let item = globals.queue.remove(0);
         log("Worker processed item #" + item);
       }
-      redraw_meter();
+      redraw_meter(globals.queue.len());
     }
-    fn redraw_meter() {
-      let count = globals.queue.len();
+    fn redraw_meter(count) {
       let color = if count >= 3 { "#ef4444" } else if count > 0 { "#f59e0b" } else { "#10b981" };
       let bar_w = if count * 20 > 90 { 90.0 } else { (count * 20) * 1.0 };
+      // radius must stay under half of both w and h, or lyon's rounded-rect
+      // tessellator hits a degenerate (zero-length) edge and panics - bar_w
+      // can be 0 when the queue is empty, so this can't just be a constant.
+      let fill_radius = (bar_w / 2.0).min(3.0);
       draw([
-        #{ shape: "rect", w: 140, h: 60, radius: 8, bg: "#ffffff", border: color, border_width: 2 },
-        #{ shape: "text", text: "Buffer: " + count + " items", y: 12, color: "#1e293b", font_size: 11, bold: true },
-        #{ shape: "rect", w: 90, h: 8, radius: 4, y: -8, bg: "#e2e8f0" },
-        #{ shape: "rect", w: bar_w, h: 8, radius: 4, x: (bar_w - 90.0) / 2.0, y: -8, bg: color }
+        #{ shape: "rect", w: 140, h: 60, radius: 8, fill: "#ffffff", stroke: color, stroke_width: 2 },
+        #{ shape: "text", text: "Buffer: " + count + " items", y: 12, color: "#1e293b", size: 11 },
+        #{ shape: "rect", w: 90, h: 8, radius: 3, y: -8, fill: "#e2e8f0" },
+        #{ shape: "rect", w: bar_w, h: 8, radius: fill_radius, x: (bar_w - 90.0) / 2.0, y: -8, fill: color }
       ]);
     }
 
