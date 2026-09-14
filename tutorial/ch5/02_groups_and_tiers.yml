@@ -1,0 +1,122 @@
+fns:
+  - &client_fn |
+    fn on_init() {
+      state.count = 0;
+    }
+    fn on_timer() {
+      state.count += 1;
+      send("gateway", #{ req: state.count, path: "/api/checkout" });
+    }
+
+  - &gateway_fn |
+    fn on_message(from, msg) {
+      send("auth", msg);
+      send("orders", msg);
+    }
+
+  - &auth_fn |
+    fn on_message(from, msg) {
+      send("users_db", #{ req: msg.req, validated: true });
+    }
+
+  - &orders_fn |
+    fn on_message(from, msg) {
+      send("orders_db", #{ req: msg.req, status: "created" });
+      send("cache", #{ key: `req_${msg.req}`, val: "cached" });
+    }
+
+  - &noop_fn |
+    fn on_message(from, msg) {
+      log(`Persisted: ${msg}`);
+    }
+
+layout:
+  type: hierarchical
+  direction: lr
+  rank_sep: 240
+  node_sep: 110
+
+groups:
+  ingress:
+    title: "Edge & Ingress Tier"
+    direction: tb
+    style:
+      bg: "#1e293b"
+      border: "#38bdf8"
+      border_width: 2.0
+      radius: 14.0
+
+  compute:
+    title: "Service Mesh"
+    direction: tb
+    style:
+      bg: "#0f172a"
+      border: "#a855f7"
+      border_width: 2.0
+      radius: 14.0
+
+  storage:
+    title: "Data Persistence"
+    direction: tb
+    style:
+      bg: "#111827"
+      border: "#10b981"
+      border_width: 2.0
+      radius: 14.0
+
+graph_defn:
+  graph_attrs:
+    title: 3-Tier Cloud Architecture
+
+  node_types:
+    - id: client
+      fn: *client_fn
+      attrs:
+        ticks: 2
+    - id: gateway
+      fn: *gateway_fn
+    - id: service
+    - id: auth_svc
+      fn: *auth_fn
+    - id: orders_svc
+      fn: *orders_fn
+    - id: db
+      fn: *noop_fn
+    - id: cache_node
+      fn: *noop_fn
+
+  graph:
+    - name: client
+      node_type: client
+      group: ingress
+      links: [gateway]
+
+    - name: gateway
+      node_type: gateway
+      group: ingress
+      links: [auth, orders]
+
+    - name: auth
+      node_type: auth_svc
+      group: compute
+      links: [users_db]
+
+    - name: orders
+      node_type: orders_svc
+      group: compute
+      links: [orders_db, cache]
+
+    - name: users_db
+      node_type: db
+      group: storage
+      links: []
+
+    - name: orders_db
+      node_type: db
+      group: storage
+      links: []
+
+    - name: cache
+      node_type: cache_node
+      group: storage
+      links: []
