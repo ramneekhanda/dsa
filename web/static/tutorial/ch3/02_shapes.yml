@@ -1,10 +1,11 @@
 fns:
   - &showcase_fn |
-    // `on_init`'s draw() call runs against the bare parse-time engine (log/send/
-    // draw are no-ops there by design - see `instantiate_node` in graphv2.rs), so
-    // it never actually paints anything. `on_timer` runs through the live,
-    // fully-registered engine and does the real drawing; a short tick means the
-    // showcase appears almost immediately after load instead of relying on init.
+    // `draw()` works from `on_init` too (the parse-time engine records it into a
+    // draw_store the same way the live tick-loop engine does - see
+    // `instantiate_node`/`init_scope` in graphv2.rs); `log`/`send`/etc are still
+    // harmless no-ops there. `on_timer` redraws the same thing periodically as a
+    // simple refresh - not strictly needed for this static showcase, but a cheap
+    // way to double-check draw() keeps working every tick, not just once at load.
     fn draw_showcase() {
       // Offset clear of the default icon + name label every node still gets
       // underneath a draw() overlay (only attrs.template suppresses those).

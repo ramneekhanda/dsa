@@ -246,8 +246,17 @@ then despawn-and-respawns that node's `NodeOverlayShape` child entities (lyon sh
 `Text2d`, parented to the node so they track drag/pan/zoom). `draw()` *replaces* the
 overlay; not calling it leaves the last one; `draw([])` clears. Supported shapes: `rect`
 (optional `radius`), `circle`, `line`, `polygon`/`polyline`, `text`; coords are node-local,
-y-up, `#rrggbb` colors, capped at `MAX_SHAPES_PER_NODE`. Rhai functions can't see
-script-level vars, so a helper called from a handler must take what it needs as params.
+y-up, capped at `MAX_SHAPES_PER_NODE`. Rhai functions can't see script-level vars, so a
+helper called from a handler must take what it needs as params. Color/size keys accept
+a couple of natural aliases (`paint_of`/`color_of_aliases`/`num_aliases` in `draw.rs`) so
+a shape map doesn't have to match one exact vocabulary: `fill` also accepts `bg`/`color`,
+`stroke` also accepts `border`/`border_color` (`color` for `line`), `stroke_width` also
+accepts `border_width`/`width`, and a `text` shape's `size` also accepts `font_size` -
+`fill`/`stroke`/`stroke_width`/`size` are still the canonical names and win if both are
+present. `draw()` also works from `on_init`, not just `on_timer`/`on_msg` - `parse_graph2`
+builds its own draw_store-backed engine (`create_rhai_engine`) so the very first `on_init`
+call already has a real, working `draw()` (`log`/`send`/`spawn_node`/etc are still
+harmless no-ops there, since there's no live ECS world yet to affect).
 
 ### Runtime topology changes (`spawn_node()`/`despawn()`/`link()`/`unlink()`)
 

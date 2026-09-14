@@ -154,6 +154,24 @@ fn color_of(map: &rhai::Map, key: &str) -> Option<Color> {
         .and_then(|s| parse_color(&s))
 }
 
+fn color_of_aliases(map: &rhai::Map, keys: &[&str]) -> Option<Color> {
+    for &k in keys {
+        if let Some(c) = color_of(map, k) {
+            return Some(c);
+        }
+    }
+    None
+}
+
+fn num_aliases(map: &rhai::Map, keys: &[&str], default: f32) -> f32 {
+    for &k in keys {
+        if map.contains_key(k) {
+            return num(map, k, default);
+        }
+    }
+    default
+}
+
 /// Applies an optional `opacity` multiplier (0..=1, default 1) to a colour's alpha.
 fn with_opacity(color: Option<Color>, opacity: f32) -> Option<Color> {
     color.map(|c| {
@@ -164,11 +182,11 @@ fn with_opacity(color: Option<Color>, opacity: f32) -> Option<Color> {
 }
 
 fn paint_of(map: &rhai::Map) -> Paint {
-    let opacity = num(map, "opacity", 1.0);
+    let opacity = num_aliases(map, &["opacity"], 1.0);
     Paint {
-        fill: with_opacity(color_of(map, "fill"), opacity),
-        stroke: with_opacity(color_of(map, "stroke"), opacity),
-        stroke_width: num(map, "stroke_width", 1.0).max(0.0),
+        fill: with_opacity(color_of_aliases(map, &["fill", "bg", "color"]), opacity),
+        stroke: with_opacity(color_of_aliases(map, &["stroke", "border", "border_color"]), opacity),
+        stroke_width: num_aliases(map, &["stroke_width", "border_width", "width"], 1.0).max(0.0),
     }
 }
 
@@ -237,8 +255,8 @@ pub fn parse_draw_cmd(value: &Dynamic) -> Option<DrawCmd> {
             y1: num(&map, "y1", 0.0),
             x2: num(&map, "x2", 0.0),
             y2: num(&map, "y2", 0.0),
-            color: color_of(&map, "stroke").unwrap_or(Color::BLACK),
-            width: num(&map, "stroke_width", 1.0).max(0.0),
+            color: color_of_aliases(&map, &["stroke", "border", "color"]).unwrap_or(Color::BLACK),
+            width: num_aliases(&map, &["stroke_width", "border_width", "width"], 1.0).max(0.0),
         }),
         "polygon" | "polyline" => Some(DrawCmd::Polygon {
             points: points_of(&map),
@@ -249,8 +267,8 @@ pub fn parse_draw_cmd(value: &Dynamic) -> Option<DrawCmd> {
             x: num(&map, "x", 0.0),
             y: num(&map, "y", 0.0),
             text: text_of(&map, "text").unwrap_or_default(),
-            size: num(&map, "size", 14.0).max(1.0),
-            color: color_of(&map, "color").unwrap_or(Color::BLACK),
+            size: num_aliases(&map, &["size", "font_size"], 14.0).max(1.0),
+            color: color_of_aliases(&map, &["color", "text_color", "fill"]).unwrap_or(Color::BLACK),
         }),
         "icon" => Some(DrawCmd::Icon {
             x: num(&map, "x", 0.0),

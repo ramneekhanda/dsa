@@ -402,12 +402,7 @@ fn apply_spawns(
             .filter(|peer| gd.node_instances.iter().any(|n| &n.name == peer))
             .collect();
 
-        *draw_store.write().unwrap() = None;
-        let mut node = instantiate_node(engine, &node_type, name.clone(), valid_links.clone());
-        if let Some(shapes) = draw_store.write().unwrap().take() {
-            node.overlay = crate::parser::draw::parse_overlay(&shapes);
-            node.overlay_dirty = true;
-        }
+        let node = instantiate_node(engine, &node_type, name.clone(), valid_links.clone(), draw_store);
         for msg in local_log_store.write().unwrap().drain(..) {
             crate::wasm::browser::emit_log_event(&node.name, &msg);
         }

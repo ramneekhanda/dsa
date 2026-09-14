@@ -9,16 +9,17 @@ By combining Rhai message handlers with `draw()`, nodes can visualize dynamic bu
 When a node receives work or processes items, calculate shape dimensions dynamically:
 
 ```rhai
-fn update_meter() {
-  let q_len = state.queue.len();
-  let status_color = if q_len > 3 { "#ef4444" } else if q_len > 0 { "#f59e0b" } else { "#10b981" };
-  let bar_w = (q_len as f32) * 18.0;
+fn redraw_meter(count) {
+  let color = if count >= 3 { "#ef4444" } else if count > 0 { "#f59e0b" } else { "#10b981" };
+  let bar_w = if count * 20 > 90 { 90.0 } else { (count * 20) * 1.0 };
+  let fill_radius = (bar_w / 2.0).min(3.0);
+  let CARD_Y = 80;
 
   draw([
-    #{ shape: "rect", w: 140, h: 60, radius: 8, bg: "#ffffff", border: status_color, border_width: 2 },
-    #{ shape: "text", text: "Queue: " + q_len, y: 12, color: "#334155", font_size: 11, bold: true },
-    #{ shape: "rect", w: 90, h: 8, radius: 4, y: -8, bg: "#e2e8f0" },
-    #{ shape: "rect", w: bar_w.min(90.0), h: 8, radius: 4, x: (bar_w.min(90.0) - 90.0) / 2.0, y: -8, bg: status_color }
+    #{ shape: "rect", w: 140, h: 60, radius: 8, y: CARD_Y, fill: "#ffffff", stroke: color, stroke_width: 2 },
+    #{ shape: "text", text: "Buffer: " + count + " items", y: CARD_Y + 12, color: "#1e293b", size: 11 },
+    #{ shape: "rect", w: 90, h: 8, radius: 3, y: CARD_Y - 8, fill: "#e2e8f0" },
+    #{ shape: "rect", w: bar_w, h: 8, radius: fill_radius, x: (bar_w - 90.0) / 2.0, y: CARD_Y - 8, fill: color }
   ]);
 }
 ```

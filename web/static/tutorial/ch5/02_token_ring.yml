@@ -4,13 +4,7 @@ fns:
       state.has_token = false;
       state.cycles = 0;
 
-      // Node 1 starts the token circulation. State setup must finish before
-      // any update_ui()/draw() call: draw() throws (function not registered
-      // on the bare parse-time engine used for the very first on_init - see
-      // instantiate_node's doc comment) and Rhai aborts the rest of the
-      // function on an unhandled error, so a draw() call placed earlier
-      // would silently skip this block on every node, including node_1,
-      // permanently deadlocking the ring.
+      // Node 1 starts the token circulation.
       if node_name == "node_1" {
         state.has_token = true;
         update_ui(node_name, "INITIAL TOKEN", "#10b981");

@@ -1503,6 +1503,41 @@ pub struct File {
     pub timers: HashMap<String, Timer>,
 }
 
+pub fn create_rhai_engine(draw_store: std::sync::Arc<std::sync::RwLock<Option<rhai::Array>>>) -> rhai::Engine {
+    let mut engine = rhai::Engine::new();
+    engine.set_max_expr_depths(256, 256);
+    let ds = draw_store.clone();
+    let ds_one = draw_store.clone();
+    engine
+        .register_fn("log", |_s: String| {})
+        .register_fn("log", |_s: Dynamic| {})
+        .register_fn("log", |_a: Dynamic, _b: Dynamic| {})
+        .register_fn("send", |_to: String, _msg: Dynamic| {})
+        .register_fn("draw", move |shapes: rhai::Array| {
+            *ds.write().unwrap() = Some(shapes);
+        })
+        .register_fn("draw", move |shape: rhai::Map| {
+            *ds_one.write().unwrap() = Some(vec![Dynamic::from_map(shape)]);
+        })
+        .register_fn("random_chance", |percent: i64| -> bool {
+            rand::thread_rng().gen_range(0..100) < percent
+        })
+        .register_fn("random_int", |min: i64, max: i64| -> i64 {
+            if max <= min {
+                min
+            } else {
+                rand::thread_rng().gen_range(min..max)
+            }
+        })
+        .register_fn("spawn_node", |_name: String, _node_type: String, _links: rhai::Array| {})
+        .register_fn("despawn", |_name: String| {})
+        .register_fn("link", |_peer: String| {})
+        .register_fn("unlink", |_peer: String| {})
+        .register_fn("explain", |_key: String, _text: String| {})
+        .register_fn("explain", |_text: String| {});
+    engine
+}
+
 pub fn parse_graph2(graph_code: &String) -> Result<File, serde_yaml::Error> {
     parse_graph2_with_sources(graph_code, &HashMap::new())
 }
@@ -1511,11 +1546,8 @@ pub fn parse_graph2_with_sources(
     graph_code: &String,
     external_sources: &HashMap<String, String>,
 ) -> Result<File, serde_yaml::Error> {
-    let mut engine = rhai::Engine::new();
-    // Rhai's default nesting limit inside a function is only 32 levels, which a
-    // realistic handler (a map literal with an inline `if`, say) can trip. Raise
-    // it well clear of hand-written scripts while still bounding pathological input.
-    engine.set_max_expr_depths(256, 256);
+    let draw_store = std::sync::Arc::new(std::sync::RwLock::new(None));
+    let engine = create_rhai_engine(draw_store.clone());
 
     let data = crate::parser::imports::resolve_file_imports(graph_code, external_sources);
     if let Ok(mut m_data) = data {
@@ -1597,8 +1629,13 @@ pub fn parse_graph2_with_sources(
                 .iter()
                 .find(|x| x.id == node.node_type);
             if let Some(data_w_type) = type_data {
-                let n =
-                    instantiate_node(&engine, data_w_type, node.name.clone(), node.links.clone());
+                let n = instantiate_node(
+                    &engine,
+                    data_w_type,
+                    node.name.clone(),
+                    node.links.clone(),
+                    &draw_store,
+                );
                 m_data.graph_defn.node_instances.push(n);
             } else {
                 return Err(serde_yaml::Error::custom(
@@ -1612,15 +1649,14 @@ pub fn parse_graph2_with_sources(
 }
 
 /// Builds a fresh `Node` instance of `node_type` and runs its `on_init` once. Used
-/// both at initial YAML parse time (a bare, unconfigured `engine` - `log`/`send`/
-/// `draw`/`spawn`/etc all silently no-op there, matching prior behavior) and by
-/// `rhai_engine::apply_spawns` for a script's runtime `spawn()` (the fully-registered
-/// engine there, so `draw()` in `on_init` paints the new node's overlay immediately).
+/// both at initial YAML parse time (with draw_store recording any initial draw() call)
+/// and by `rhai_engine::apply_spawns` for a script's runtime `spawn()`.
 pub fn instantiate_node(
     engine: &rhai::Engine,
     node_type: &NodeType,
     name: String,
     links: Vec<String>,
+    draw_store: &std::sync::Arc<std::sync::RwLock<Option<rhai::Array>>>,
 ) -> Node {
     let mut n = Node {
         name,
@@ -1652,7 +1688,7 @@ pub fn instantiate_node(
             .collect();
         n.overlay_dirty = true;
     }
-    init_scope(engine, &mut n);
+    init_scope(engine, &mut n, draw_store);
     n
 }
 
@@ -1695,7 +1731,11 @@ fn template_params(instance_name: &str, attrs: &Attrs) -> HashMap<String, String
     params
 }
 
-pub fn init_scope(engine: &rhai::Engine, node: &mut Node) {
+pub fn init_scope(
+    engine: &rhai::Engine,
+    node: &mut Node,
+    draw_store: &std::sync::Arc<std::sync::RwLock<Option<rhai::Array>>>,
+) {
     let scope = &mut node.scope;
     scope.push_constant("node_name", node.name.clone());
     let links: Dynamic = node.links.clone().into();
@@ -1706,6 +1746,11 @@ pub fn init_scope(engine: &rhai::Engine, node: &mut Node) {
     scope.push_dynamic("state", std::mem::take(&mut node.state));
     let _ = engine.call_fn_with_options::<()>(options, scope, &node.ast, "on_init", ());
     node.state = scope.remove::<Dynamic>("state").unwrap_or_default();
+
+    if let Some(shapes) = draw_store.write().unwrap().take() {
+        node.overlay = crate::parser::draw::parse_overlay(&shapes);
+        node.overlay_dirty = true;
+    }
 
     c_log!("scope size: {}", scope.len());
     c_log!("scope: {:?}", scope);
@@ -1989,6 +2034,97 @@ graph:
             parsed_seq.graph_defn.groups[0].layout.as_ref().and_then(|l| l.direction),
             Some(LayoutDirection::Rl)
         );
+    }
+
+    #[test]
+    fn test_init_scope_draw_and_state() {
+        let yaml = r##"
+graph_defn:
+  node_types:
+    - id: worker
+      fn: |
+        fn on_init() {
+          state.queue = [1, 2, 3];
+          redraw(state.queue.len());
+        }
+        fn redraw(count) {
+          draw([
+            #{ shape: "rect", w: 100, h: 40, fill: "#ffffff", stroke: "#10b981", stroke_width: 2 },
+            #{ shape: "text", text: "Count: " + count, color: "#1e293b", size: 12 }
+          ]);
+        }
+  graph:
+    - name: w1
+      node_type: worker
+      links: []
+"##
+        .to_string();
+
+        let parsed = parse_graph2(&yaml).expect("Should parse graph with on_init draw()");
+        let w1 = &parsed.graph_defn.node_instances[0];
+        assert_eq!(w1.overlay.len(), 2);
+        assert!(w1.overlay_dirty);
+    }
+
+    /// Regression test for the `globals`/`state` dual-binding bug: `on_init`
+    /// used to push the node's persisted state into scope under two names
+    /// (`globals` and `state`, both seeded from the same clone) and guess
+    /// afterward which one to keep by checking whether `state` looked like a
+    /// non-empty map - a heuristic that only worked on the very first
+    /// state-mutating call, since `state` stayed non-empty (just stale) on
+    /// every call after that regardless of whether the script touched it.
+    /// This drives a second call the same way `rhai_engine.rs`'s `on_timer`
+    /// path does (push `state` by move, call, pop, assign back) to prove a
+    /// count keeps incrementing past the first tick instead of freezing.
+    #[test]
+    fn test_state_round_trips_across_multiple_calls() {
+        let yaml = r##"
+graph_defn:
+  node_types:
+    - id: counter
+      fn: |
+        fn on_init() { state.count = 0; }
+        fn on_timer() { state.count += 1; }
+  graph:
+    - name: c1
+      node_type: counter
+      links: []
+"##
+        .to_string();
+
+        let parsed = parse_graph2(&yaml).expect("Should parse graph with state counter");
+        let mut c1 = parsed.graph_defn.node_instances.into_iter().next().unwrap();
+        assert_eq!(
+            c1.state.read_lock::<rhai::Map>().unwrap().get("count").unwrap().as_int().unwrap(),
+            0,
+            "on_init should have set count to 0"
+        );
+
+        let engine = rhai::Engine::new();
+        for expected in 1..=3 {
+            let scope = &mut c1.scope;
+            let init_size = scope.len();
+            let options = CallFnOptions::new().eval_ast(false).rewind_scope(false);
+            scope.push_dynamic("state", std::mem::take(&mut c1.state));
+            engine
+                .call_fn_with_options::<()>(options, scope, &c1.ast, "on_timer", ())
+                .expect("on_timer should run without error");
+            c1.state = scope.remove::<Dynamic>("state").unwrap_or_default();
+            scope.rewind(init_size);
+
+            let count = c1
+                .state
+                .read_lock::<rhai::Map>()
+                .unwrap()
+                .get("count")
+                .unwrap()
+                .as_int()
+                .unwrap();
+            assert_eq!(
+                count, expected,
+                "count should keep incrementing across calls, not freeze after the first"
+            );
+        }
     }
 }
 
