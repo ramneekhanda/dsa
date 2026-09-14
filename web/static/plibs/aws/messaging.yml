@@ -1,0 +1,161 @@
+graph_defn:
+  node_templates:
+    - id: aws_sqs_card
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 126.0
+          h: 56.0
+          radius: 8.0
+          fill: "#232f3e"
+          stroke: "#f97316"
+          stroke_width: 1.5
+        - shape: roundedrect
+          x: 0.0
+          y: 18.0
+          w: 126.0
+          h: 18.0
+          radius: 8.0
+          fill: "#c2410c"
+        - shape: text
+          x: -14.0
+          y: 18.0
+          text: "{{node_name}}"
+          size: 8.5
+          color: "#ffffff"
+        - shape: circle
+          x: 46.0
+          y: 18.0
+          r: 3.5
+          fill: "#fb923c"
+        - shape: text
+          x: 0.0
+          y: -2.0
+          text: "{{queue_type}}"
+          size: 7.5
+          color: "#fdba74"
+        - shape: progress
+          style: bar
+          x: 0.0
+          y: -17.0
+          w: 96.0
+          h: 4.0
+          track_color: "#131a22"
+          fill_color: "#f97316"
+
+    - id: aws_sns_card
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 128.0
+          h: 56.0
+          radius: 8.0
+          fill: "#232f3e"
+          stroke: "#ec4899"
+          stroke_width: 1.5
+        - shape: text
+          x: 0.0
+          y: 14.0
+          text: "{{node_name}}"
+          size: 9.0
+          color: "#f8fafc"
+        - shape: text
+          x: 0.0
+          y: -2.0
+          text: "SNS // TOPIC FANOUT"
+          size: 7.0
+          color: "#f472b6"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -17.0
+          w: 96.0
+          h: 3.5
+          segments: 6
+          gap: 2.0
+          track_color: "#131a22"
+          fill_color: "#ec4899"
+
+    - id: aws_eventbridge_card
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 128.0
+          h: 56.0
+          radius: 8.0
+          fill: "#1e293b"
+          stroke: "#14b8a6"
+          stroke_width: 1.5
+        - shape: text
+          x: 0.0
+          y: 14.0
+          text: "{{node_name}}"
+          size: 9.0
+          color: "#f8fafc"
+        - shape: text
+          x: 0.0
+          y: -2.0
+          text: "EVENTBRIDGE BUS"
+          size: 7.0
+          color: "#2dd4bf"
+        - shape: progress
+          style: bar
+          x: 0.0
+          y: -17.0
+          w: 96.0
+          h: 3.5
+          track_color: "#0f172a"
+          fill_color: "#14b8a6"
+
+  node_types:
+    - id: sqs_queue
+      attrs:
+        ticks: 2
+        template_ref: aws_sqs_card
+        params:
+          queue_type: "SQS // STANDARD"
+      fn: |
+        fn on_init() {
+          globals.buffer = [];
+        }
+        fn on_timer() {
+          if globals.buffer.len() > 0 && links.len() > 0 {
+            let item = globals.buffer.shift();
+            send(links[0], item);
+          }
+        }
+        fn on_msg(from, msg) {
+          globals.buffer.push(msg);
+          log("SQS enqueued item (queue depth: " + globals.buffer.len() + ")");
+        }
+
+    - id: sns_topic
+      attrs:
+        ticks: 2
+        template_ref: aws_sns_card
+      fn: |
+        fn on_init() {}
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          log("SNS broadcasting message to " + links.len() + " subscribers");
+          for target in links {
+            send(target, msg);
+          }
+        }
+
+    - id: eventbridge
+      attrs:
+        ticks: 2
+        template_ref: aws_eventbridge_card
+      fn: |
+        fn on_init() {}
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          log("EventBridge routed event: " + msg);
+          for target in links {
+            send(target, msg);
+          }
+        }

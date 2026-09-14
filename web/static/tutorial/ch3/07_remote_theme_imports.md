@@ -10,7 +10,8 @@ Instead of manually defining node shapes, colors, connector styles, message bubb
 
 ```yaml
 imports:
-  - from: "plibs:synthwave"
+  - from: "plibs:themes/synthwave"
+  - from: "plibs:aws/compute"
   - from: "stdlib:load_balancer"
 ```
 
@@ -19,6 +20,7 @@ You can also import directly from relative library files or remote repositories:
 ```yaml
 imports:
   - from: "plibs/themes/synthwave.yml"
+  - from: "plibs:themes/cloud"
   - from: "https://raw.githubusercontent.com/your-org/procsim-libs/main/themes/dracula.yml"
 ```
 

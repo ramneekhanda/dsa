@@ -1,0 +1,200 @@
+graph_defn:
+  node_templates:
+    - id: aws_lambda_card
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 128.0
+          h: 60.0
+          radius: 8.0
+          fill: "#232f3e"
+          stroke: "#ff9900"
+          stroke_width: 1.5
+        - shape: roundedrect
+          x: 0.0
+          y: 20.0
+          w: 128.0
+          h: 18.0
+          radius: 8.0
+          fill: "#ff9900"
+        - shape: text
+          x: -16.0
+          y: 20.0
+          text: "{{node_name}}"
+          size: 8.5
+          color: "#232f3e"
+        - shape: circle
+          x: 48.0
+          y: 20.0
+          r: 4.0
+          fill: "#ffffff"
+        - shape: text
+          x: 48.0
+          y: 20.0
+          text: "λ"
+          size: 7.0
+          color: "#ff9900"
+        - shape: text
+          x: 0.0
+          y: -2.0
+          text: "{{status_text}}"
+          size: 7.5
+          color: "#ff9900"
+        - shape: progress
+          style: bar
+          x: 0.0
+          y: -18.0
+          w: 104.0
+          h: 4.0
+          track_color: "#131a22"
+          fill_color: "#ff9900"
+
+    - id: aws_ec2_blade
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 132.0
+          h: 52.0
+          radius: 6.0
+          fill: "#1e293b"
+          stroke: "#f59e0b"
+          stroke_width: 1.5
+        - shape: rect
+          x: -58.0
+          y: 0.0
+          w: 6.0
+          h: 52.0
+          fill: "#f59e0b"
+        - shape: text
+          x: 6.0
+          y: 12.0
+          text: "{{node_name}}"
+          size: 9.0
+          color: "#f8fafc"
+        - shape: text
+          x: 6.0
+          y: -2.0
+          text: "{{instance_type}}"
+          size: 7.5
+          color: "#94a3b8"
+        - shape: circle
+          x: 48.0
+          y: 12.0
+          r: 3.0
+          fill: "#22c55e"
+        - shape: progress
+          style: segmented
+          x: 6.0
+          y: -16.0
+          w: 96.0
+          h: 3.5
+          segments: 8
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "#f59e0b"
+
+    - id: aws_ecs_card
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 124.0
+          h: 56.0
+          radius: 8.0
+          fill: "#232f3e"
+          stroke: "#ec4899"
+          stroke_width: 1.5
+        - shape: roundedrect
+          x: 0.0
+          y: 18.0
+          w: 124.0
+          h: 18.0
+          radius: 8.0
+          fill: "#334155"
+        - shape: text
+          x: -14.0
+          y: 18.0
+          text: "{{node_name}}"
+          size: 8.5
+          color: "#f8fafc"
+        - shape: circle
+          x: 44.0
+          y: 18.0
+          r: 3.5
+          fill: "#ec4899"
+        - shape: text
+          x: 0.0
+          y: -2.0
+          text: "{{task_status}}"
+          size: 7.5
+          color: "#ec4899"
+        - shape: progress
+          style: bar
+          x: 0.0
+          y: -18.0
+          w: 96.0
+          h: 4.0
+          track_color: "#0f172a"
+          fill_color: "#ec4899"
+
+  node_types:
+    - id: lambda_func
+      attrs:
+        ticks: 2
+        template_ref: aws_lambda_card
+        params:
+          status_text: "LAMBDA // IDLE"
+      fn: |
+        fn on_init() {
+          globals.invocations = 0;
+        }
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          globals.invocations += 1;
+          log("Lambda " + node_name + " invoked (" + globals.invocations + "): " + msg);
+          if links.len() > 0 {
+            send(links[0], #{
+              source: node_name,
+              data: msg,
+              invocations: globals.invocations
+            });
+          }
+        }
+
+    - id: ec2_instance
+      attrs:
+        ticks: 2
+        template_ref: aws_ec2_blade
+        params:
+          instance_type: "t4g.xlarge"
+      fn: |
+        fn on_init() {
+          globals.req_count = 0;
+        }
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          globals.req_count += 1;
+          log("EC2 " + node_name + " processed request #" + globals.req_count);
+          if links.len() > 0 {
+            send(links[0], msg);
+          }
+        }
+
+    - id: ecs_service
+      attrs:
+        ticks: 2
+        template_ref: aws_ecs_card
+        params:
+          task_status: "TASKS 3/3 RUNNING"
+      fn: |
+        fn on_init() {
+          globals.tasks = 3;
+        }
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          if links.len() > 0 {
+            send(links[0], msg);
+          }
+        }

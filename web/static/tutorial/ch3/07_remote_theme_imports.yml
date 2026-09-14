@@ -1,5 +1,5 @@
 imports:
-  - from: "plibs:synthwave"
+  - from: "plibs:themes/synthwave"
   - from: "stdlib:load_balancer"
 
 graph_defn:

@@ -1,0 +1,168 @@
+graph_defn:
+  node_templates:
+    - id: aws_dynamo_card
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 128.0
+          h: 58.0
+          radius: 8.0
+          fill: "#232f3e"
+          stroke: "#3b82f6"
+          stroke_width: 1.5
+        - shape: roundedrect
+          x: 0.0
+          y: 19.0
+          w: 128.0
+          h: 18.0
+          radius: 8.0
+          fill: "#1d4ed8"
+        - shape: text
+          x: -16.0
+          y: 19.0
+          text: "{{node_name}}"
+          size: 8.5
+          color: "#ffffff"
+        - shape: circle
+          x: 48.0
+          y: 19.0
+          r: 3.5
+          fill: "#60a5fa"
+        - shape: text
+          x: 0.0
+          y: -2.0
+          text: "{{table_name}}"
+          size: 7.5
+          color: "#93c5fd"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -18.0
+          w: 104.0
+          h: 3.5
+          segments: 8
+          gap: 2.0
+          track_color: "#131a22"
+          fill_color: "#3b82f6"
+
+    - id: aws_s3_card
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 124.0
+          h: 54.0
+          radius: 10.0
+          fill: "#232f3e"
+          stroke: "#22c55e"
+          stroke_width: 1.5
+        - shape: text
+          x: 0.0
+          y: 14.0
+          text: "{{node_name}}"
+          size: 9.0
+          color: "#f8fafc"
+        - shape: text
+          x: 0.0
+          y: -2.0
+          text: "s3://{{bucket_name}}"
+          size: 7.0
+          color: "#4ade80"
+        - shape: progress
+          style: bar
+          x: 0.0
+          y: -17.0
+          w: 96.0
+          h: 3.5
+          track_color: "#131a22"
+          fill_color: "#22c55e"
+
+    - id: aws_rds_card
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 128.0
+          h: 56.0
+          radius: 6.0
+          fill: "#1e293b"
+          stroke: "#6366f1"
+          stroke_width: 1.5
+        - shape: rect
+          x: 0.0
+          y: 18.0
+          w: 128.0
+          h: 18.0
+          fill: "#4338ca"
+        - shape: text
+          x: -16.0
+          y: 18.0
+          text: "{{node_name}}"
+          size: 8.5
+          color: "#ffffff"
+        - shape: text
+          x: 0.0
+          y: -3.0
+          text: "AURORA // POSTGRES"
+          size: 7.5
+          color: "#a5b4fc"
+        - shape: progress
+          style: segmented
+          x: 0.0
+          y: -18.0
+          w: 100.0
+          h: 3.5
+          segments: 8
+          gap: 2.0
+          track_color: "#0f172a"
+          fill_color: "#6366f1"
+
+  node_types:
+    - id: dynamodb
+      attrs:
+        ticks: 2
+        template_ref: aws_dynamo_card
+        params:
+          table_name: "ItemsTable"
+      fn: |
+        fn on_init() {
+          globals.items = #{};
+          globals.write_count = 0;
+        }
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          globals.write_count += 1;
+          globals.items["item_" + globals.write_count] = msg;
+          log("DynamoDB PutItem #" + globals.write_count + " from " + from);
+        }
+
+    - id: s3_bucket
+      attrs:
+        ticks: 2
+        template_ref: aws_s3_card
+        params:
+          bucket_name: "prod-assets"
+      fn: |
+        fn on_init() {
+          globals.objects = 0;
+        }
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          globals.objects += 1;
+          log("S3 PutObject #" + globals.objects + ": " + msg);
+        }
+
+    - id: rds_aurora
+      attrs:
+        ticks: 2
+        template_ref: aws_rds_card
+      fn: |
+        fn on_init() {
+          globals.tx_count = 0;
+        }
+        fn on_timer() {}
+        fn on_msg(from, msg) {
+          globals.tx_count += 1;
+          log("Aurora SQL Commit #" + globals.tx_count);
+        }

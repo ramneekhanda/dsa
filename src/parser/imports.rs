@@ -1998,41 +1998,100 @@ pub const PRESET_THEME_DRACULA: &str = include_str!("../../plibs/themes/dracula.
 pub const PRESET_THEME_MATRIX: &str = include_str!("../../plibs/themes/matrix.yml");
 pub const PRESET_THEME_SOLARIZED_LIGHT: &str = include_str!("../../plibs/themes/solarized_light.yml");
 
+pub const PRESET_AWS_COMPUTE: &str = include_str!("../../plibs/aws/compute.yml");
+pub const PRESET_AWS_NETWORKING: &str = include_str!("../../plibs/aws/networking.yml");
+pub const PRESET_AWS_DATABASE: &str = include_str!("../../plibs/aws/database.yml");
+pub const PRESET_AWS_MESSAGING: &str = include_str!("../../plibs/aws/messaging.yml");
+pub const PRESET_AWS_ALL: &str = include_str!("../../plibs/aws/all.yml");
+
 /// Looks up a built-in preset by name/shorthand.
 pub fn get_builtin_preset(name: &str) -> Option<&'static str> {
     let normalized = name.trim().to_lowercase();
     match normalized.as_str() {
-        "theme:cyberpunk" | "plibs:cyberpunk" | "cyberpunk" | "plibs/themes/cyberpunk.yml" => {
-            Some(PRESET_THEME_CYBERPUNK)
-        }
-        "theme:cloud" | "theme:cloud_cards" | "plibs:cloud" | "cloud" | "cloud_cards" | "plibs/themes/cloud.yml" => {
-            Some(PRESET_THEME_CLOUD)
-        }
-        "theme:datacenter" | "theme:rack" | "plibs:datacenter" | "datacenter" | "rack" | "plibs/themes/datacenter.yml" => {
-            Some(PRESET_THEME_DATACENTER)
-        }
-        "theme:minimal" | "theme:capsule" | "plibs:minimal" | "minimal" | "capsule" | "plibs/themes/minimal.yml" => {
-            Some(PRESET_THEME_MINIMAL)
-        }
-        "theme:synthwave" | "plibs:synthwave" | "synthwave" | "plibs/themes/synthwave.yml" => {
-            Some(PRESET_THEME_SYNTHWAVE)
-        }
-        "theme:nordic" | "plibs:nordic" | "nordic" | "nord" | "plibs/themes/nordic.yml" => {
-            Some(PRESET_THEME_NORDIC)
-        }
-        "theme:dracula" | "plibs:dracula" | "dracula" | "plibs/themes/dracula.yml" => {
-            Some(PRESET_THEME_DRACULA)
-        }
-        "theme:matrix" | "plibs:matrix" | "matrix" | "plibs/themes/matrix.yml" => {
-            Some(PRESET_THEME_MATRIX)
-        }
-        "theme:solarized_light"
+        // Theme library: plibs:themes/<name>
+        "plibs:themes/cyberpunk"
+        | "theme:cyberpunk"
+        | "plibs:cyberpunk"
+        | "cyberpunk"
+        | "plibs/themes/cyberpunk.yml" => Some(PRESET_THEME_CYBERPUNK),
+
+        "plibs:themes/cloud"
+        | "theme:cloud"
+        | "theme:cloud_cards"
+        | "plibs:cloud"
+        | "cloud"
+        | "cloud_cards"
+        | "plibs/themes/cloud.yml" => Some(PRESET_THEME_CLOUD),
+
+        "plibs:themes/datacenter"
+        | "theme:datacenter"
+        | "theme:rack"
+        | "plibs:datacenter"
+        | "datacenter"
+        | "rack"
+        | "plibs/themes/datacenter.yml" => Some(PRESET_THEME_DATACENTER),
+
+        "plibs:themes/minimal"
+        | "theme:minimal"
+        | "theme:capsule"
+        | "plibs:minimal"
+        | "minimal"
+        | "capsule"
+        | "plibs/themes/minimal.yml" => Some(PRESET_THEME_MINIMAL),
+
+        "plibs:themes/synthwave"
+        | "theme:synthwave"
+        | "plibs:synthwave"
+        | "synthwave"
+        | "plibs/themes/synthwave.yml" => Some(PRESET_THEME_SYNTHWAVE),
+
+        "plibs:themes/nordic"
+        | "theme:nordic"
+        | "plibs:nordic"
+        | "nordic"
+        | "nord"
+        | "plibs/themes/nordic.yml" => Some(PRESET_THEME_NORDIC),
+
+        "plibs:themes/dracula"
+        | "theme:dracula"
+        | "plibs:dracula"
+        | "dracula"
+        | "plibs/themes/dracula.yml" => Some(PRESET_THEME_DRACULA),
+
+        "plibs:themes/matrix"
+        | "theme:matrix"
+        | "plibs:matrix"
+        | "matrix"
+        | "plibs/themes/matrix.yml" => Some(PRESET_THEME_MATRIX),
+
+        "plibs:themes/solarized_light"
+        | "plibs:themes/solarized"
+        | "theme:solarized_light"
         | "theme:solarized"
         | "plibs:solarized_light"
         | "plibs:solarized"
         | "solarized_light"
         | "solarized"
         | "plibs/themes/solarized_light.yml" => Some(PRESET_THEME_SOLARIZED_LIGHT),
+
+        // AWS library: plibs:aws/<module>
+        "plibs:aws/compute" | "aws:compute" | "plibs/aws/compute.yml" => {
+            Some(PRESET_AWS_COMPUTE)
+        }
+        "plibs:aws/networking" | "aws:networking" | "plibs/aws/networking.yml" => {
+            Some(PRESET_AWS_NETWORKING)
+        }
+        "plibs:aws/database" | "aws:database" | "plibs/aws/database.yml" => {
+            Some(PRESET_AWS_DATABASE)
+        }
+        "plibs:aws/messaging" | "aws:messaging" | "plibs/aws/messaging.yml" => {
+            Some(PRESET_AWS_MESSAGING)
+        }
+        "plibs:aws/all" | "plibs:aws" | "aws:all" | "aws" | "plibs/aws/all.yml" => {
+            Some(PRESET_AWS_ALL)
+        }
+
+        // Standard library presets: stdlib:*
         "stdlib:load_balancer" | "load_balancer" | "stdlib:lb" | "lb" => {
             Some(PRESET_STDLIB_LOAD_BALANCER)
         }
@@ -2162,12 +2221,16 @@ pub fn merge_graph_definitions(
     }
 }
 
-/// Resolves all imports (both built-in presets and external URLs) for a given raw YAML string.
-pub fn resolve_file_imports(
+fn resolve_file_recursive(
     raw_yaml: &str,
     external_sources: &HashMap<String, String>,
+    depth: usize,
 ) -> Result<File, serde_yaml::Error> {
     use serde::de::Error as SerdeError;
+    if depth > 8 {
+        return Err(serde_yaml::Error::custom("Cyclic or too deeply nested imports"));
+    }
+
     let mut file: File = serde_yaml::from_str(raw_yaml)?;
 
     // Collect all imports: theme shorthand + top-level imports + graph_defn.imports
@@ -2212,8 +2275,8 @@ pub fn resolve_file_imports(
             )));
         };
 
-        // Directly parse imported YAML
-        let imported_file: File = serde_yaml::from_str(&source_yaml)?;
+        // Recursively resolve imported YAML
+        let imported_file = resolve_file_recursive(&source_yaml, external_sources, depth + 1)?;
         let filter_slice = imp.import.as_deref();
         merge_graph_definitions(
             &mut merged_graph_defn,
@@ -2225,6 +2288,14 @@ pub fn resolve_file_imports(
 
     file.graph_defn = merged_graph_defn;
     Ok(file)
+}
+
+/// Resolves all imports (both built-in presets and external URLs) for a given raw YAML string.
+pub fn resolve_file_imports(
+    raw_yaml: &str,
+    external_sources: &HashMap<String, String>,
+) -> Result<File, serde_yaml::Error> {
+    resolve_file_recursive(raw_yaml, external_sources, 0)
 }
 
 #[cfg(test)]
@@ -2417,6 +2488,15 @@ imports:
     #[test]
     fn test_all_builtin_presets_validity() {
         let presets = [
+            "plibs:themes/cyberpunk",
+            "plibs:themes/cloud",
+            "plibs:themes/datacenter",
+            "plibs:themes/minimal",
+            "plibs:themes/synthwave",
+            "plibs:themes/nordic",
+            "plibs:themes/dracula",
+            "plibs:themes/matrix",
+            "plibs:themes/solarized_light",
             "theme:cyberpunk",
             "theme:cloud",
             "theme:datacenter",
@@ -2426,11 +2506,11 @@ imports:
             "theme:dracula",
             "theme:matrix",
             "theme:solarized_light",
-            "plibs:synthwave",
-            "plibs:nordic",
-            "plibs:dracula",
-            "plibs:matrix",
-            "plibs:solarized_light",
+            "plibs:aws/compute",
+            "plibs:aws/networking",
+            "plibs:aws/database",
+            "plibs:aws/messaging",
+            "plibs:aws/all",
             "stdlib:load_balancer",
             "stdlib:circuit_breaker",
             "stdlib:cache",
@@ -2446,19 +2526,19 @@ imports:
     #[test]
     fn test_all_builtin_themes_have_explain_theme() {
         let themes = [
-            ("theme:cyberpunk", crate::parser::graphv2::MessageBubbleShape::Chamfered),
-            ("theme:cloud", crate::parser::graphv2::MessageBubbleShape::Rounded),
-            ("theme:datacenter", crate::parser::graphv2::MessageBubbleShape::Box),
-            ("theme:minimal", crate::parser::graphv2::MessageBubbleShape::Pill),
-            ("theme:synthwave", crate::parser::graphv2::MessageBubbleShape::Chamfered),
-            ("theme:nordic", crate::parser::graphv2::MessageBubbleShape::Rounded),
-            ("theme:dracula", crate::parser::graphv2::MessageBubbleShape::Rounded),
-            ("theme:matrix", crate::parser::graphv2::MessageBubbleShape::Box),
-            ("theme:solarized_light", crate::parser::graphv2::MessageBubbleShape::Pill),
+            ("plibs:themes/cyberpunk", crate::parser::graphv2::MessageBubbleShape::Chamfered),
+            ("plibs:themes/cloud", crate::parser::graphv2::MessageBubbleShape::Rounded),
+            ("plibs:themes/datacenter", crate::parser::graphv2::MessageBubbleShape::Box),
+            ("plibs:themes/minimal", crate::parser::graphv2::MessageBubbleShape::Pill),
+            ("plibs:themes/synthwave", crate::parser::graphv2::MessageBubbleShape::Chamfered),
+            ("plibs:themes/nordic", crate::parser::graphv2::MessageBubbleShape::Rounded),
+            ("plibs:themes/dracula", crate::parser::graphv2::MessageBubbleShape::Rounded),
+            ("plibs:themes/matrix", crate::parser::graphv2::MessageBubbleShape::Box),
+            ("plibs:themes/solarized_light", crate::parser::graphv2::MessageBubbleShape::Pill),
         ];
 
         for (theme_name, expected_shape) in themes {
-            let yaml = format!("theme: {}\n", theme_name.strip_prefix("theme:").unwrap());
+            let yaml = format!("imports:\n  - from: \"{}\"\n", theme_name);
             let file = parse_graph2(&yaml).unwrap_or_else(|e| panic!("Theme '{}' failed to parse: {}", theme_name, e));
             let explain_theme = file
                 .graph_defn
