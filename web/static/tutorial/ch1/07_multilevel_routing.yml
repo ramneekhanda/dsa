@@ -91,19 +91,19 @@ graph_defn:
   node_types:
     - id: client
       attrs:
-        ticks: 3
+        ticks: 5
       fn: *client_fn
     - id: gateway
       attrs:
-        ticks: 1
+        ticks: 3600
       fn: *gateway_fn
     - id: auth_service
       attrs:
-        ticks: 1
+        ticks: 3600
       fn: *auth_fn
     - id: data_service
       attrs:
-        ticks: 1
+        ticks: 3600
       fn: *data_fn
 
   icons:

@@ -37,7 +37,7 @@ graph_defn:
           log("ping got: " + msg.display);
         }
       attrs:
-        ticks: 3
+        ticks: 4
     - id: pong
       fn: |
         fn on_msg(msg) {

@@ -18,4 +18,4 @@ graph_defn:
     - id: pinger
       fn: *pinger_fn
       attrs:
-        ticks: 2
+        ticks: 4

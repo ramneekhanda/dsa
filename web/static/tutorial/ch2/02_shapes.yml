@@ -24,4 +24,4 @@ graph_defn:
     - id: gallery
       fn: *gallery_fn
       attrs:
-        ticks: 2
+        ticks: 4

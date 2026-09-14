@@ -53,7 +53,7 @@ graph_defn:
     - id: client
       fn: *client_fn
       attrs:
-        ticks: { min: 3, max: 5, jitter: true }
+        ticks: { min: 4, max: 7, jitter: true }
     - id: server
       fn: *server_fn
       params:

@@ -30,7 +30,7 @@ graph_defn:
     - id: leader
       fn: *leader_fn
       attrs:
-        ticks: 3
+        ticks: 5
     - id: node
       fn: *ring_node_fn
 

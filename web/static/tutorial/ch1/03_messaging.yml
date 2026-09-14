@@ -30,8 +30,8 @@ graph_defn:
     - id: ping
       fn: *ping_fn
       attrs:
-        ticks: 3
+        ticks: 4
     - id: pong
       fn: *pong_fn
       attrs:
-        ticks: 3
+        ticks: 3600

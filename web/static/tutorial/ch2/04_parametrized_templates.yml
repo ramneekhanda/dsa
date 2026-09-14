@@ -58,7 +58,7 @@ graph_defn:
     - id: client
       fn: *client_fn
       attrs:
-        ticks: { min: 2, max: 4, jitter: true }
+        ticks: { min: 4, max: 7, jitter: true }
         # {{icon}} auto-binds to this attrs.icon; {{node_name}} auto-binds
         # to each node *instance*'s own name - client_a and client_b render
         # correctly despite sharing this one node type/template.

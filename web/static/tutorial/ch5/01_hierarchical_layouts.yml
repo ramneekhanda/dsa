@@ -41,7 +41,7 @@ graph_defn:
     - id: producer
       fn: *producer_fn
       attrs:
-        ticks: 2
+        ticks: 4
     - id: gateway
       fn: *gateway_fn
     - id: worker

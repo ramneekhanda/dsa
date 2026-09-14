@@ -25,7 +25,7 @@ node_types:
         }
       }
     attrs:
-      ticks: { min: 3, max: 5, jitter: true }
+      ticks: { min: 4, max: 7, jitter: true }
 
   - id: server
     fn: |

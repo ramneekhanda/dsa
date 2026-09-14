@@ -25,7 +25,7 @@ graph_defn:
   node_types:
     - id: source
       attrs:
-        ticks: 2
+        ticks: 4
         template_ref: cloud_card
         params:
           icon: "aws_sns"

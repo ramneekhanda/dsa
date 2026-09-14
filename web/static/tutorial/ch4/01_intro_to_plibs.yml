@@ -29,7 +29,7 @@ graph_defn:
     - id: client
       fn: *client_fn
       attrs:
-        ticks: 2
+        ticks: 4
   graph:
     - name: client
       node_type: client

@@ -61,13 +61,13 @@ graph_defn:
   node_types:
     - id: client
       attrs:
-        ticks: 2
+        ticks: 4
       fn: *client_fn
     - id: gateway
       attrs:
-        ticks: 1
+        ticks: 3600
       fn: *gateway_fn
     - id: worker
       attrs:
-        ticks: 1
+        ticks: 3600
       fn: *worker_fn

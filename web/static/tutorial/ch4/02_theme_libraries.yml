@@ -37,7 +37,7 @@ graph_defn:
       template: dracula_node
       fn: *producer_fn
       attrs:
-        ticks: 2
+        ticks: 4
         title: "PRODUCER"
         status: "ACTIVE"
         badge: "BATCH"

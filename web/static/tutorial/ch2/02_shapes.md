@@ -32,7 +32,7 @@ node_types:
         ]);
       }
     attrs:
-      ticks: 2
+      ticks: 4
 ```
 
 Shapes paint in list order - a later shape in the array draws on top of an earlier
