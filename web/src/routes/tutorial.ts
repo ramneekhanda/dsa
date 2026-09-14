@@ -156,4 +156,47 @@ export const tutorialChapters: TutorialChapter[] = [
       },
     ],
   },
+  {
+    id: "ch4",
+    title: "Chapter 4: Process Libraries (plibs)",
+    dir: "ch4",
+    lessons: [
+      {
+        id: "4.1",
+        title: "4.1 Introduction to plibs",
+        markdown: "01_intro_to_plibs.md",
+        yaml: "01_intro_to_plibs.yml",
+      },
+      {
+        id: "4.2",
+        title: "4.2 Theme Libraries",
+        markdown: "02_theme_libraries.md",
+        yaml: "02_theme_libraries.yml",
+      },
+      {
+        id: "4.3",
+        title: "4.3 AWS Compute & Networking",
+        markdown: "03_aws_compute_networking.md",
+        yaml: "03_aws_compute_networking.yml",
+      },
+      {
+        id: "4.4",
+        title: "4.4 AWS Storage & Messaging",
+        markdown: "04_aws_database_messaging.md",
+        yaml: "04_aws_database_messaging.yml",
+      },
+      {
+        id: "4.5",
+        title: "4.5 AWS Cloud Architectures",
+        markdown: "05_aws_full_architecture.md",
+        yaml: "05_aws_full_architecture.yml",
+      },
+      {
+        id: "4.6",
+        title: "4.6 Authoring Custom plibs",
+        markdown: "06_authoring_plibs.md",
+        yaml: "06_authoring_plibs.yml",
+      },
+    ],
+  },
 ];
