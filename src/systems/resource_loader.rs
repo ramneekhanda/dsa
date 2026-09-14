@@ -5,22 +5,22 @@ use crate::resources::common_assets::{CommonAssets, LoadingState, LoadingStateOp
 use crate::resources::graph_def::GraphChange;
 use crate::resources::graph_def::GraphDefinitionRes;
 
+// Needs the explicit `https://` scheme (not just `//host/path`) to be routed
+// through `bevy_web_asset`'s registered `https` AssetSource on both platforms -
+// a protocol-relative path only "worked" in the browser because Bevy's wasm
+// asset fetcher hands any unmatched path straight to `fetch()`, which browsers
+// resolve as protocol-relative; native's filesystem-based default asset reader
+// has no such fallback and just reports the literal path not found.
+const DEFAULT_FONT_URL: &str =
+    "https://raw.githubusercontent.com/ramneekhanda/procsim_assets/main/fonts/ComicNeue-Regular.ttf";
+
 fn load_default_fonts_and_icons(ca: &mut ResMut<CommonAssets>, asset_server: &Res<AssetServer>) {
     ca.resource_map.insert(
         "default_font".to_string(),
-        ResourceType::FontHandle(
-            // Needs the explicit `https://` scheme (not just `//host/path`) to be
-            // routed through `bevy_web_asset`'s registered `https` AssetSource on
-            // both platforms - a protocol-relative path only "worked" in the
-            // browser because Bevy's wasm asset fetcher hands any unmatched path
-            // straight to `fetch()`, which browsers resolve as protocol-relative;
-            // native's filesystem-based default asset reader has no such fallback
-            // and just reports the literal path not found.
-            asset_server.load("https://raw.githubusercontent.com/ramneekhanda/procsim_assets/main/fonts/ComicNeue-Regular.ttf"),
-        ),
+        ResourceType::FontHandle(asset_server.load(DEFAULT_FONT_URL)),
     );
     ca.resource_map.insert(
-      "default_system_icon".to_string(), 
+      "default_system_icon".to_string(),
       ResourceType::ImageHandle( asset_server.load("https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/General/Servers.png"))
     );
 }
@@ -37,6 +37,22 @@ fn load_resources_from_file(
             icon.id.clone(),
             ResourceType::ImageHandle(asset_server.load(icon.url.clone())),
         );
+    }
+
+    // `graph_attrs.font` is part of the theme (see GraphAttrs' doc comment) -
+    // swap the single shared `"default_font"` handle to match whenever it
+    // actually changes: a theme that sets one, back to the hardcoded app
+    // default when a newly-loaded graph doesn't set one at all, or a no-op
+    // when it's unchanged from last time (comparing against `theme_font_url`
+    // avoids re-issuing `asset_server.load` - and the resulting `LoadingState`
+    // gate re-triggering - on every single graph reload).
+    let wanted_font = g.graph_defn.graph_attrs.font.clone();
+    if wanted_font != ca.theme_font_url {
+        let url = wanted_font.clone().unwrap_or_else(|| DEFAULT_FONT_URL.to_string());
+        c_log!("theme font changed -> '{}'", url);
+        ca.resource_map
+            .insert("default_font".to_string(), ResourceType::FontHandle(asset_server.load(url)));
+        ca.theme_font_url = wanted_font;
     }
 }
 

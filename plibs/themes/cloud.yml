@@ -3,6 +3,7 @@ graph_defn:
     background: "#f1f5f9"
     connection_color: "#64748b"
     text_color: "#0f172a"
+    font: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/lato/Lato-Regular.ttf"
     message_theme:
       shape: pill
       bg: "#1e293b"

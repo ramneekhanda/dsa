@@ -3,6 +3,7 @@ graph_defn:
     background: "#fdf6e3"
     connection_color: "#268bd2"
     text_color: "#073642"
+    font: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/cousine/Cousine-Regular.ttf"
     message_theme:
       shape: pill
       bg: "#eee8d5"

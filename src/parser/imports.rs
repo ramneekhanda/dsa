@@ -298,6 +298,9 @@ pub fn merge_graph_definitions(
     if base.graph_attrs.explain_theme.is_none() && imported.graph_attrs.explain_theme.is_some() {
         base.graph_attrs.explain_theme = imported.graph_attrs.explain_theme;
     }
+    if base.graph_attrs.font.is_none() && imported.graph_attrs.font.is_some() {
+        base.graph_attrs.font = imported.graph_attrs.font;
+    }
 
     // 2. Merge icons (deduplicated by id)
     for icon in imported.icons {

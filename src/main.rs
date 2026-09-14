@@ -43,6 +43,7 @@ fn setup_app(app: &mut App) {
         );
     app.insert_resource(CommonAssets {
         resource_map: HashMap::new(),
+        theme_font_url: None,
     })
     .insert_resource(Msaa::Sample4)
     .insert_resource(CodeStorage::default())

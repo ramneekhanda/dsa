@@ -308,6 +308,18 @@ pub struct GraphAttrs {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub explain_theme: Option<ExplainTheme>,
+
+    /// URL of a font file to use for every piece of canvas text (node labels,
+    /// message/connector text, draw()/template text shapes, group titles,
+    /// explain bubbles - everything rendered through the single shared
+    /// `"default_font"` resource, see `systems::resource_loader`). `None`
+    /// keeps the app-wide default (Comic Neue). Like every other `GraphAttrs`
+    /// field, this is one value for the whole graph, not a per-node/per-shape
+    /// choice - a local `graph_attrs.font` always wins over an imported
+    /// theme's, and among imports the first one in `imports:` order that sets
+    /// it wins (see `merge_graph_definitions`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font: Option<String>,
 }
 
 impl Default for GraphAttrs {
@@ -319,6 +331,7 @@ impl Default for GraphAttrs {
             text_color: black_color(),
             message_theme: None,
             explain_theme: None,
+            font: None,
         }
     }
 }

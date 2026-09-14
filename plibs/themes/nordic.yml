@@ -3,6 +3,7 @@ graph_defn:
     background: "#242933"
     connection_color: "#88c0d0"
     text_color: "#eceff4"
+    font: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/varelaround/VarelaRound-Regular.ttf"
     message_theme:
       shape: rounded
       bg: "#2e3440"

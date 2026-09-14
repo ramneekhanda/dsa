@@ -3,6 +3,7 @@ graph_defn:
     background: "#f8fafc"
     connection_color: "#3b82f6"
     text_color: "#0f172a"
+    font: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/poppins/Poppins-Regular.ttf"
     message_theme:
       shape: pill
       bg: "#ffffff"

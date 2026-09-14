@@ -3,6 +3,7 @@ graph_defn:
     background: "#1e1f29"
     connection_color: "#bd93f9"
     text_color: "#f8f8f2"
+    font: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/spacemono/SpaceMono-Regular.ttf"
     message_theme:
       shape: rounded
       bg: "#282a36"

@@ -111,6 +111,19 @@ most important file to read first:
   `node_types` entry — added so hand-written and import-merged YAML (see imports below,
   which key/dedup `node_types` by `id`) can use whichever reads better without a schema
   fork; `parse_graph2`/`merge_graph_definitions` only ever see the normalized `id`.
+- `graph_attrs.font: Option<String>` — a font file URL, part of the theme like
+  `background`/`connection_color`/`message_theme`/etc (same merge precedence: a local
+  `font:` always wins, otherwise the first import in order that sets one wins - see
+  `merge_graph_definitions`). It's one value for the whole graph, not per-node/per-shape -
+  every piece of canvas text (node labels, connector/message text, `draw()`/template text
+  shapes, group titles, explain bubbles) renders through the single shared `"default_font"`
+  resource. `systems::resource_loader::load_resources_from_file` swaps that resource's
+  `Handle<Font>` to match whenever `graph_attrs.font` actually changes (tracked via
+  `CommonAssets.theme_font_url` so an unchanged theme doesn't re-issue an `asset_server.load`
+  every reload), falling back to the hardcoded app-wide default (Comic Neue) when a graph
+  doesn't set one. Every `plibs/themes/*.yml` preset sets one; picked as static (non-variable)
+  font files specifically, since Bevy's `ab_glyph` text stack's support for OpenType variable
+  font axes is uncertain - a single-weight `.ttf` sidesteps the question entirely.
 
 ### Imports & module presets (`src/parser/imports.rs`, `plibs/`)
 

@@ -3,6 +3,7 @@ graph_defn:
     background: "#18181b"
     connection_color: "#22c55e"
     text_color: "#f4f4f5"
+    font: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/ibmplexmono/IBMPlexMono-Regular.ttf"
     message_theme:
       shape: box
       bg: "#18181b"

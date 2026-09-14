@@ -3,6 +3,7 @@ graph_defn:
     background: "#070b19"
     connection_color: "#00f0ff"
     text_color: "#e0f7fa"
+    font: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/sharetechmono/ShareTechMono-Regular.ttf"
     message_theme:
       shape: chamfered
       bg: "#060d17"
