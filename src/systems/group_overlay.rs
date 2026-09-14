@@ -11,9 +11,9 @@ pub struct GroupBoxMarker {
     pub group_id: String,
 }
 
-/// Z-index of group container boxes - well behind nodes (z=100+) and connectors (z=10+),
-/// but in front of the background canvas grid (z=0).
-const GROUP_BOX_Z: f32 = 5.0;
+/// Z-index of group container boxes - behind connectors (z=10.0) and nodes (z=100+),
+/// but in front of the background canvas grid (z=0.0).
+const GROUP_BOX_Z: f32 = 2.0;
 
 /// Updates and spawns visual group container boxes when the graph definition changes.
 pub fn update_group_boxes(

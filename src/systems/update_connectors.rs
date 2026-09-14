@@ -279,7 +279,11 @@ fn generate_line(
 
     commands
         .spawn((
-            ShapeBundle { path, ..default() },
+            ShapeBundle {
+                path,
+                spatial: SpatialBundle::from_transform(Transform::from_xyz(0.0, 0.0, 10.0)),
+                ..default()
+            },
             connector_stroke(cc),
             NodeConnector {
                 id1: id1.to_string(),
