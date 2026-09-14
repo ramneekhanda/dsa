@@ -122,8 +122,8 @@ fn compute_grid_layout(
     let cols = cols.max(1);
     let rows = (n + cols - 1) / cols;
 
-    let spacing_x = layout_config.node_spacing.unwrap_or(180.0);
-    let spacing_y = layout_config.node_spacing.unwrap_or(140.0);
+    let spacing_x = layout_config.get_node_sep().max(60.0);
+    let spacing_y = layout_config.get_node_sep().max(60.0);
 
     let offset_x = -((cols - 1) as f32 * spacing_x) / 2.0;
     let offset_y = ((rows - 1) as f32 * spacing_y) / 2.0;
@@ -157,9 +157,9 @@ fn compute_hierarchical_layout(
     graph_defn: &GraphDefinition,
     layout_config: &LayoutConfig,
 ) -> ComputedLayout {
-    let rank_spacing = layout_config.rank_spacing.unwrap_or(260.0);
-    let node_spacing = layout_config.node_spacing.unwrap_or(140.0);
-    let group_spacing = layout_config.group_spacing.unwrap_or(300.0);
+    let rank_spacing = layout_config.get_rank_sep();
+    let node_spacing = layout_config.get_node_sep();
+    let group_spacing = layout_config.get_group_sep();
     let global_dir = layout_config.direction;
 
     // Node lookup map
@@ -219,7 +219,7 @@ fn compute_hierarchical_layout(
         let g_spacing = g
             .layout
             .as_ref()
-            .and_then(|l| l.spacing)
+            .map(|l| l.get_spacing(node_spacing))
             .unwrap_or(node_spacing);
 
         let mut internal_positions = HashMap::new();
@@ -670,7 +670,7 @@ mod tests {
                 title: Some("Compute Tier".to_string()),
                 layout: Some(GroupLayoutConfig {
                     direction: Some(LayoutDirection::Tb),
-                    spacing: Some(120.0),
+                    sep: Some(120.0),
                     ..default()
                 }),
                 nodes: vec!["worker_1".to_string(), "worker_2".to_string()],
@@ -769,8 +769,8 @@ graph_defn:
         let parsed: crate::parser::graphv2::File =
             serde_yaml::from_str(yaml).expect("Failed to parse YAML");
         let layout_cfg = parsed.graph_defn.layout.as_ref().unwrap();
-        assert_eq!(layout_cfg.rank_spacing, Some(350.0));
-        assert_eq!(layout_cfg.node_spacing, Some(180.0));
+        assert_eq!(layout_cfg.rank_sep, Some(350.0));
+        assert_eq!(layout_cfg.node_sep, Some(180.0));
 
         let computed = compute_graph_layout(&parsed.graph_defn);
         let pos_a = computed.node_positions.get("a").unwrap();

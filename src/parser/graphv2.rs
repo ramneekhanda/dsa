@@ -1130,33 +1130,56 @@ pub struct LayoutConfig {
     pub direction: LayoutDirection,
     #[serde(
         default,
-        alias = "rank_sep",
         alias = "rank_spacing",
+        alias = "rank spacing",
+        alias = "rank-spacing",
         alias = "rank_separation",
         alias = "rankSep",
-        alias = "rankSpacing"
+        alias = "rankSpacing",
+        alias = "rank sep",
+        alias = "rank-sep"
     )]
-    pub rank_spacing: Option<f32>,
+    pub rank_sep: Option<f32>,
     #[serde(
         default,
-        alias = "node_sep",
         alias = "node_spacing",
+        alias = "node spacing",
+        alias = "node-spacing",
         alias = "node_separation",
         alias = "nodeSep",
-        alias = "nodeSpacing"
+        alias = "nodeSpacing",
+        alias = "node sep",
+        alias = "node-sep"
     )]
-    pub node_spacing: Option<f32>,
+    pub node_sep: Option<f32>,
     #[serde(
         default,
-        alias = "group_sep",
         alias = "group_spacing",
+        alias = "group spacing",
+        alias = "group-spacing",
         alias = "group_separation",
         alias = "groupSep",
-        alias = "groupSpacing"
+        alias = "groupSpacing",
+        alias = "group sep",
+        alias = "group-sep"
     )]
-    pub group_spacing: Option<f32>,
+    pub group_sep: Option<f32>,
     #[serde(default)]
     pub draggable: Option<bool>,
+}
+
+impl LayoutConfig {
+    pub fn get_rank_sep(&self) -> f32 {
+        self.rank_sep.unwrap_or(260.0)
+    }
+
+    pub fn get_node_sep(&self) -> f32 {
+        self.node_sep.unwrap_or(140.0)
+    }
+
+    pub fn get_group_sep(&self) -> f32 {
+        self.group_sep.unwrap_or(320.0)
+    }
 }
 
 impl Default for LayoutConfig {
@@ -1164,9 +1187,9 @@ impl Default for LayoutConfig {
         Self {
             r#type: LayoutType::Hierarchical,
             direction: LayoutDirection::Lr,
-            rank_spacing: Some(260.0),
-            node_spacing: Some(140.0),
-            group_spacing: Some(320.0),
+            rank_sep: Some(260.0),
+            node_sep: Some(140.0),
+            group_sep: Some(320.0),
             draggable: Some(false),
         }
     }
@@ -1178,15 +1201,26 @@ pub struct GroupLayoutConfig {
     pub direction: Option<LayoutDirection>,
     #[serde(
         default,
-        alias = "sep",
         alias = "node_sep",
+        alias = "node sep",
+        alias = "node-sep",
         alias = "node_spacing",
+        alias = "node spacing",
+        alias = "node-spacing",
         alias = "nodeSep",
-        alias = "nodeSpacing"
+        alias = "nodeSpacing",
+        alias = "spacing",
+        alias = "sep"
     )]
-    pub spacing: Option<f32>,
+    pub sep: Option<f32>,
     #[serde(default, alias = "cols", alias = "col")]
     pub columns: Option<usize>,
+}
+
+impl GroupLayoutConfig {
+    pub fn get_spacing(&self, default_val: f32) -> f32 {
+        self.sep.unwrap_or(default_val)
+    }
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone, JsonSchema, Default)]
@@ -1257,10 +1291,10 @@ where
                             layout.direction = helper.direction;
                         }
                         if helper.spacing.is_some() {
-                            layout.spacing = helper.spacing;
+                            layout.sep = helper.spacing;
                         }
                         let layout_opt = if layout.direction.is_some()
-                            || layout.spacing.is_some()
+                            || layout.sep.is_some()
                             || layout.columns.is_some()
                         {
                             Some(layout)
@@ -1286,10 +1320,10 @@ where
                                 layout.direction = helper.direction;
                             }
                             if helper.spacing.is_some() {
-                                layout.spacing = helper.spacing;
+                                layout.sep = helper.spacing;
                             }
                             let layout_opt = if layout.direction.is_some()
-                                || layout.spacing.is_some()
+                                || layout.sep.is_some()
                                 || layout.columns.is_some()
                             {
                                 Some(layout)
@@ -1322,10 +1356,10 @@ where
                         layout.direction = helper.direction;
                     }
                     if helper.spacing.is_some() {
-                        layout.spacing = helper.spacing;
+                        layout.sep = helper.spacing;
                     }
                     let layout_opt = if layout.direction.is_some()
-                        || layout.spacing.is_some()
+                        || layout.sep.is_some()
                         || layout.columns.is_some()
                     {
                         Some(layout)
