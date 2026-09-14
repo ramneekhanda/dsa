@@ -25,7 +25,7 @@ const EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../web/static/tutorial/ch1/02_first_graph.yml"),
     ),
     (
-        "1.3 Nodes Talking To Each Other",
+        "1.3 Message Passing & Links",
         include_str!("../../web/static/tutorial/ch1/03_messaging.yml"),
     ),
     (
@@ -33,75 +33,99 @@ const EXAMPLES: &[(&str, &str)] = &[
         include_str!("../../web/static/tutorial/ch1/04_params_and_icons.yml"),
     ),
     (
-        "1.5 State and Logging",
+        "1.5 Persistent State & Logging",
         include_str!("../../web/static/tutorial/ch1/05_state_and_logging.yml"),
     ),
     (
-        "1.6 Putting It Together",
-        include_str!("../../web/static/tutorial/ch1/06_putting_it_together.yml"),
+        "1.6 Multilevel Routing & Reverse Paths",
+        include_str!("../../web/static/tutorial/ch1/06_multilevel_routing.yml"),
     ),
     (
-        "1.7 Multilevel Routing",
-        include_str!("../../web/static/tutorial/ch1/07_multilevel_routing.yml"),
+        "1.7 Interactive Narration (explain)",
+        include_str!("../../web/static/tutorial/ch1/07_interactive_narration.yml"),
     ),
     (
-        "1.8 Constants & State Persistence",
-        include_str!("../../web/static/tutorial/ch1/08_constants_and_scope.yml"),
+        "2.1 Hierarchical Pipelines",
+        include_str!("../../web/static/tutorial/ch2/01_hierarchical_layouts.yml"),
     ),
     (
-        "1.9 Interactive Narration (explain)",
-        include_str!("../../web/static/tutorial/ch1/09_interactive_narration.yml"),
+        "2.2 Groups & Architecture Tiers",
+        include_str!("../../web/static/tutorial/ch2/02_groups_and_tiers.yml"),
     ),
     (
-        "2.1 draw() Basics",
-        include_str!("../../web/static/tutorial/ch2/01_draw_basics.yml"),
+        "2.3 Grid & Circular Topologies",
+        include_str!("../../web/static/tutorial/ch2/03_grid_and_circular.yml"),
     ),
     (
-        "2.2 Shape Primitives",
-        include_str!("../../web/static/tutorial/ch2/02_shapes.yml"),
+        "2.4 Manual Control & Fine-Tuning",
+        include_str!("../../web/static/tutorial/ch2/04_manual_and_offsets.yml"),
     ),
     (
-        "2.3 Reusable Node Templates",
-        include_str!("../../web/static/tutorial/ch2/03_node_templates.yml"),
+        "3.1 draw() Basics & Node Coordinates",
+        include_str!("../../web/static/tutorial/ch3/01_draw_basics.yml"),
     ),
     (
-        "2.4 Parametrized Templates",
-        include_str!("../../web/static/tutorial/ch2/04_parametrized_templates.yml"),
+        "3.2 Shape Primitives",
+        include_str!("../../web/static/tutorial/ch3/02_shapes.yml"),
     ),
     (
-        "3.1 Cloud Architecture Theme",
-        include_str!("../../web/static/tutorial/ch3/01_cloud_cards.yml"),
+        "3.3 Reusable Node Templates",
+        include_str!("../../web/static/tutorial/ch3/03_node_templates.yml"),
     ),
     (
-        "3.2 Datacenter Rack Units",
-        include_str!("../../web/static/tutorial/ch3/02_datacenter_rack.yml"),
+        "3.4 Live State Gauges & Meters",
+        include_str!("../../web/static/tutorial/ch3/04_state_gauges.yml"),
     ),
     (
-        "3.3 Cyberpunk Neon HUD",
-        include_str!("../../web/static/tutorial/ch3/03_cyberpunk_hud.yml"),
+        "4.1 Cloud Architecture Theme",
+        include_str!("../../web/static/tutorial/ch4/01_cloud_cards.yml"),
     ),
     (
-        "3.4 Minimal Capsule Pills",
-        include_str!("../../web/static/tutorial/ch3/04_capsule_pills.yml"),
+        "4.2 Datacenter Rack Units",
+        include_str!("../../web/static/tutorial/ch4/02_datacenter_rack.yml"),
     ),
     (
-        "3.5 Layered & Composed Themes",
-        include_str!("../../web/static/tutorial/ch3/05_layered_theming.yml"),
+        "4.3 Cyberpunk Neon HUD",
+        include_str!("../../web/static/tutorial/ch4/03_cyberpunk_hud.yml"),
     ),
     (
-        "3.6 Remote Imports & Presets",
-        include_str!("../../web/static/tutorial/ch3/06_remote_imports.yml"),
+        "4.4 Minimal Capsule Pills",
+        include_str!("../../web/static/tutorial/ch4/04_capsule_pills.yml"),
     ),
     (
-        "3.7 Remote Theme Packages",
-        include_str!("../../web/static/tutorial/ch3/07_remote_theme_imports.yml"),
+        "4.5 Layered & Composed Themes",
+        include_str!("../../web/static/tutorial/ch4/05_layered_theming.yml"),
+    ),
+    (
+        "5.1 Introduction to plibs",
+        include_str!("../../web/static/tutorial/ch5/01_intro_to_plibs.yml"),
+    ),
+    (
+        "5.2 Token Ring Mutual Exclusion",
+        include_str!("../../web/static/tutorial/ch5/02_token_ring.yml"),
+    ),
+    (
+        "5.3 Load Balancer (Round-Robin)",
+        include_str!("../../web/static/tutorial/ch5/03_load_balancer.yml"),
+    ),
+    (
+        "5.4 Two-Phase Commit (2PC)",
+        include_str!("../../web/static/tutorial/ch5/04_two_phase_commit.yml"),
+    ),
+    (
+        "5.5 Primary-Backup Replication",
+        include_str!("../../web/static/tutorial/ch5/05_primary_backup.yml"),
+    ),
+    (
+        "5.6 AWS Cloud Architecture Library",
+        include_str!("../../web/static/tutorial/ch5/06_aws_cloud_architecture.yml"),
     ),
 ];
 
 /// Same list `load_native_demo_on_startup` seeds `E_CODE` with at `Startup`
 /// - kept as a named constant so the two stay in sync by construction rather
 /// than by remembering to update both places.
-pub const DEFAULT_EXAMPLE: &str = EXAMPLES[4].1; // "1.6 Putting It Together"
+pub const DEFAULT_EXAMPLE: &str = EXAMPLES[0].1; // "1.2 Your First Graph"
 
 pub fn examples_picker(mut contexts: EguiContexts) {
     // Starts collapsed, same reasoning as ui::graph_properties_viewer's

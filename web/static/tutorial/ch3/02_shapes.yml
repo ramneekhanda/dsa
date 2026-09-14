@@ -1,0 +1,27 @@
+fns:
+  - &showcase_fn |
+    fn on_init() {
+      draw([
+        #{ shape: "rect", w: 140, h: 80, radius: 10, bg: "#ffffff", border: "#e2e8f0", border_width: 2 },
+        #{ shape: "circle", r: 16, x: -40, y: 10, bg: "#ecfdf5", border: "#10b981", border_width: 2 },
+        #{ shape: "rect", w: 32, h: 32, radius: 4, x: 0, y: 10, bg: "#eff6ff", border: "#3b82f6", border_width: 2 },
+        #{ shape: "polygon", points: [[40, 26], [54, -6], [26, -6]], bg: "#fef3c7", border: "#f59e0b", border_width: 2 },
+        #{ shape: "line", x1: -55, y1: -16, x2: 55, y2: -16, color: "#cbd5e1", width: 1 },
+        #{ shape: "text", text: "Shapes Showcase", y: -26, color: "#334155", font_size: 11, bold: true }
+      ]);
+    }
+
+graph_defn:
+  layout:
+    type: hierarchical
+    direction: lr
+  graph_attrs:
+    title: "Shape Primitives"
+  node_types:
+    - id: showcase
+      fn: *showcase_fn
+      attrs: { ticks: 3600 }
+  graph:
+    - name: shapes_demo
+      node_type: showcase
+      links: []

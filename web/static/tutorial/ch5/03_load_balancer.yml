@@ -1,0 +1,113 @@
+fns:
+  - &client_fn |
+    fn on_init() {
+      globals.req_id = 0;
+    }
+    fn on_timer() {
+      globals.req_id += 1;
+      log("Client sending Request #" + globals.req_id);
+      send("load_balancer", #{
+        type: "REQ",
+        id: globals.req_id,
+        reply_to: "client"
+      });
+    }
+    fn on_msg(msg) {
+      if msg.type == "RESP" {
+        log("Client received response for Req #" + msg.id + " from " + msg.worker);
+      }
+    }
+
+  - &lb_fn |
+    fn on_init() {
+      globals.idx = 0;
+      globals.total_routed = 0;
+      update_ui();
+    }
+    fn on_msg(msg) {
+      if msg.type == "REQ" {
+        let workers = ["worker_1", "worker_2", "worker_3"];
+        let target = workers[globals.idx % workers.len()];
+        globals.idx += 1;
+        globals.total_routed += 1;
+        log("LB routing Req #" + msg.id + " -> " + target);
+        update_ui();
+        send(target, msg);
+      } else if msg.type == "RESP" {
+        send(msg.reply_to, msg);
+      }
+    }
+    fn update_ui() {
+      draw([
+        #{ shape: "rect", w: 140, h: 55, radius: 8, bg: "#ffffff", border: "#6366f1", border_width: 2 },
+        #{ shape: "text", text: "LOAD BALANCER", y: 10, color: "#4338ca", font_size: 10, bold: true },
+        #{ shape: "text", text: "Total: " + globals.total_routed + " reqs", y: -10, color: "#64748b", font_size: 10 }
+      ]);
+    }
+
+  - &worker_fn |
+    fn on_init() {
+      globals.jobs_done = 0;
+      update_ui();
+    }
+    fn on_msg(msg) {
+      if msg.type == "REQ" {
+        globals.jobs_done += 1;
+        log(node_name + " processed Req #" + msg.id);
+        update_ui();
+        send(msg.from, #{
+          type: "RESP",
+          id: msg.id,
+          reply_to: msg.reply_to,
+          worker: node_name
+        });
+      }
+    }
+    fn update_ui() {
+      draw([
+        #{ shape: "rect", w: 130, h: 50, radius: 8, bg: "#ffffff", border: "#10b981", border_width: 2 },
+        #{ shape: "text", text: node_name, y: 8, color: "#047857", font_size: 10, bold: true },
+        #{ shape: "text", text: "Done: " + globals.jobs_done, y: -8, color: "#64748b", font_size: 10 }
+      ]);
+    }
+
+graph_defn:
+  layout:
+    type: hierarchical
+    direction: lr
+    rank_sep: 240
+    node_sep: 110
+  graph_attrs:
+    title: "Load Balancer with Round-Robin"
+  groups:
+    - id: backend_tier
+      title: "Worker Pool"
+      direction: tb
+      sep: 110
+      nodes: [worker_1, worker_2, worker_3]
+  node_types:
+    - id: client
+      fn: *client_fn
+      attrs: { ticks: 4 }
+    - id: load_balancer
+      fn: *lb_fn
+      attrs: { ticks: 3600 }
+    - id: worker
+      fn: *worker_fn
+      attrs: { ticks: 3600 }
+  graph:
+    - name: client
+      node_type: client
+      links: [load_balancer]
+    - name: load_balancer
+      node_type: load_balancer
+      links: [worker_1, worker_2, worker_3]
+    - name: worker_1
+      node_type: worker
+      links: []
+    - name: worker_2
+      node_type: worker
+      links: []
+    - name: worker_3
+      node_type: worker
+      links: []

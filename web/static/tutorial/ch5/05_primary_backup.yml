@@ -1,0 +1,120 @@
+fns:
+  - &client_fn |
+    fn on_init() {
+      globals.tx = 0;
+    }
+    fn on_timer() {
+      globals.tx += 1;
+      log("Client initiating Write TX #" + globals.tx);
+      send("primary_db", #{
+        type: "WRITE",
+        tx: globals.tx,
+        key: "user_bal",
+        val: 100 + globals.tx,
+        reply_to: "client"
+      });
+    }
+    fn on_msg(msg) {
+      if msg.type == "WRITE_OK" {
+        log("Client received WRITE_OK for TX #" + msg.tx);
+      }
+    }
+
+  - &primary_fn |
+    fn on_init() {
+      globals.store = #{};
+      globals.pending_tx = #{};
+      update_ui("PRIMARY (READY)", "#10b981");
+    }
+    fn on_msg(msg) {
+      if msg.type == "WRITE" {
+        globals.store[msg.key] = msg.val;
+        globals.pending_tx[msg.tx.to_string()] = #{
+          reply_to: msg.reply_to,
+          acks: 0
+        };
+        log("Primary accepted TX #" + msg.tx + " -> replicating to backups");
+        update_ui("REPLICATING #" + msg.tx, "#f59e0b");
+        send("replica_1", #{ type: "REPLICATE", tx: msg.tx, key: msg.key, val: msg.val });
+        send("replica_2", #{ type: "REPLICATE", tx: msg.tx, key: msg.key, val: msg.val });
+      } else if msg.type == "ACK" {
+        let key = msg.tx.to_string();
+        if globals.pending_tx.contains(key) {
+          globals.pending_tx[key].acks += 1;
+          if globals.pending_tx[key].acks == 2 {
+            let reply_to = globals.pending_tx[key].reply_to;
+            log("Primary achieved Quorum for TX #" + msg.tx + " -> confirming to client");
+            update_ui("COMMITTED #" + msg.tx, "#10b981");
+            send(reply_to, #{ type: "WRITE_OK", tx: msg.tx });
+          }
+        }
+      }
+    }
+    fn update_ui(status, color) {
+      draw([
+        #{ shape: "rect", w: 140, h: 55, radius: 8, bg: "#ffffff", border: color, border_width: 2 },
+        #{ shape: "text", text: "PRIMARY DB", y: 10, color: "#1e293b", font_size: 11, bold: true },
+        #{ shape: "text", text: status, y: -10, color: color, font_size: 9, bold: true }
+      ]);
+    }
+
+  - &replica_fn |
+    fn on_init() {
+      globals.store = #{};
+      globals.replicated_count = 0;
+      update_ui();
+    }
+    fn on_msg(msg) {
+      if msg.type == "REPLICATE" {
+        globals.store[msg.key] = msg.val;
+        globals.replicated_count += 1;
+        log(node_name + " synced TX #" + msg.tx);
+        update_ui();
+        send(msg.from, #{ type: "ACK", tx: msg.tx });
+      }
+    }
+    fn update_ui() {
+      draw([
+        #{ shape: "rect", w: 130, h: 50, radius: 8, bg: "#ffffff", border: "#6366f1", border_width: 2 },
+        #{ shape: "text", text: node_name, y: 8, color: "#3730a3", font_size: 10, bold: true },
+        #{ shape: "text", text: "Syncs: " + globals.replicated_count, y: -8, color: "#64748b", font_size: 9 }
+      ]);
+    }
+
+graph_defn:
+  layout:
+    type: hierarchical
+    direction: lr
+    rank_sep: 240
+    node_sep: 110
+  graph_attrs:
+    title: "Primary-Backup Replication"
+  groups:
+    - id: backup_tier
+      title: "Standby Replicas"
+      direction: tb
+      sep: 110
+      nodes: [replica_1, replica_2]
+  node_types:
+    - id: client
+      fn: *client_fn
+      attrs: { ticks: 4 }
+    - id: primary
+      fn: *primary_fn
+      attrs: { ticks: 3600 }
+    - id: replica
+      fn: *replica_fn
+      attrs: { ticks: 3600 }
+  graph:
+    - name: client
+      node_type: client
+      links: [primary_db]
+    - name: primary_db
+      node_type: primary
+      links: [replica_1, replica_2]
+    - name: replica_1
+      node_type: replica
+      links: []
+    - name: replica_2
+      node_type: replica
+      links: []

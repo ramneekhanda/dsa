@@ -1,0 +1,29 @@
+graph_defn:
+  theme: "themes:cloud"
+  layout:
+    type: hierarchical
+    direction: lr
+    rank_sep: 220
+    node_sep: 110
+  graph_attrs:
+    title: "Cloud Architecture Theme"
+  node_types:
+    - id: gateway
+      attrs: { ticks: 4 }
+    - id: worker
+      attrs: { ticks: 3600 }
+    - id: database
+      attrs: { ticks: 3600 }
+  graph:
+    - name: api_gateway
+      node_type: gateway
+      links: [order_service, user_service]
+    - name: order_service
+      node_type: worker
+      links: [main_db]
+    - name: user_service
+      node_type: worker
+      links: [main_db]
+    - name: main_db
+      node_type: database
+      links: []

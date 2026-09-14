@@ -1,0 +1,58 @@
+graph_defn:
+  layout:
+    type: hierarchical
+    direction: lr
+    rank_sep: 220
+    node_sep: 110
+  graph_attrs:
+    title: "Reusable Node Templates"
+  node_templates:
+    - id: compute_unit
+      template:
+        - shape: rect
+          w: 130
+          h: 55
+          radius: 8
+          bg: "#ffffff"
+          border: "#6366f1"
+          border_width: 2
+        - shape: text
+          text: "COMPUTE"
+          y: 10
+          color: "#4f46e5"
+          font_size: 10
+          bold: true
+    - id: storage_unit
+      template:
+        - shape: rect
+          w: 130
+          h: 55
+          radius: 8
+          bg: "#ffffff"
+          border: "#059669"
+          border_width: 2
+        - shape: text
+          text: "STORAGE"
+          y: 10
+          color: "#047857"
+          font_size: 10
+          bold: true
+  node_types:
+    - id: worker
+      attrs:
+        template_ref: compute_unit
+        ticks: 4
+    - id: db
+      attrs:
+        template_ref: storage_unit
+        ticks: 3600
+  graph:
+    - name: worker_1
+      node_type: worker
+      links: [db_primary]
+    - name: worker_2
+      node_type: worker
+      links: [db_primary]
+    - name: db_primary
+      node_type: db
+      links: []

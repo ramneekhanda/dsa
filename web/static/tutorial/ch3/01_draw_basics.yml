@@ -1,0 +1,36 @@
+fns:
+  - &meter_fn |
+    fn on_init() {
+      globals.load = 25;
+      update_visuals();
+    }
+    fn on_timer() {
+      globals.load = (globals.load + 25) % 100;
+      update_visuals();
+    }
+    fn update_visuals() {
+      let pct = globals.load;
+      let bar_w = pct * 1.0;
+      draw([
+        #{ shape: "rect", w: 140, h: 60, radius: 8, bg: "#ffffff", border: "#6366f1", border_width: 2 },
+        #{ shape: "text", text: "LOAD METER", y: 16, color: "#475569", font_size: 11 },
+        #{ shape: "rect", w: 100, h: 10, radius: 5, y: -4, bg: "#e2e8f0" },
+        #{ shape: "rect", w: bar_w, h: 10, radius: 5, x: (bar_w - 100.0) / 2.0, y: -4, bg: "#6366f1" },
+        #{ shape: "text", text: pct + "%", y: -20, color: "#1e293b", font_size: 10 }
+      ]);
+    }
+
+graph_defn:
+  layout:
+    type: hierarchical
+    direction: lr
+  graph_attrs:
+    title: "draw() Basics & Dynamic Overlays"
+  node_types:
+    - id: meter
+      fn: *meter_fn
+      attrs: { ticks: 4 }
+  graph:
+    - name: server_1
+      node_type: meter
+      links: []

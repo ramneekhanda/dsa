@@ -121,13 +121,16 @@ pub fn get_builtin_preset(name: &str) -> Option<&'static str> {
         // Theme library: plibs:themes/<name>
         "plibs:themes/cyberpunk"
         | "theme:cyberpunk"
+        | "themes:cyberpunk"
         | "plibs:cyberpunk"
         | "cyberpunk"
         | "plibs/themes/cyberpunk.yml" => Some(PRESET_THEME_CYBERPUNK),
 
         "plibs:themes/cloud"
         | "theme:cloud"
+        | "themes:cloud"
         | "theme:cloud_cards"
+        | "themes:cloud_cards"
         | "plibs:cloud"
         | "cloud"
         | "cloud_cards"
@@ -135,7 +138,9 @@ pub fn get_builtin_preset(name: &str) -> Option<&'static str> {
 
         "plibs:themes/datacenter"
         | "theme:datacenter"
+        | "themes:datacenter"
         | "theme:rack"
+        | "themes:rack"
         | "plibs:datacenter"
         | "datacenter"
         | "rack"
@@ -143,7 +148,9 @@ pub fn get_builtin_preset(name: &str) -> Option<&'static str> {
 
         "plibs:themes/minimal"
         | "theme:minimal"
+        | "themes:minimal"
         | "theme:capsule"
+        | "themes:capsule"
         | "plibs:minimal"
         | "minimal"
         | "capsule"
@@ -151,12 +158,14 @@ pub fn get_builtin_preset(name: &str) -> Option<&'static str> {
 
         "plibs:themes/synthwave"
         | "theme:synthwave"
+        | "themes:synthwave"
         | "plibs:synthwave"
         | "synthwave"
         | "plibs/themes/synthwave.yml" => Some(PRESET_THEME_SYNTHWAVE),
 
         "plibs:themes/nordic"
         | "theme:nordic"
+        | "themes:nordic"
         | "plibs:nordic"
         | "nordic"
         | "nord"
@@ -164,12 +173,14 @@ pub fn get_builtin_preset(name: &str) -> Option<&'static str> {
 
         "plibs:themes/dracula"
         | "theme:dracula"
+        | "themes:dracula"
         | "plibs:dracula"
         | "dracula"
         | "plibs/themes/dracula.yml" => Some(PRESET_THEME_DRACULA),
 
         "plibs:themes/matrix"
         | "theme:matrix"
+        | "themes:matrix"
         | "plibs:matrix"
         | "matrix"
         | "plibs/themes/matrix.yml" => Some(PRESET_THEME_MATRIX),
@@ -177,7 +188,9 @@ pub fn get_builtin_preset(name: &str) -> Option<&'static str> {
         "plibs:themes/solarized_light"
         | "plibs:themes/solarized"
         | "theme:solarized_light"
+        | "themes:solarized_light"
         | "theme:solarized"
+        | "themes:solarized"
         | "plibs:solarized_light"
         | "plibs:solarized"
         | "solarized_light"

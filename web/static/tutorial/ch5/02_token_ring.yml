@@ -1,0 +1,64 @@
+fns:
+  - &ring_node_fn |
+    fn on_init() {
+      globals.has_token = false;
+      globals.cycles = 0;
+      update_ui("IDLE", "#94a3b8");
+
+      // Node 1 starts the token circulation
+      if node_name == "node_1" {
+        globals.has_token = true;
+        update_ui("INITIAL TOKEN", "#10b981");
+      }
+    }
+
+    fn on_timer() {
+      if globals.has_token {
+        globals.cycles += 1;
+        log(node_name + " passing token (cycle " + globals.cycles + ")");
+        globals.has_token = false;
+        update_ui("IDLE", "#94a3b8");
+        let next_node = links[0];
+        send(next_node, #{ type: "TOKEN", seq: globals.cycles });
+      }
+    }
+
+    fn on_msg(msg) {
+      if msg.type == "TOKEN" {
+        globals.has_token = true;
+        globals.cycles = msg.seq;
+        log(node_name + " ACQUIRED TOKEN (cycle " + msg.seq + ")");
+        update_ui("CRITICAL SECTION", "#6366f1");
+      }
+    }
+
+    fn update_ui(status, color) {
+      draw([
+        #{ shape: "rect", w: 130, h: 55, radius: 8, bg: "#ffffff", border: color, border_width: 2 },
+        #{ shape: "text", text: node_name, y: 10, color: "#1e293b", font_size: 11, bold: true },
+        #{ shape: "text", text: status, y: -10, color: color, font_size: 10, bold: true }
+      ]);
+    }
+
+graph_defn:
+  layout:
+    type: circular
+  graph_attrs:
+    title: "Token Ring Mutual Exclusion"
+  node_types:
+    - id: ring_peer
+      fn: *ring_node_fn
+      attrs: { ticks: 4 }
+  graph:
+    - name: node_1
+      node_type: ring_peer
+      links: [node_2]
+    - name: node_2
+      node_type: ring_peer
+      links: [node_3]
+    - name: node_3
+      node_type: ring_peer
+      links: [node_4]
+    - name: node_4
+      node_type: ring_peer
+      links: [node_1]

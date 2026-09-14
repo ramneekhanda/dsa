@@ -441,17 +441,21 @@ fn default_progress_gap() -> f32 {
 #[serde(tag = "shape", rename_all = "snake_case")]
 pub enum TemplateShape {
     Rect {
+        #[serde(default)]
         x: f32,
+        #[serde(default)]
         y: f32,
+        #[serde(default)]
         w: f32,
+        #[serde(default)]
         h: f32,
         #[serde(default)]
         radius: f32,
-        #[serde(default)]
+        #[serde(default, alias = "bg", alias = "color")]
         fill: Option<String>,
-        #[serde(default)]
+        #[serde(default, alias = "border")]
         stroke: Option<String>,
-        #[serde(default = "default_stroke_width")]
+        #[serde(default = "default_stroke_width", alias = "border_width")]
         stroke_width: f32,
         #[serde(default = "default_opacity")]
         opacity: f32,
@@ -462,41 +466,53 @@ pub enum TemplateShape {
     /// way to square it back off.
     #[serde(rename = "roundedrect", alias = "rounded_rect")]
     RoundedRect {
+        #[serde(default)]
         x: f32,
+        #[serde(default)]
         y: f32,
+        #[serde(default)]
         w: f32,
+        #[serde(default)]
         h: f32,
         #[serde(default = "default_rounded_rect_radius")]
         radius: f32,
-        #[serde(default)]
+        #[serde(default, alias = "bg", alias = "color")]
         fill: Option<String>,
-        #[serde(default)]
+        #[serde(default, alias = "border")]
         stroke: Option<String>,
-        #[serde(default = "default_stroke_width")]
+        #[serde(default = "default_stroke_width", alias = "border_width")]
         stroke_width: f32,
         #[serde(default = "default_opacity")]
         opacity: f32,
     },
     Circle {
+        #[serde(default)]
         x: f32,
+        #[serde(default)]
         y: f32,
+        #[serde(default = "default_progress_radius")]
         r: f32,
-        #[serde(default)]
+        #[serde(default, alias = "bg", alias = "color")]
         fill: Option<String>,
-        #[serde(default)]
+        #[serde(default, alias = "border")]
         stroke: Option<String>,
-        #[serde(default = "default_stroke_width")]
+        #[serde(default = "default_stroke_width", alias = "border_width")]
         stroke_width: f32,
         #[serde(default = "default_opacity")]
         opacity: f32,
     },
     Line {
+        #[serde(default)]
         x1: f32,
+        #[serde(default)]
         y1: f32,
+        #[serde(default)]
         x2: f32,
+        #[serde(default)]
         y2: f32,
+        #[serde(alias = "color")]
         stroke: String,
-        #[serde(default = "default_stroke_width")]
+        #[serde(default = "default_stroke_width", alias = "border_width")]
         stroke_width: f32,
     },
     Polygon {
@@ -505,22 +521,27 @@ pub enum TemplateShape {
         /// polygon); `false` leaves it open (a polyline) - the two shape
         /// names `draw()` accepts as sugar for this are collapsed to one
         /// explicit flag here.
+        #[serde(default)]
         closed: bool,
-        #[serde(default)]
+        #[serde(default, alias = "bg", alias = "color")]
         fill: Option<String>,
-        #[serde(default)]
+        #[serde(default, alias = "border")]
         stroke: Option<String>,
-        #[serde(default = "default_stroke_width")]
+        #[serde(default = "default_stroke_width", alias = "border_width")]
         stroke_width: f32,
     },
     Text {
+        #[serde(default)]
         x: f32,
+        #[serde(default)]
         y: f32,
         text: String,
-        #[serde(default = "default_text_size")]
+        #[serde(default = "default_text_size", alias = "font_size")]
         size: f32,
         #[serde(default = "default_text_color")]
         color: String,
+        #[serde(default)]
+        bold: bool,
     },
     /// An icon-registry image at an arbitrary node-local position/size -
     /// typically `icon: "{{icon}}"`, so the template draws whichever icon
@@ -538,7 +559,9 @@ pub enum TemplateShape {
     /// shape in that same call, or the icon disappears the moment the
     /// handler first runs.
     Icon {
+        #[serde(default)]
         x: f32,
+        #[serde(default)]
         y: f32,
         #[serde(default = "default_icon_size")]
         w: f32,
@@ -666,6 +689,7 @@ impl TemplateShape {
                 text,
                 size,
                 color,
+                bold: _,
             } => DrawCmd::Text {
                 x: *x,
                 y: *y,
@@ -856,12 +880,14 @@ impl TemplateShape {
                 text,
                 size,
                 color,
+                bold,
             } => TemplateShape::Text {
                 x: *x,
                 y: *y,
                 text: sub(text, params),
                 size: *size,
                 color: sub(color, params),
+                bold: *bold,
             },
             TemplateShape::Icon { x, y, w, h, icon } => TemplateShape::Icon {
                 x: *x,
@@ -1013,6 +1039,7 @@ pub struct NodeTemplateDef {
     /// informational, not validated.
     #[serde(default)]
     pub params: Vec<String>,
+    #[serde(alias = "template")]
     pub shapes: Vec<TemplateShape>,
 }
 
@@ -1834,31 +1861,27 @@ graph_defn:
             "web/static/tutorial/ch1/03_messaging.yml",
             "web/static/tutorial/ch1/04_params_and_icons.yml",
             "web/static/tutorial/ch1/05_state_and_logging.yml",
-            "web/static/tutorial/ch1/06_putting_it_together.yml",
-            "web/static/tutorial/ch1/07_multilevel_routing.yml",
-            "web/static/tutorial/ch1/08_constants_and_scope.yml",
-            "web/static/tutorial/ch1/09_interactive_narration.yml",
-            "web/static/tutorial/ch2/01_draw_basics.yml",
-            "web/static/tutorial/ch2/02_shapes.yml",
-            "web/static/tutorial/ch2/03_node_templates.yml",
-            "web/static/tutorial/ch2/04_parametrized_templates.yml",
-            "web/static/tutorial/ch3/01_cloud_cards.yml",
-            "web/static/tutorial/ch3/02_datacenter_rack.yml",
-            "web/static/tutorial/ch3/03_cyberpunk_hud.yml",
-            "web/static/tutorial/ch3/04_capsule_pills.yml",
-            "web/static/tutorial/ch3/05_layered_theming.yml",
-            "web/static/tutorial/ch3/06_remote_imports.yml",
-            "web/static/tutorial/ch3/07_remote_theme_imports.yml",
-            "web/static/tutorial/ch4/01_intro_to_plibs.yml",
-            "web/static/tutorial/ch4/02_theme_libraries.yml",
-            "web/static/tutorial/ch4/03_aws_compute_networking.yml",
-            "web/static/tutorial/ch4/04_aws_database_messaging.yml",
-            "web/static/tutorial/ch4/05_aws_full_architecture.yml",
-            "web/static/tutorial/ch4/06_authoring_plibs.yml",
-            "web/static/tutorial/ch5/01_hierarchical_layouts.yml",
-            "web/static/tutorial/ch5/02_groups_and_tiers.yml",
-            "web/static/tutorial/ch5/03_grid_and_circular.yml",
-            "web/static/tutorial/ch5/04_manual_and_offsets.yml",
+            "web/static/tutorial/ch1/06_multilevel_routing.yml",
+            "web/static/tutorial/ch1/07_interactive_narration.yml",
+            "web/static/tutorial/ch2/01_hierarchical_layouts.yml",
+            "web/static/tutorial/ch2/02_groups_and_tiers.yml",
+            "web/static/tutorial/ch2/03_grid_and_circular.yml",
+            "web/static/tutorial/ch2/04_manual_and_offsets.yml",
+            "web/static/tutorial/ch3/01_draw_basics.yml",
+            "web/static/tutorial/ch3/02_shapes.yml",
+            "web/static/tutorial/ch3/03_node_templates.yml",
+            "web/static/tutorial/ch3/04_state_gauges.yml",
+            "web/static/tutorial/ch4/01_cloud_cards.yml",
+            "web/static/tutorial/ch4/02_datacenter_rack.yml",
+            "web/static/tutorial/ch4/03_cyberpunk_hud.yml",
+            "web/static/tutorial/ch4/04_capsule_pills.yml",
+            "web/static/tutorial/ch4/05_layered_theming.yml",
+            "web/static/tutorial/ch5/01_intro_to_plibs.yml",
+            "web/static/tutorial/ch5/02_token_ring.yml",
+            "web/static/tutorial/ch5/03_load_balancer.yml",
+            "web/static/tutorial/ch5/04_two_phase_commit.yml",
+            "web/static/tutorial/ch5/05_primary_backup.yml",
+            "web/static/tutorial/ch5/06_aws_cloud_architecture.yml",
         ];
 
         for path in tutorial_files {

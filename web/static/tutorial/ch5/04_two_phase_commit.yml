@@ -1,0 +1,102 @@
+fns:
+  - &coord_fn |
+    fn on_init() {
+      globals.tx_id = 0;
+      globals.votes = [];
+      update_ui("IDLE", "#64748b");
+    }
+    fn on_timer() {
+      globals.tx_id += 1;
+      globals.votes = [];
+      log("Coordinator starting 2PC for TX #" + globals.tx_id);
+      update_ui("PHASE 1: PREPARING", "#f59e0b");
+      explain(
+        "2pc_phase1",
+        "**Phase 1 (Prepare)**: Coordinator broadcasts `PREPARE` to all participant databases."
+      );
+      send("db_cohort_1", #{ type: "PREPARE", tx_id: globals.tx_id });
+      send("db_cohort_2", #{ type: "PREPARE", tx_id: globals.tx_id });
+    }
+    fn on_msg(msg) {
+      if msg.type == "VOTE" {
+        globals.votes.push(msg.vote);
+        if globals.votes.len() == 2 {
+          let all_yes = true;
+          for v in globals.votes {
+            if v != "YES" { all_yes = false; }
+          }
+          if all_yes {
+            log("Coordinator received unanimous YES -> GLOBAL_COMMIT for TX #" + globals.tx_id);
+            update_ui("PHASE 2: COMMITTED", "#10b981");
+            explain(
+              "2pc_phase2",
+              "**Phase 2 (Commit)**: All cohorts voted YES. Coordinator issues `GLOBAL_COMMIT`."
+            );
+            send("db_cohort_1", #{ type: "GLOBAL_COMMIT", tx_id: globals.tx_id });
+            send("db_cohort_2", #{ type: "GLOBAL_COMMIT", tx_id: globals.tx_id });
+          }
+        }
+      }
+    }
+    fn update_ui(status, color) {
+      draw([
+        #{ shape: "rect", w: 150, h: 60, radius: 8, bg: "#ffffff", border: color, border_width: 2 },
+        #{ shape: "text", text: "COORDINATOR", y: 12, color: "#1e293b", font_size: 11, bold: true },
+        #{ shape: "text", text: status, y: -10, color: color, font_size: 9, bold: true }
+      ]);
+    }
+
+  - &cohort_fn |
+    fn on_init() {
+      globals.status = "READY";
+      update_ui("READY", "#64748b");
+    }
+    fn on_msg(msg) {
+      if msg.type == "PREPARE" {
+        log(node_name + " received PREPARE for TX #" + msg.tx_id + " -> voting YES");
+        update_ui("VOTED YES", "#f59e0b");
+        send(msg.from, #{ type: "VOTE", tx_id: msg.tx_id, vote: "YES" });
+      } else if msg.type == "GLOBAL_COMMIT" {
+        log(node_name + " COMMITTED TX #" + msg.tx_id);
+        update_ui("COMMITTED", "#10b981");
+      }
+    }
+    fn update_ui(status, color) {
+      draw([
+        #{ shape: "rect", w: 130, h: 55, radius: 8, bg: "#ffffff", border: color, border_width: 2 },
+        #{ shape: "text", text: node_name, y: 10, color: "#1e293b", font_size: 10, bold: true },
+        #{ shape: "text", text: status, y: -10, color: color, font_size: 9, bold: true }
+      ]);
+    }
+
+graph_defn:
+  layout:
+    type: hierarchical
+    direction: lr
+    rank_sep: 260
+    node_sep: 120
+  graph_attrs:
+    title: "Two-Phase Commit Protocol"
+  groups:
+    - id: cohort_tier
+      title: "Participant Databases"
+      direction: tb
+      sep: 120
+      nodes: [db_cohort_1, db_cohort_2]
+  node_types:
+    - id: coordinator
+      fn: *coord_fn
+      attrs: { ticks: 5 }
+    - id: cohort
+      fn: *cohort_fn
+      attrs: { ticks: 3600 }
+  graph:
+    - name: coordinator
+      node_type: coordinator
+      links: [db_cohort_1, db_cohort_2]
+    - name: db_cohort_1
+      node_type: cohort
+      links: []
+    - name: db_cohort_2
+      node_type: cohort
+      links: []
