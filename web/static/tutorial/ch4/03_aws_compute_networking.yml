@@ -24,13 +24,17 @@ graph_defn:
     title: "AWS Compute & Networking Architecture"
   node_types:
     - id: traffic_gen
-      template: aws_alb_card
-      fn: *traffic_gen_fn
       attrs:
         ticks: 2
-        title: "TRAFFIC GEN"
-        status: "GENERATING"
-        target_count: "4 users"
+        template_ref: cloud_card
+        params:
+          icon: "aws_alb"
+          accent_color: "#0284c7"
+          role: "Load Tester"
+          status_bg: "#eff6ff"
+          status_color: "#1d4ed8"
+          status_text: "4 SESSIONS // ACTIVE"
+      fn: *traffic_gen_fn
   graph:
     - name: client
       node_type: traffic_gen

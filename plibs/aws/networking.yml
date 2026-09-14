@@ -1,136 +1,28 @@
+imports:
+  - from: "plibs:themes/cloud"
+
 graph_defn:
-  node_templates:
-    - id: aws_api_gw_card
-      shapes:
-        - shape: roundedrect
-          x: 0.0
-          y: 0.0
-          w: 130.0
-          h: 58.0
-          radius: 8.0
-          fill: "#232f3e"
-          stroke: "#a855f7"
-          stroke_width: 1.5
-        - shape: roundedrect
-          x: 0.0
-          y: 19.0
-          w: 130.0
-          h: 18.0
-          radius: 8.0
-          fill: "#a855f7"
-        - shape: text
-          x: -16.0
-          y: 19.0
-          text: "{{node_name}}"
-          size: 8.5
-          color: "#ffffff"
-        - shape: circle
-          x: 48.0
-          y: 19.0
-          r: 3.5
-          fill: "#22c55e"
-        - shape: text
-          x: 0.0
-          y: -2.0
-          text: "{{route_path}}"
-          size: 7.5
-          color: "#c084fc"
-        - shape: progress
-          style: segmented
-          x: 0.0
-          y: -18.0
-          w: 104.0
-          h: 3.5
-          segments: 8
-          gap: 2.0
-          track_color: "#131a22"
-          fill_color: "#a855f7"
-
-    - id: aws_alb_card
-      shapes:
-        - shape: roundedrect
-          x: 0.0
-          y: 0.0
-          w: 126.0
-          h: 54.0
-          radius: 8.0
-          fill: "#1e293b"
-          stroke: "#38bdf8"
-          stroke_width: 1.5
-        - shape: roundedrect
-          x: 0.0
-          y: 17.0
-          w: 126.0
-          h: 18.0
-          radius: 8.0
-          fill: "#0369a1"
-        - shape: text
-          x: -14.0
-          y: 17.0
-          text: "{{node_name}}"
-          size: 8.5
-          color: "#ffffff"
-        - shape: circle
-          x: 46.0
-          y: 17.0
-          r: 3.0
-          fill: "#38bdf8"
-        - shape: text
-          x: 0.0
-          y: -3.0
-          text: "{{target_group}}"
-          size: 7.5
-          color: "#38bdf8"
-        - shape: progress
-          style: bar
-          x: 0.0
-          y: -17.0
-          w: 98.0
-          h: 3.5
-          track_color: "#0f172a"
-          fill_color: "#38bdf8"
-
-    - id: aws_cloudfront_card
-      shapes:
-        - shape: roundedrect
-          x: 0.0
-          y: 0.0
-          w: 128.0
-          h: 56.0
-          radius: 12.0
-          fill: "#232f3e"
-          stroke: "#3b82f6"
-          stroke_width: 1.5
-        - shape: text
-          x: 0.0
-          y: 14.0
-          text: "{{node_name}}"
-          size: 9.0
-          color: "#f8fafc"
-        - shape: text
-          x: 0.0
-          y: -2.0
-          text: "EDGE POP // GLOBAL"
-          size: 7.5
-          color: "#60a5fa"
-        - shape: progress
-          style: segmented
-          x: 0.0
-          y: -17.0
-          w: 96.0
-          h: 3.5
-          segments: 6
-          gap: 2.0
-          track_color: "#131a22"
-          fill_color: "#3b82f6"
+  icons:
+    - id: aws_api_gw
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/NetworkingContentDelivery/APIGateway.png"
+    - id: aws_alb
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/NetworkingContentDelivery/ElasticLoadBalancingApplicationLoadBalancer.png"
+    - id: aws_cloudfront
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/NetworkingContentDelivery/CloudFront.png"
 
   node_types:
     - id: api_gateway
       attrs:
         ticks: 2
-        template_ref: aws_api_gw_card
+        template_ref: cloud_card
+        icon: aws_api_gw
         params:
-          route_path: "HTTP /v1/*"
+          icon: "aws_api_gw"
+          accent_color: "#a855f7"
+          role: "API Gateway"
+          status_bg: "#faf5ff"
+          status_color: "#7e22ce"
+          status_text: "HTTP /v1/* // 200 OK"
       fn: |
         fn on_init() {
           globals.requests = 0;
@@ -148,9 +40,15 @@ graph_defn:
     - id: alb
       attrs:
         ticks: 2
-        template_ref: aws_alb_card
+        template_ref: cloud_card
+        icon: aws_alb
         params:
-          target_group: "TG: default-targets"
+          icon: "aws_alb"
+          accent_color: "#8b5cf6"
+          role: "Application LB"
+          status_bg: "#f5f3ff"
+          status_color: "#6d28d9"
+          status_text: "TARGETS: 2 HEALTHY"
       fn: |
         fn on_init() {
           globals.idx = 0;
@@ -167,7 +65,15 @@ graph_defn:
     - id: cloudfront
       attrs:
         ticks: 2
-        template_ref: aws_cloudfront_card
+        template_ref: cloud_card
+        icon: aws_cloudfront
+        params:
+          icon: "aws_cloudfront"
+          accent_color: "#3b82f6"
+          role: "CloudFront CDN"
+          status_bg: "#eff6ff"
+          status_color: "#1d4ed8"
+          status_text: "EDGE POP // GLOBAL"
       fn: |
         fn on_init() {
           globals.cache = [];

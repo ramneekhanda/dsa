@@ -23,13 +23,17 @@ graph_defn:
     title: "Serverless E-Commerce System (plibs:aws/all)"
   node_types:
     - id: user_client
-      template: aws_alb_card
-      fn: *user_client_fn
       attrs:
         ticks: 2
-        title: "WEB CLIENT"
-        status: "ACTIVE"
-        target_count: "3 orders"
+        template_ref: cloud_card
+        params:
+          icon: "aws_alb"
+          accent_color: "#2563eb"
+          role: "Web Frontend"
+          status_bg: "#eff6ff"
+          status_color: "#1d4ed8"
+          status_text: "CLIENT // ACTIVE"
+      fn: *user_client_fn
   graph:
     - name: client
       node_type: user_client

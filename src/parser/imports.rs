@@ -2551,5 +2551,38 @@ imports:
             assert!(explain_theme.accent.is_some(), "Theme '{}' missing accent", theme_name);
         }
     }
+
+    #[test]
+    fn test_aws_all_icons_and_cloud_theme() {
+        let yaml = r#"
+imports:
+  - from: "plibs:themes/cloud"
+  - from: "plibs:aws/all"
+
+graph_defn:
+  node_types:
+    - id: user_client
+      attrs:
+        ticks: 2
+        template_ref: cloud_card
+        icon: aws_alb
+        params:
+          icon: "aws_alb"
+  graph:
+    - name: client
+      node_type: user_client
+      links: []
+"#;
+        let file = parse_graph2(&yaml.to_string()).expect("Should parse aws all");
+        assert!(file.graph_defn.icons.iter().any(|i| i.id == "aws_lambda"));
+        assert!(file.graph_defn.icons.iter().any(|i| i.id == "aws_ec2"));
+        assert!(file.graph_defn.icons.iter().any(|i| i.id == "aws_api_gw"));
+        assert!(file.graph_defn.icons.iter().any(|i| i.id == "aws_alb"));
+        assert!(file.graph_defn.icons.iter().any(|i| i.id == "aws_dynamodb"));
+        assert!(file.graph_defn.icons.iter().any(|i| i.id == "aws_sqs"));
+        assert!(file.graph_defn.node_templates.iter().any(|t| t.id == "cloud_card"));
+        let lambda_node = file.graph_defn.node_types.iter().find(|t| t.id == "lambda_func").unwrap();
+        assert_eq!(lambda_node.attrs.template_ref, Some("cloud_card".to_string()));
+    }
 }
 

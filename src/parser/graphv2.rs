@@ -1518,6 +1518,12 @@ graph_defn:
             "web/static/tutorial/ch3/05_layered_theming.yml",
             "web/static/tutorial/ch3/06_remote_imports.yml",
             "web/static/tutorial/ch3/07_remote_theme_imports.yml",
+            "web/static/tutorial/ch4/01_intro_to_plibs.yml",
+            "web/static/tutorial/ch4/02_theme_libraries.yml",
+            "web/static/tutorial/ch4/03_aws_compute_networking.yml",
+            "web/static/tutorial/ch4/04_aws_database_messaging.yml",
+            "web/static/tutorial/ch4/05_aws_full_architecture.yml",
+            "web/static/tutorial/ch4/06_authoring_plibs.yml",
         ];
 
         for path in tutorial_files {

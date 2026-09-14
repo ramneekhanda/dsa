@@ -1,122 +1,28 @@
+imports:
+  - from: "plibs:themes/cloud"
+
 graph_defn:
-  node_templates:
-    - id: aws_sqs_card
-      shapes:
-        - shape: roundedrect
-          x: 0.0
-          y: 0.0
-          w: 126.0
-          h: 56.0
-          radius: 8.0
-          fill: "#232f3e"
-          stroke: "#f97316"
-          stroke_width: 1.5
-        - shape: roundedrect
-          x: 0.0
-          y: 18.0
-          w: 126.0
-          h: 18.0
-          radius: 8.0
-          fill: "#c2410c"
-        - shape: text
-          x: -14.0
-          y: 18.0
-          text: "{{node_name}}"
-          size: 8.5
-          color: "#ffffff"
-        - shape: circle
-          x: 46.0
-          y: 18.0
-          r: 3.5
-          fill: "#fb923c"
-        - shape: text
-          x: 0.0
-          y: -2.0
-          text: "{{queue_type}}"
-          size: 7.5
-          color: "#fdba74"
-        - shape: progress
-          style: bar
-          x: 0.0
-          y: -17.0
-          w: 96.0
-          h: 4.0
-          track_color: "#131a22"
-          fill_color: "#f97316"
-
-    - id: aws_sns_card
-      shapes:
-        - shape: roundedrect
-          x: 0.0
-          y: 0.0
-          w: 128.0
-          h: 56.0
-          radius: 8.0
-          fill: "#232f3e"
-          stroke: "#ec4899"
-          stroke_width: 1.5
-        - shape: text
-          x: 0.0
-          y: 14.0
-          text: "{{node_name}}"
-          size: 9.0
-          color: "#f8fafc"
-        - shape: text
-          x: 0.0
-          y: -2.0
-          text: "SNS // TOPIC FANOUT"
-          size: 7.0
-          color: "#f472b6"
-        - shape: progress
-          style: segmented
-          x: 0.0
-          y: -17.0
-          w: 96.0
-          h: 3.5
-          segments: 6
-          gap: 2.0
-          track_color: "#131a22"
-          fill_color: "#ec4899"
-
-    - id: aws_eventbridge_card
-      shapes:
-        - shape: roundedrect
-          x: 0.0
-          y: 0.0
-          w: 128.0
-          h: 56.0
-          radius: 8.0
-          fill: "#1e293b"
-          stroke: "#14b8a6"
-          stroke_width: 1.5
-        - shape: text
-          x: 0.0
-          y: 14.0
-          text: "{{node_name}}"
-          size: 9.0
-          color: "#f8fafc"
-        - shape: text
-          x: 0.0
-          y: -2.0
-          text: "EVENTBRIDGE BUS"
-          size: 7.0
-          color: "#2dd4bf"
-        - shape: progress
-          style: bar
-          x: 0.0
-          y: -17.0
-          w: 96.0
-          h: 3.5
-          track_color: "#0f172a"
-          fill_color: "#14b8a6"
+  icons:
+    - id: aws_sqs
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/ApplicationIntegration/SimpleQueueService.png"
+    - id: aws_sns
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/ApplicationIntegration/SimpleNotificationService.png"
+    - id: aws_eventbridge
+      url: "https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/ApplicationIntegration/EventBridge.png"
 
   node_types:
     - id: sqs_queue
       attrs:
         ticks: 2
-        template_ref: aws_sqs_card
+        template_ref: cloud_card
+        icon: aws_sqs
         params:
-          queue_type: "SQS // STANDARD"
+          icon: "aws_sqs"
+          accent_color: "#f97316"
+          role: "Amazon SQS"
+          status_bg: "#fff7ed"
+          status_color: "#c2410c"
+          status_text: "QUEUE // STANDARD"
       fn: |
         fn on_init() {
           globals.buffer = [];
@@ -135,7 +41,15 @@ graph_defn:
     - id: sns_topic
       attrs:
         ticks: 2
-        template_ref: aws_sns_card
+        template_ref: cloud_card
+        icon: aws_sns
+        params:
+          icon: "aws_sns"
+          accent_color: "#f43f5e"
+          role: "Amazon SNS"
+          status_bg: "#fff1f2"
+          status_color: "#be123c"
+          status_text: "TOPIC // BROADCAST"
       fn: |
         fn on_init() {}
         fn on_timer() {}
@@ -149,7 +63,15 @@ graph_defn:
     - id: eventbridge
       attrs:
         ticks: 2
-        template_ref: aws_eventbridge_card
+        template_ref: cloud_card
+        icon: aws_eventbridge
+        params:
+          icon: "aws_eventbridge"
+          accent_color: "#e11d48"
+          role: "EventBridge Bus"
+          status_bg: "#fff1f2"
+          status_color: "#be123c"
+          status_text: "EVENT ROUTER // ACTIVE"
       fn: |
         fn on_init() {}
         fn on_timer() {}

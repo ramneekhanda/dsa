@@ -76,32 +76,45 @@
   }
 
   async function resolveAndCompile(sourceCode: string) {
-    let urls: string[] = [];
-    try {
-      if (typeof get_import_urls === "function") {
-        const raw = get_import_urls(sourceCode);
-        urls = typeof raw === "string" ? JSON.parse(raw) : (raw || []);
-      }
-    } catch (e) {
-      console.warn("Failed to scan import urls:", e);
-    }
+    if (typeof get_import_urls === "function") {
+      let queue = [sourceCode];
+      let iterations = 0;
+      while (queue.length > 0 && iterations < 10) {
+        iterations++;
+        const currentBatch = queue;
+        queue = [];
 
-    const missingUrls = urls.filter((u) => !remoteSourcesCache[u]);
-    if (missingUrls.length > 0) {
-      await Promise.all(
-        missingUrls.map(async (url) => {
+        let allUrls: string[] = [];
+        for (const code of currentBatch) {
           try {
-            const resp = await fetch(url);
-            if (resp.ok) {
-              remoteSourcesCache[url] = await resp.text();
-            } else {
-              console.error(`Failed to fetch remote import from ${url}: ${resp.statusText}`);
-            }
-          } catch (err) {
-            console.error(`Error fetching remote import from ${url}:`, err);
+            const raw = get_import_urls(code);
+            const urls: string[] = typeof raw === "string" ? JSON.parse(raw) : (raw || []);
+            allUrls.push(...urls);
+          } catch (e) {
+            console.warn("Failed to scan import urls:", e);
           }
-        })
-      );
+        }
+
+        const missingUrls = [...new Set(allUrls)].filter((u) => !remoteSourcesCache[u]);
+        if (missingUrls.length > 0) {
+          await Promise.all(
+            missingUrls.map(async (url) => {
+              try {
+                const resp = await fetch(url);
+                if (resp.ok) {
+                  const content = await resp.text();
+                  remoteSourcesCache[url] = content;
+                  queue.push(content);
+                } else {
+                  console.error(`Failed to fetch remote import from ${url}: ${resp.statusText}`);
+                }
+              } catch (err) {
+                console.error(`Error fetching remote import from ${url}:`, err);
+              }
+            })
+          );
+        }
+      }
     }
 
     let b = typeof compile_code_with_sources === "function"
