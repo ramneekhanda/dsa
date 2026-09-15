@@ -385,19 +385,49 @@ projection lookup — the first time `BubbleCamera` was added; fixed by adding
 A `NodeConnector`'s path is built by `build_connector_path`, shaped per
 `graph_attrs.connector_style` (`ConnectorStyle`: `curved` | `straight` | `step` —
 one value for the whole graph, same scope as `connection_color`; **defaults to
-`step`** when unset). All three are inset so the line visibly stops just outside
-each icon's edge rather than running into it. `curved` bows *perpendicular* to the
-A→B line (magnitude proportional to distance, clamped in `bow_amount`) rather than
-toward a fixed diagonal offset — a fixed offset could bow the "wrong" way depending
-on how two nodes happened to be arranged; deriving it from the line itself keeps the
-shape consistent no matter the layout. `straight` is a single segment; `step` routes
-horizontal-then-vertical with one right-angle elbow, which gets rounded for free by
-the connector's existing `LineJoin::Round` stroke (`connector_stroke`) — no arc math
-needed, it's still just straight segments. `build_connector_path`/`connector_stroke`
-are shared by both the initial spawn (`generate_line`) and the per-frame retrace loop
-so newly-created and moving connectors can't drift out of sync with each other; the
-in-flight message-walk animation (`walk_path`) needs no style-specific handling since
-it samples whatever the resulting `lyon::Path` actually contains, corner or not.
+`step`** when unset).
+
+Every style insets its endpoints to stop at each node's *actual* rendered
+footprint rather than a fixed circular offset from center - `node_half_extents`
+derives an axis-aligned half-width/half-height from the node's own `overlay`
+shapes (falling back to `DEFAULT_HALF_EXTENTS`, sized for a bare icon+label, when
+there's no overlay), and `box_exit_point` finds exactly where a straight ray from
+the center exits that box in a given direction (`half.x / |dir.x|` vs.
+`half.y / |dir.y|`, whichever is smaller - no per-quadrant branching, and IEEE-754
+division makes an axis-aligned direction's zero component naturally evaluate to
+`f32::INFINITY`, which `.min()` correctly discards). A fixed circular "radius"
+(the old approach) either undershot a wide template card approached from the side
+or overshot a short one approached from above - deriving the exit point from the
+real box fixes both.
+
+`curved` bows *perpendicular* to the A→B line (magnitude proportional to distance,
+clamped in `bow_amount`) rather than toward a fixed diagonal offset - a fixed
+offset could bow the "wrong" way depending on how two nodes happened to be
+arranged; deriving it from the line itself keeps the shape consistent no matter
+the layout. `straight` is a single segment.
+
+`step` picks the shortest orthogonal route the two nodes' actual exit/entry sides
+allow, and is provably never more than 3 segments: `box_exit_point` also reports
+which edge of each box the connector actually leaves/arrives through (left/right =
+"horizontal", top/bottom = "vertical") - already aligned on one axis → 1 segment;
+one end horizontal and the other vertical → 2 segments (a clean L, no compromise on
+either end); both the same axis → 3 segments (a Z bridging them). A useful
+emergent consequence: two *identically*-shaped nodes always exit on the same axis
+by symmetry, so a graph of uniform-looking nodes gets consistent Z-routing, while
+routes between differently-shaped nodes (e.g. a wide template card into a bare
+icon) adapt to the shorter L when the geometry allows it. Every corner (`step` can
+have up to two) is rounded into a visible fillet by `line_through_rounded_corners`
+- pull back a fixed radius along each adjacent segment (clamped to half that
+segment's own length, so a short leg can't make the fillet overshoot) and
+quadratic-bezier through the original corner point - rather than relying on the
+connector's `LineJoin::Round` stroke alone, which only rounds by the stroke width
+(barely visible at `BASE_WIDTH`).
+
+`build_connector_path`/`connector_stroke` are shared by both the initial spawn
+(`generate_line`) and the per-frame retrace loop so newly-created and moving
+connectors can't drift out of sync with each other; the in-flight message-walk
+animation (`walk_path`) needs no style- or segment-count-specific handling since it
+samples whatever the resulting `lyon::Path` actually contains, corner or not.
 
 Connectors used to have a hover highlight (an invisible `ConnectorHitRegion` sprite child
 per connector carrying `On::<Pointer<Over>>`/`<Out>` handlers, driving `NodeConnector.hovered`

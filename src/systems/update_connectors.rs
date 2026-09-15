@@ -74,11 +74,95 @@ fn edge_key<'a>(a: &'a str, b: &'a str) -> (&'a str, &'a str) {
     }
 }
 
-/// Distance from a node's center to inset each connector endpoint by, so the
-/// line visibly stops just outside the icon's edge instead of running into
-/// or under it. Node icons are drawn at `ICON_WIDTH`/`ICON_HEIGHT` = 64px
-/// (see `node_system.rs`) - half that, plus a small margin.
-const NODE_RADIUS: f32 = 38.0;
+/// Fallback half-width/half-height for a node with no `overlay` shapes (a
+/// bare default icon + label) - close to the old fixed `NODE_RADIUS` this
+/// replaced, just no longer pretending a node is a circle (see
+/// `node_half_extents`'s doc comment for why that mattered). Node icons are
+/// drawn at `ICON_WIDTH`/`ICON_HEIGHT` = 64px (see `node_system.rs`); the
+/// extra height budgets for the name label rendered below the icon.
+const DEFAULT_HALF_EXTENTS: Vec2 = Vec2::new(38.0, 44.0);
+
+/// A connector endpoint's inset used to stop exactly at a node's real
+/// footprint rather than a fixed circular "radius" from its center - a
+/// node's on-canvas shape is a rectangle-ish card (its overlay/template, or
+/// the bare icon+label), not a circle, so a single constant offset either
+/// undershoots (cuts into a wide template card approached from the side) or
+/// overshoots (leaves a gap approached from above/below a short-but-wide
+/// one) depending on approach angle. Computed from the node's actual
+/// `overlay` shapes: the tightest axis-aligned box (kept symmetric around
+/// the node's local origin, since overlay shapes aren't guaranteed centered)
+/// that contains every shape's own extent.
+fn node_half_extents(node: &crate::parser::graphv2::Node) -> Vec2 {
+    use crate::parser::draw::{DrawCmd, DrawProgressStyle};
+
+    if node.overlay.is_empty() {
+        return DEFAULT_HALF_EXTENTS;
+    }
+
+    let mut hx: f32 = 0.0;
+    let mut hy: f32 = 0.0;
+    let mut grow = |cx: f32, cy: f32, half_w: f32, half_h: f32| {
+        hx = hx.max(cx.abs() + half_w);
+        hy = hy.max(cy.abs() + half_h);
+    };
+
+    for cmd in &node.overlay {
+        match cmd {
+            DrawCmd::Rect { x, y, w, h, .. } => grow(*x, *y, w / 2.0, h / 2.0),
+            DrawCmd::Circle { x, y, r, .. } => grow(*x, *y, *r, *r),
+            DrawCmd::Icon { x, y, w, h, .. } => grow(*x, *y, w / 2.0, h / 2.0),
+            DrawCmd::Line { x1, y1, x2, y2, .. } => {
+                grow(*x1, *y1, 0.0, 0.0);
+                grow(*x2, *y2, 0.0, 0.0);
+            }
+            DrawCmd::Polygon { points, .. } => {
+                for p in points {
+                    grow(p.x, p.y, 0.0, 0.0);
+                }
+            }
+            DrawCmd::Text { x, y, text, size, .. } => {
+                // Rough monospace-ish estimate - exact glyph metrics aren't
+                // available here, and this only needs to be in the right
+                // ballpark to keep a connector from cutting through a label.
+                grow(*x, *y, text.len() as f32 * size * 0.3, size / 2.0);
+            }
+            DrawCmd::Progress { x, y, style, .. } => match style {
+                DrawProgressStyle::Bar { w, h, .. } => grow(*x, *y, w / 2.0, h / 2.0),
+                DrawProgressStyle::Segmented { w, h, .. } => grow(*x, *y, w / 2.0, h / 2.0),
+                DrawProgressStyle::Ring { r, thickness, .. } => {
+                    grow(*x, *y, r + thickness / 2.0, r + thickness / 2.0)
+                }
+                DrawProgressStyle::Pie { r, .. } => grow(*x, *y, *r, *r),
+            },
+        }
+    }
+
+    if hx <= 0.0 || hy <= 0.0 {
+        return DEFAULT_HALF_EXTENTS;
+    }
+    Vec2::new(hx, hy)
+}
+
+/// Where a ray from a box's center (half-extents `half`) heading in
+/// direction `dir` exits the box - the box is always exited on whichever
+/// axis is reached first, so this needs no per-quadrant branching:
+/// `half.x / |dir.x|` is the distance to the left/right edge, `half.y /
+/// |dir.y|` to the top/bottom edge, and the smaller of the two is the real
+/// exit point. When `dir`'s component on an axis is `0.0`, IEEE-754 float
+/// division makes that axis's distance `f32::INFINITY`, which `.min()`
+/// correctly discards - no explicit zero-check needed. `max_t` is the
+/// existing short-link clamp (so two nearby/overlapping nodes' insets can't
+/// cross past each other). Returns the exit point and whether the exit was
+/// through the left/right edge (`true`) or the top/bottom edge (`false`) -
+/// the two ends' exit sides are what `Step` uses to pick its route shape.
+fn box_exit_point(center: Vec2, dir: Vec2, half: Vec2, max_t: f32) -> (Vec2, bool) {
+    let t_x = half.x / dir.x.abs();
+    let t_y = half.y / dir.y.abs();
+    let horizontal_exit = t_x < t_y;
+    let t = t_x.min(t_y).min(max_t);
+    (center + dir * t, horizontal_exit)
+}
+
 /// How far the curve bows perpendicular to the A-B line, as a fraction of
 /// the distance between the two node centers - clamped so very short links
 /// don't degenerate and very long ones don't bow absurdly far.
@@ -145,14 +229,24 @@ fn line_through_rounded_corners(path_builder: &mut PathBuilder, points: &[Vec2],
 /// arranged. This way the arc direction and shape stay visually consistent
 /// no matter how a graph is laid out or dragged.
 ///
-/// `Straight` is a single line segment. `Step` routes horizontal out from
-/// `a`, vertical to align, then horizontal in to `b` (elbowed at the
-/// horizontal midpoint) - unless the two nodes are already level, in which
-/// case it's just the one straight segment. Each corner is rounded into a
-/// visible fillet by `line_through_rounded_corners` (a small quadratic
-/// bezier through the corner point, not just the thin, stroke-width-scaled
-/// rounding `LineJoin::Round` alone would give a sharp corner).
-fn build_connector_path(a: Vec2, b: Vec2, style: ConnectorStyle) -> Path {
+/// `Straight` is a single line segment. `Step` picks the shortest orthogonal
+/// route the two nodes' actual exit/entry sides allow (see `box_exit_point`
+/// - `horizontal_exit`/`horizontal_entry` below come from which edge of each
+/// node's box the connector actually leaves/arrives through, not a fixed
+/// assumption):
+/// - already aligned on one axis → 1 segment, straight.
+/// - one side exits horizontal, the other enters vertical (or vice versa) →
+///   2 segments, a clean L with no compromise on either end.
+/// - both sides exit/enter on the *same* axis → 3 segments, a Z bridging
+///   them (horizontal-vertical-horizontal, or vertical-horizontal-vertical).
+///
+/// These three cases cover every possible pairing of exit/entry sides, so a
+/// `Step` connector is never more than 3 segments. Every corner is rounded
+/// into a visible fillet by `line_through_rounded_corners` (a small
+/// quadratic bezier through the corner point, not just the thin,
+/// stroke-width-scaled rounding `LineJoin::Round` alone would give a sharp
+/// corner).
+fn build_connector_path(a: Vec2, a_half: Vec2, b: Vec2, b_half: Vec2, style: ConnectorStyle) -> Path {
     let delta = b - a;
     let dist = delta.length();
     let mut path_builder = PathBuilder::new();
@@ -165,11 +259,14 @@ fn build_connector_path(a: Vec2, b: Vec2, style: ConnectorStyle) -> Path {
     }
     let dir = delta / dist;
 
-    // Don't let the inset eat more than the two nodes' visual gap on very
-    // short links (icons close together or briefly overlapping mid-drag).
-    let inset = NODE_RADIUS.min(dist * 0.45);
-    let start = a + dir * inset;
-    let end = b - dir * inset;
+    // Don't let either inset eat more than the two nodes' visual gap on
+    // very short links (icons close together or briefly overlapping
+    // mid-drag) - each side is independently capped at 45% of the total
+    // distance, so together they can take at most 90%, always leaving some
+    // visible gap between them.
+    let max_t = dist * 0.45;
+    let (start, horizontal_exit) = box_exit_point(a, dir, a_half, max_t);
+    let (end, horizontal_entry) = box_exit_point(b, -dir, b_half, max_t);
 
     path_builder.move_to(start);
     match style {
@@ -177,21 +274,43 @@ fn build_connector_path(a: Vec2, b: Vec2, style: ConnectorStyle) -> Path {
             path_builder.line_to(end);
         }
         ConnectorStyle::Step => {
-            // Horizontal out from `start`, vertical to align, horizontal in
-            // to `end` - three segments, elbowed at the horizontal
-            // midpoint, with each corner rounded into a visible fillet
-            // (see `line_through_rounded_corners`) rather than a sharp
-            // right angle. Skip the (degenerate, zero-length) vertical leg
-            // when the two nodes are already level, rather than leaving a
-            // redundant collinear vertex in the path.
-            if (end.y - start.y).abs() < 0.5 {
+            if (end.y - start.y).abs() < 0.5 || (end.x - start.x).abs() < 0.5 {
+                // Already aligned on one axis - a single straight segment,
+                // whichever axis it is.
                 path_builder.line_to(end);
-            } else {
+            } else if horizontal_exit != horizontal_entry {
+                // One end leaves/arrives horizontally, the other
+                // vertically - a single corner connects them exactly, no
+                // bridging segment needed.
+                let corner = if horizontal_exit {
+                    Vec2::new(end.x, start.y)
+                } else {
+                    Vec2::new(start.x, end.y)
+                };
+                line_through_rounded_corners(
+                    &mut path_builder,
+                    &[start, corner, end],
+                    STEP_CORNER_RADIUS,
+                );
+            } else if horizontal_exit {
+                // Both ends leave/arrive horizontally - bridge the y gap
+                // with a vertical segment at the horizontal midpoint.
                 let mid_x = (start.x + end.x) / 2.0;
                 let points = [
                     start,
                     Vec2::new(mid_x, start.y),
                     Vec2::new(mid_x, end.y),
+                    end,
+                ];
+                line_through_rounded_corners(&mut path_builder, &points, STEP_CORNER_RADIUS);
+            } else {
+                // Both ends leave/arrive vertically - bridge the x gap with
+                // a horizontal segment at the vertical midpoint.
+                let mid_y = (start.y + end.y) / 2.0;
+                let points = [
+                    start,
+                    Vec2::new(start.x, mid_y),
+                    Vec2::new(end.x, mid_y),
                     end,
                 ];
                 line_through_rounded_corners(&mut path_builder, &points, STEP_CORNER_RADIUS);
@@ -257,6 +376,16 @@ pub fn update_connectors(
         all_node_loc.insert(node.node_name.clone(), pos);
     }
 
+    // Each node's actual on-canvas footprint (see `node_half_extents`), keyed
+    // by name so both the new-connector and retrace loops below can look up
+    // either endpoint's real shape instead of assuming a fixed icon size.
+    let extents: HashMap<&str, Vec2> = g
+        .graph_defn
+        .node_instances
+        .iter()
+        .map(|n| (n.name.as_str(), node_half_extents(n)))
+        .collect();
+
     // edges that should exist right now, keyed so A-B and B-A collapse to one entry.
     // Keys/values borrow from `node_instances`/`query_conn` rather than cloning -
     // this diff runs unconditionally every frame (it has to: `link()`/`unlink()`
@@ -304,7 +433,18 @@ pub fn update_connectors(
         }
         let a_loc = all_node_loc.get(a).unwrap();
         let b_loc = all_node_loc.get(b).unwrap();
-        let _ = generate_line(a_loc, b_loc, &g.graph_defn.graph_attrs, a, b, &mut commands);
+        let a_half = extents.get(a).copied().unwrap_or(DEFAULT_HALF_EXTENTS);
+        let b_half = extents.get(b).copied().unwrap_or(DEFAULT_HALF_EXTENTS);
+        let _ = generate_line(
+            a_loc,
+            a_half,
+            b_loc,
+            b_half,
+            &g.graph_defn.graph_attrs,
+            a,
+            b,
+            &mut commands,
+        );
     }
 
     // keep every surviving connector's path glued to its
@@ -332,9 +472,13 @@ pub fn update_connectors(
                 c_log!("Node not found for connector: {}-{}", conn.id1, conn.id2);
                 continue;
             }
+            let a_half = extents.get(conn.id1.as_str()).copied().unwrap_or(DEFAULT_HALF_EXTENTS);
+            let b_half = extents.get(conn.id2.as_str()).copied().unwrap_or(DEFAULT_HALF_EXTENTS);
             *path = build_connector_path(
                 node1_loc.unwrap().truncate(),
+                a_half,
                 node2_loc.unwrap().truncate(),
+                b_half,
                 g.graph_defn.graph_attrs.connector_style,
             );
             conn.path = path.0.clone();
@@ -347,13 +491,15 @@ pub fn update_connectors(
 
 fn generate_line(
     a: &Vec3,
+    a_half: Vec2,
     b: &Vec3,
+    b_half: Vec2,
     ga: &GraphAttrs,
     id1: &str,
     id2: &str,
     commands: &mut Commands,
 ) -> Entity {
-    let path = build_connector_path(a.truncate(), b.truncate(), ga.connector_style);
+    let path = build_connector_path(a.truncate(), a_half, b.truncate(), b_half, ga.connector_style);
     let walking_path = path.0.clone();
     let walk_cache = walk_path(&walking_path);
     let cc = ga.connection_color;
@@ -438,4 +584,93 @@ pub fn update_connector_style(
         }
     }
     prof.connector_style_ms += __prof_t0.elapsed().as_secs_f64() * 1000.0; // TEMPORARY
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parser::draw::{DrawCmd, Paint};
+
+    #[test]
+    fn test_box_exit_point_picks_nearer_edge() {
+        let half = Vec2::new(80.0, 25.0); // a wide, short card
+
+        // Approaching mostly sideways - should exit the left/right edge.
+        let (p, horizontal) = box_exit_point(Vec2::ZERO, Vec2::new(1.0, 0.0), half, 1000.0);
+        assert!(horizontal);
+        assert!((p.x - half.x).abs() < 0.001);
+        assert!(p.y.abs() < 0.001);
+
+        // Approaching mostly vertically - should exit the top/bottom edge.
+        let (p, horizontal) = box_exit_point(Vec2::ZERO, Vec2::new(0.0, 1.0), half, 1000.0);
+        assert!(!horizontal);
+        assert!((p.y - half.y).abs() < 0.001);
+        assert!(p.x.abs() < 0.001);
+
+        // A diagonal shallow enough that the wide card's side edge is still
+        // reached first (dx dominates relative to the card's aspect ratio).
+        let dir = Vec2::new(1.0, 0.3).normalize();
+        let (_, horizontal) = box_exit_point(Vec2::ZERO, dir, half, 1000.0);
+        assert!(horizontal);
+    }
+
+    #[test]
+    fn test_box_exit_point_clamped_on_short_links() {
+        let half = Vec2::new(80.0, 25.0);
+        let (p, _) = box_exit_point(Vec2::ZERO, Vec2::new(1.0, 0.0), half, 10.0);
+        // max_t (10.0) is smaller than the box's own half-width (80.0) - the
+        // short-link clamp must win, not the box edge.
+        assert!((p.x - 10.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_node_half_extents_defaults_without_overlay() {
+        let node = test_node_with_overlay(vec![]);
+        assert_eq!(node_half_extents(&node), DEFAULT_HALF_EXTENTS);
+    }
+
+    #[test]
+    fn test_node_half_extents_from_rect_overlay() {
+        let node = test_node_with_overlay(vec![DrawCmd::Rect {
+            x: 0.0,
+            y: 0.0,
+            w: 160.0,
+            h: 50.0,
+            radius: 8.0,
+            paint: Paint { fill: None, stroke: None, stroke_width: 0.0 },
+        }]);
+        let half = node_half_extents(&node);
+        assert!((half.x - 80.0).abs() < 0.001);
+        assert!((half.y - 25.0).abs() < 0.001);
+    }
+
+    /// Builds a minimal `Node` carrying only the `overlay` field these tests
+    /// care about - the rest are irrelevant to `node_half_extents`, which
+    /// only ever reads `overlay`.
+    fn test_node_with_overlay(overlay: Vec<DrawCmd>) -> crate::parser::graphv2::Node {
+        use crate::parser::graphv2::{Attrs, Node, NodeType};
+        use bevy::time::{Timer, TimerMode};
+        use rhai::Dynamic;
+        use std::collections::BTreeMap;
+        use std::time::Duration;
+
+        Node {
+            name: "n".to_string(),
+            node_data: NodeType {
+                id: "n".to_string(),
+                func: None,
+                ast: rhai::AST::empty(),
+                attrs: Attrs::default(),
+                params: None,
+            },
+            timer: Timer::new(Duration::from_secs(1), TimerMode::Repeating),
+            links: vec![],
+            ast: rhai::AST::empty(),
+            scope: rhai::Scope::new(),
+            state: Dynamic::from_map(BTreeMap::new()),
+            overlay,
+            overlay_dirty: false,
+            template_overrides: std::collections::HashMap::new(),
+        }
+    }
 }
