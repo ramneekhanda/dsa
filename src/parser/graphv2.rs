@@ -109,6 +109,27 @@ pub enum MessageBubbleShape {
     Chamfered,
 }
 
+/// Shape of the connector line drawn between two linked nodes (see
+/// `systems::update_connectors::build_connector_path`, the single function
+/// shared by the initial connector spawn and the per-frame retrace loop).
+/// One value for the whole graph, same scope as `connection_color` - not
+/// per-connector/per-link. `Step`'s right-angle corner gets rounded for
+/// free by the connector's existing `LineJoin::Round` stroke - no arc math
+/// needed, it's built from plain straight segments.
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone, Copy, Default, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ConnectorStyle {
+    /// Bows perpendicular to the A→B line, magnitude proportional to
+    /// node distance (clamped).
+    Curved,
+    /// A single straight segment between the two (inset) node edges.
+    Straight,
+    /// A right-angle route: horizontal from the start, then vertical to
+    /// the end. Default when `graph_attrs.connector_style` is unset.
+    #[default]
+    Step,
+}
+
 fn default_message_stroke_width() -> f32 {
     1.5
 }
@@ -303,6 +324,11 @@ pub struct GraphAttrs {
     )]
     pub text_color: Color,
 
+    /// Shape of every connector line in the graph - see `ConnectorStyle`'s
+    /// doc comment. Defaults to `step` (right-angle routing) when unset.
+    #[serde(default)]
+    pub connector_style: ConnectorStyle,
+
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub message_theme: Option<MessageTheme>,
 
@@ -329,6 +355,7 @@ impl Default for GraphAttrs {
             connection_color: black_color(),
             title: String::new(),
             text_color: black_color(),
+            connector_style: ConnectorStyle::default(),
             message_theme: None,
             explain_theme: None,
             font: None,
@@ -1919,6 +1946,38 @@ graph_defn:
         assert!(theme.bg.is_some());
         assert!(theme.stroke.is_some());
         assert!(theme.text_color.is_some());
+    }
+
+    /// `connector_style` defaults to `Step` when unset, and each explicit
+    /// value round-trips through the YAML tag correctly.
+    #[test]
+    fn test_connector_style_defaults_and_parses() {
+        let unset = r##"
+graph_defn:
+  node_types:
+    - id: worker
+  graph:
+    - name: w1
+      node_type: worker
+      links: []
+"##
+        .to_string();
+        let parsed = parse_graph2(&unset).expect("Should parse YAML with no connector_style");
+        assert_eq!(parsed.graph_defn.graph_attrs.connector_style, ConnectorStyle::Step);
+
+        for (tag, expected) in [
+            ("curved", ConnectorStyle::Curved),
+            ("straight", ConnectorStyle::Straight),
+            ("step", ConnectorStyle::Step),
+        ] {
+            let yaml = format!(
+                "graph_defn:\n  graph_attrs:\n    connector_style: {}\n  node_types:\n    - id: worker\n  graph:\n    - name: w1\n      node_type: worker\n      links: []\n",
+                tag
+            );
+            let parsed = parse_graph2(&yaml)
+                .unwrap_or_else(|e| panic!("Should parse connector_style: {}: {}", tag, e));
+            assert_eq!(parsed.graph_defn.graph_attrs.connector_style, expected);
+        }
     }
 
     #[test]

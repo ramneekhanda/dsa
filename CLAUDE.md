@@ -382,15 +382,22 @@ projection lookup — the first time `BubbleCamera` was added; fixed by adding
 
 ### Connectors (`src/systems/update_connectors.rs`, `src/components/node_connector.rs`)
 
-A `NodeConnector` is drawn as a cubic bezier between two node centers, inset so it
-visibly stops just outside each icon's edge rather than running into it. The curve bows
-*perpendicular* to the A→B line (magnitude proportional to distance, clamped in
-`bow_amount`) rather than toward a fixed diagonal offset — a fixed offset could bow the
-"wrong" way depending on how two nodes happened to be arranged; deriving it from the line
-itself keeps the shape consistent no matter the layout. `connector_geometry`/
-`connector_stroke` are shared by both the initial spawn (`generate_line`) and the
-per-frame retrace loop so newly-created and moving connectors can't drift out of sync
-with each other.
+A `NodeConnector`'s path is built by `build_connector_path`, shaped per
+`graph_attrs.connector_style` (`ConnectorStyle`: `curved` | `straight` | `step` —
+one value for the whole graph, same scope as `connection_color`; **defaults to
+`step`** when unset). All three are inset so the line visibly stops just outside
+each icon's edge rather than running into it. `curved` bows *perpendicular* to the
+A→B line (magnitude proportional to distance, clamped in `bow_amount`) rather than
+toward a fixed diagonal offset — a fixed offset could bow the "wrong" way depending
+on how two nodes happened to be arranged; deriving it from the line itself keeps the
+shape consistent no matter the layout. `straight` is a single segment; `step` routes
+horizontal-then-vertical with one right-angle elbow, which gets rounded for free by
+the connector's existing `LineJoin::Round` stroke (`connector_stroke`) — no arc math
+needed, it's still just straight segments. `build_connector_path`/`connector_stroke`
+are shared by both the initial spawn (`generate_line`) and the per-frame retrace loop
+so newly-created and moving connectors can't drift out of sync with each other; the
+in-flight message-walk animation (`walk_path`) needs no style-specific handling since
+it samples whatever the resulting `lyon::Path` actually contains, corner or not.
 
 Connectors used to have a hover highlight (an invisible `ConnectorHitRegion` sprite child
 per connector carrying `On::<Pointer<Over>>`/`<Out>` handlers, driving `NodeConnector.hovered`

@@ -292,6 +292,11 @@ pub fn merge_graph_definitions(
     if base.graph_attrs.title.is_empty() && !imported.graph_attrs.title.is_empty() {
         base.graph_attrs.title = imported.graph_attrs.title;
     }
+    if base.graph_attrs.connector_style == default_attrs.connector_style
+        && imported.graph_attrs.connector_style != default_attrs.connector_style
+    {
+        base.graph_attrs.connector_style = imported.graph_attrs.connector_style;
+    }
     if base.graph_attrs.message_theme.is_none() && imported.graph_attrs.message_theme.is_some() {
         base.graph_attrs.message_theme = imported.graph_attrs.message_theme;
     }

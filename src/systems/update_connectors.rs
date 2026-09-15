@@ -2,7 +2,10 @@ use crate::c_log;
 use crate::components::message::Messages;
 use crate::components::node::{NodeMarker, SelectedNodeMarker};
 use crate::resources::graph_def::GraphDefinitionRes;
-use crate::{components::node_connector::*, parser::graphv2::GraphAttrs};
+use crate::{
+    components::node_connector::*,
+    parser::graphv2::{ConnectorStyle, GraphAttrs},
+};
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 use std::collections::{HashMap, HashSet};
@@ -87,27 +90,36 @@ fn bow_amount(dist: f32) -> f32 {
     (dist * BOW_FRACTION).clamp(BOW_MIN, BOW_MAX)
 }
 
-/// Computes the inset start/end points and the two cubic-bezier control
-/// points for the connector between node centers `a` and `b`.
+/// Builds the connector path between node centers `a` and `b`, shaped
+/// according to `graph_attrs.connector_style` (see `ConnectorStyle`'s doc
+/// comment) - shared by both the initial spawn (`generate_line`) and the
+/// per-frame retrace loop so newly-created and moving connectors can't
+/// drift out of sync with each other.
 ///
-/// The curve bows perpendicular to the A→B line (magnitude proportional to
+/// `Curved` bows perpendicular to the A→B line (magnitude proportional to
 /// distance, clamped) rather than always toward a fixed `(+50, +50)`
 /// diagonal offset like before - that fixed offset could bow the "wrong"
 /// way (e.g. for vertically stacked nodes) or look lopsided depending on
 /// layout, since it didn't account for how the two nodes were actually
 /// arranged. This way the arc direction and shape stay visually consistent
 /// no matter how a graph is laid out or dragged.
-fn connector_geometry(a: Vec2, b: Vec2) -> (Vec2, Vec2, Vec2, Vec2) {
+///
+/// `Straight` and `Step` are built from plain line segments rather than a
+/// bezier - `Step`'s right-angle corner gets rounded for free by the
+/// connector's existing `LineJoin::Round` stroke (see `connector_stroke`),
+/// no arc math needed.
+fn build_connector_path(a: Vec2, b: Vec2, style: ConnectorStyle) -> Path {
     let delta = b - a;
     let dist = delta.length();
+    let mut path_builder = PathBuilder::new();
     if dist < 1.0 {
         // Degenerate (nodes effectively on top of each other) - avoid a
         // divide-by-zero in the normalize below.
-        return (a, a, b, b);
+        path_builder.move_to(a);
+        path_builder.line_to(b);
+        return path_builder.build();
     }
     let dir = delta / dist;
-    let perp = Vec2::new(-dir.y, dir.x);
-    let bow = bow_amount(dist);
 
     // Don't let the inset eat more than the two nodes' visual gap on very
     // short links (icons close together or briefly overlapping mid-drag).
@@ -115,9 +127,27 @@ fn connector_geometry(a: Vec2, b: Vec2) -> (Vec2, Vec2, Vec2, Vec2) {
     let start = a + dir * inset;
     let end = b - dir * inset;
 
-    let c1 = start + (end - start) * 0.33 + perp * bow;
-    let c2 = start + (end - start) * 0.66 + perp * bow;
-    (start, c1, c2, end)
+    path_builder.move_to(start);
+    match style {
+        ConnectorStyle::Straight => {
+            path_builder.line_to(end);
+        }
+        ConnectorStyle::Step => {
+            // Horizontal from `start`, then vertical to `end` - a single
+            // right-angle elbow.
+            let elbow = Vec2::new(end.x, start.y);
+            path_builder.line_to(elbow);
+            path_builder.line_to(end);
+        }
+        ConnectorStyle::Curved => {
+            let perp = Vec2::new(-dir.y, dir.x);
+            let bow = bow_amount(dist);
+            let c1 = start + (end - start) * 0.33 + perp * bow;
+            let c2 = start + (end - start) * 0.66 + perp * bow;
+            path_builder.cubic_bezier_to(c1, c2, end);
+        }
+    }
+    path_builder.build()
 }
 
 /// A connector's rounded-cap, rounded-join stroke - shared by both
@@ -244,13 +274,11 @@ pub fn update_connectors(
                 c_log!("Node not found for connector: {}-{}", conn.id1, conn.id2);
                 continue;
             }
-            let (start, c1, c2, end) =
-                connector_geometry(node1_loc.unwrap().truncate(), node2_loc.unwrap().truncate());
-            let mut path_builder = PathBuilder::new();
-            path_builder.move_to(start);
-            path_builder.cubic_bezier_to(c1, c2, end);
-
-            *path = path_builder.build();
+            *path = build_connector_path(
+                node1_loc.unwrap().truncate(),
+                node2_loc.unwrap().truncate(),
+                g.graph_defn.graph_attrs.connector_style,
+            );
             conn.path = path.0.clone();
             conn.walk_cache = walk_path(&conn.path);
         }
@@ -267,12 +295,7 @@ fn generate_line(
     id2: &str,
     commands: &mut Commands,
 ) -> Entity {
-    let (start, c1, c2, end) = connector_geometry(a.truncate(), b.truncate());
-    let mut path_builder = PathBuilder::new();
-    path_builder.move_to(start);
-    path_builder.cubic_bezier_to(c1, c2, end);
-
-    let path = path_builder.build();
+    let path = build_connector_path(a.truncate(), b.truncate(), ga.connector_style);
     let walking_path = path.0.clone();
     let walk_cache = walk_path(&walking_path);
     let cc = ga.connection_color;
