@@ -105,7 +105,10 @@ fn bow_amount(dist: f32) -> f32 {
 /// no matter how a graph is laid out or dragged.
 ///
 /// `Straight` and `Step` are built from plain line segments rather than a
-/// bezier - `Step`'s right-angle corner gets rounded for free by the
+/// bezier. `Step` routes horizontal out from `a`, vertical to align, then
+/// horizontal in to `b` (elbowed at the horizontal midpoint) - unless the
+/// two nodes are already level, in which case it's just the one straight
+/// segment. Both right-angle corners get rounded for free by the
 /// connector's existing `LineJoin::Round` stroke (see `connector_stroke`),
 /// no arc math needed.
 fn build_connector_path(a: Vec2, b: Vec2, style: ConnectorStyle) -> Path {
@@ -133,11 +136,19 @@ fn build_connector_path(a: Vec2, b: Vec2, style: ConnectorStyle) -> Path {
             path_builder.line_to(end);
         }
         ConnectorStyle::Step => {
-            // Horizontal from `start`, then vertical to `end` - a single
-            // right-angle elbow.
-            let elbow = Vec2::new(end.x, start.y);
-            path_builder.line_to(elbow);
-            path_builder.line_to(end);
+            // Horizontal out from `start`, vertical to align, horizontal in
+            // to `end` - three segments, elbowed at the horizontal
+            // midpoint. Skip the (degenerate, zero-length) vertical leg
+            // when the two nodes are already level, rather than leaving a
+            // redundant collinear vertex in the path.
+            if (end.y - start.y).abs() < 0.5 {
+                path_builder.line_to(end);
+            } else {
+                let mid_x = (start.x + end.x) / 2.0;
+                path_builder.line_to(Vec2::new(mid_x, start.y));
+                path_builder.line_to(Vec2::new(mid_x, end.y));
+                path_builder.line_to(end);
+            }
         }
         ConnectorStyle::Curved => {
             let perp = Vec2::new(-dir.y, dir.x);

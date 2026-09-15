@@ -124,8 +124,10 @@ pub enum ConnectorStyle {
     Curved,
     /// A single straight segment between the two (inset) node edges.
     Straight,
-    /// A right-angle route: horizontal from the start, then vertical to
-    /// the end. Default when `graph_attrs.connector_style` is unset.
+    /// A three-segment orthogonal route: horizontal out from the start,
+    /// vertical to align, horizontal in to the end (collapses to a single
+    /// segment when the two nodes are already level). Default when
+    /// `graph_attrs.connector_style` is unset.
     #[default]
     Step,
 }
