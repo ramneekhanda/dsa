@@ -36,7 +36,7 @@ pub fn create_nodes(
     mut commands: Commands,
     ca: Res<CommonAssets>,
     g: Res<GraphDefinitionRes>,
-    query: Query<(Entity, &NodeMarker)>,
+    query: Query<(Entity, &NodeMarker, &Transform)>,
     mut change_reader: EventReader<GraphChange>,
     mut added_reader: EventReader<NodeAdded>,
     mut removed_reader: EventReader<NodeRemoved>,
@@ -45,7 +45,7 @@ pub fn create_nodes(
     mut node_props: ResMut<crate::resources::ui_state::NodePropertiesPopup>,
 ) {
     if change_reader.read().count() > 0 {
-        for (entity, _) in query.iter() {
+        for (entity, _, _) in query.iter() {
             commands.entity(entity).despawn_recursive();
         }
         let mut z = 0.;
@@ -73,7 +73,7 @@ pub fn create_nodes(
     }
 
     for removed in removed_reader.read() {
-        if let Some((entity, _)) = query.iter().find(|(_, m)| m.node_name == removed.name) {
+        if let Some((entity, _, _)) = query.iter().find(|(_, m, _)| m.node_name == removed.name) {
             commands.entity(entity).despawn_recursive();
         }
         // A script-driven despawn() of the node the popup is currently
@@ -87,7 +87,19 @@ pub fn create_nodes(
         return;
     }
     let g_attrs: &GraphAttrs = &g.graph_defn.graph_attrs;
-    let mut z = query.iter().count() as f32;
+    // Ground truth for "where is everyone right now" - not the freshly
+    // recomputed `layout` below, which assumes every node's position gets
+    // updated to match it. We deliberately only spawn the new node(s) here
+    // (see this fn's doc comment: existing nodes' positions/drag state
+    // survive untouched), so an existing node may already be sitting
+    // somewhere the fresh layout no longer agrees with (a manual drag, or
+    // simply because adding this node reshuffled its rank layer's spacing).
+    // Steering the new node away from these actual on-screen positions -
+    // instead of blindly trusting the recomputed one - is what keeps it
+    // from landing on top of a node that isn't going to move to make room.
+    let mut existing_positions: Vec<Vec2> =
+        query.iter().map(|(_, _, t)| t.translation.truncate()).collect();
+    let mut z = existing_positions.len() as f32;
     let layout = crate::systems::layout::compute_graph_layout(&g.graph_defn);
     for added in added_reader.read() {
         if let Some(node) = g
@@ -96,12 +108,47 @@ pub fn create_nodes(
             .iter()
             .find(|n| n.name == added.name)
         {
-            let pos = layout.node_positions.get(&node.name).copied().unwrap_or(Vec2::ZERO);
+            let desired = layout.node_positions.get(&node.name).copied().unwrap_or(Vec2::ZERO);
+            let pos = resolve_spawn_position(desired, &existing_positions, existing_positions.len());
+            // Also steer any further nodes added this same frame away from
+            // this one, not just from what was already on screen.
+            existing_positions.push(pos);
             let locked = !layout.draggable;
             spawn_node(z, node, &mut commands, &ca, g_attrs, pos, locked);
             z += 1.;
         }
     }
+}
+
+/// A freshly-spawned node's layout-computed position can coincide with (or
+/// sit too close to) an already-placed node's *actual* on-screen position -
+/// see `create_nodes`' `NodeAdded` branch for why those can disagree. If
+/// `desired` is too close to anything in `existing_positions`, nudge it
+/// outward along a golden-angle spiral (evenly distributes points without
+/// clustering, unlike a plain grid or random jitter) until it clears every
+/// existing node, or give up after a bounded number of attempts and return
+/// the last candidate rather than looping forever.
+fn resolve_spawn_position(desired: Vec2, existing_positions: &[Vec2], node_count: usize) -> Vec2 {
+    const MIN_SEPARATION: f32 = 160.0;
+    const GOLDEN_ANGLE: f32 = 2.399963; // radians; ~137.5 degrees
+    const MAX_ATTEMPTS: u32 = 24;
+
+    let collides = |p: Vec2| existing_positions.iter().any(|&e| e.distance(p) < MIN_SEPARATION);
+    if !collides(desired) {
+        return desired;
+    }
+
+    let base_radius = spawn_spread_radius(node_count);
+    let mut candidate = desired;
+    for attempt in 1..=MAX_ATTEMPTS {
+        let angle = attempt as f32 * GOLDEN_ANGLE;
+        let radius = base_radius * (1.0 + attempt as f32 * 0.15);
+        candidate = desired + Vec2::new(angle.cos(), angle.sin()) * radius;
+        if !collides(candidate) {
+            return candidate;
+        }
+    }
+    candidate
 }
 
 /// Clears the current node selection when a left click lands on nothing pickable that

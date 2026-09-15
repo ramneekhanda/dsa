@@ -66,6 +66,57 @@ graph_defn:
           gap: 1.5
           track_color: "#000000"
           fill_color: "#00ff41"
+    - id: node
+      shapes:
+        - shape: rect
+          x: 0.0
+          y: 0.0
+          w: 126.0
+          h: 46.0
+          fill: "#051108"
+          stroke: "#00ff41"
+          stroke_width: 1.5
+        - shape: rect
+          x: 0.0
+          y: 15.0
+          w: 126.0
+          h: 16.0
+          fill: "#0d2b14"
+        - shape: icon
+          x: -50.0
+          y: 15.0
+          w: 14.0
+          h: 14.0
+          icon: "{{icon}}"
+        - shape: text
+          x: -12.0
+          y: 15.0
+          text: "[{{node_name}}]"
+          size: 8.5
+          color: "#00ff41"
+        - shape: circle
+          x: 46.0
+          y: 15.0
+          r: 2.5
+          fill: "{{accent_color}}"
+        - shape: text
+          x: 0.0
+          y: -3.0
+          text: "{{role_tag}}"
+          size: 7.0
+          color: "#22c55e"
+        - shape: rect
+          x: 0.0
+          y: -18.0
+          w: 100.0
+          h: 10.0
+          fill: "{{status_bg}}"
+        - shape: text
+          x: 0.0
+          y: -18.0
+          text: "{{status_text}}"
+          size: 6.5
+          color: "{{status_color}}"
   node_types:
     - id: matrix_core
       attrs:

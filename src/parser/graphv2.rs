@@ -1,4 +1,4 @@
-use crate::c_log;
+use crate::{c_log, log_dsa_event};
 use bevy::{
     color::{Color, Srgba},
     prelude::*,
@@ -1134,6 +1134,13 @@ pub struct Node {
     /// re-render for `systems::node_overlay`.
     pub overlay: Vec<crate::parser::draw::DrawCmd>,
     pub overlay_dirty: bool,
+    /// `{{param}}` -> value overrides set at runtime via `update_node_params(#{...})`
+    /// (see `apply_template_param_updates`), layered on top of `template_params()`'s
+    /// defaults/YAML `template_params` and persisted across calls so a later update
+    /// only needs to name the fields that actually changed. Only meaningful for a
+    /// node type with `attrs.template`/`template_ref` - a plain node has nothing to
+    /// re-substitute these against.
+    pub template_overrides: HashMap<String, String>,
 }
 
 impl std::cmp::PartialEq for Node {
@@ -1443,6 +1450,15 @@ pub struct NodeConnection {
     pub name: String,
     pub node_type: String,
     pub links: Vec<String>,
+    /// Per-instance Rhai script override - when set, only *this* node runs it
+    /// instead of `node_type`'s own `fn`. Everything else (icon, template,
+    /// params, ticks) still comes from `node_type` - this exists so one
+    /// instance of a shared/imported type (e.g. a plib's `lambda_func`) can
+    /// behave differently without copy-pasting the whole type definition
+    /// just to change its script. Compiled once, the same way a node type's
+    /// own `fn` is (see `parse_graph2_with_sources`).
+    #[serde(rename = "fn", default, skip_serializing_if = "Option::is_none")]
+    pub func: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub group: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1516,11 +1532,15 @@ pub struct File {
     pub timers: HashMap<String, Timer>,
 }
 
-pub fn create_rhai_engine(draw_store: std::sync::Arc<std::sync::RwLock<Option<rhai::Array>>>) -> rhai::Engine {
+pub fn create_rhai_engine(
+    draw_store: std::sync::Arc<std::sync::RwLock<Option<rhai::Array>>>,
+    update_params_store: std::sync::Arc<std::sync::RwLock<Option<rhai::Map>>>,
+) -> rhai::Engine {
     let mut engine = rhai::Engine::new();
     engine.set_max_expr_depths(256, 256);
     let ds = draw_store.clone();
     let ds_one = draw_store.clone();
+    let up = update_params_store.clone();
     engine
         .register_fn("log", |_s: String| {})
         .register_fn("log", |_s: Dynamic| {})
@@ -1543,11 +1563,21 @@ pub fn create_rhai_engine(draw_store: std::sync::Arc<std::sync::RwLock<Option<rh
             }
         })
         .register_fn("spawn_node", |_name: String, _node_type: String, _links: rhai::Array| {})
+        .register_fn(
+            "spawn_node",
+            |_name: String, _node_type: String, _links: rhai::Array, _fn_override: String| {},
+        )
         .register_fn("despawn", |_name: String| {})
         .register_fn("link", |_peer: String| {})
         .register_fn("unlink", |_peer: String| {})
         .register_fn("explain", |_key: String, _text: String| {})
-        .register_fn("explain", |_text: String| {});
+        .register_fn("explain", |_text: String| {})
+        // Genuinely wired (not a no-op), same reasoning as `draw` above - an
+        // `on_init` that calls `update_node_params(#{...})` should take effect
+        // immediately, before there's a live ECS world.
+        .register_fn("update_node_params", move |p: rhai::Map| {
+            *up.write().unwrap() = Some(p);
+        });
     engine
 }
 
@@ -1560,7 +1590,8 @@ pub fn parse_graph2_with_sources(
     external_sources: &HashMap<String, String>,
 ) -> Result<File, serde_yaml::Error> {
     let draw_store = std::sync::Arc::new(std::sync::RwLock::new(None));
-    let engine = create_rhai_engine(draw_store.clone());
+    let update_params_store = std::sync::Arc::new(std::sync::RwLock::new(None));
+    let engine = create_rhai_engine(draw_store.clone(), update_params_store.clone());
 
     let data = crate::parser::imports::resolve_file_imports(graph_code, external_sources);
     if let Ok(mut m_data) = data {
@@ -1642,12 +1673,29 @@ pub fn parse_graph2_with_sources(
                 .iter()
                 .find(|x| x.id == node.node_type);
             if let Some(data_w_type) = type_data {
+                let effective_type = if let Some(script) = &node.func {
+                    let mut overridden = data_w_type.clone();
+                    overridden.func = Some(script.clone());
+                    if let Err(e) = compile_ast(&engine, &mut overridden) {
+                        return Err(serde_yaml::Error::custom(
+                            format!(
+                                "Error compiling per-instance fn override for node '{}': {:?}",
+                                node.name, e
+                            )
+                            .as_str(),
+                        ));
+                    }
+                    overridden
+                } else {
+                    data_w_type.clone()
+                };
                 let n = instantiate_node(
                     &engine,
-                    data_w_type,
+                    &effective_type,
                     node.name.clone(),
                     node.links.clone(),
                     &draw_store,
+                    &update_params_store,
                 );
                 m_data.graph_defn.node_instances.push(n);
             } else {
@@ -1670,6 +1718,7 @@ pub fn instantiate_node(
     name: String,
     links: Vec<String>,
     draw_store: &std::sync::Arc<std::sync::RwLock<Option<rhai::Array>>>,
+    update_params_store: &std::sync::Arc<std::sync::RwLock<Option<rhai::Map>>>,
 ) -> Node {
     let mut n = Node {
         name,
@@ -1684,6 +1733,7 @@ pub fn instantiate_node(
         state: Dynamic::from_map(BTreeMap::new()),
         overlay: Vec::new(),
         overlay_dirty: false,
+        template_overrides: HashMap::new(),
     };
     // Seed the overlay from a YAML-declared `attrs.template` (see
     // `TemplateShape`'s doc comment) *before* `on_init` runs - a script's
@@ -1701,7 +1751,7 @@ pub fn instantiate_node(
             .collect();
         n.overlay_dirty = true;
     }
-    init_scope(engine, &mut n, draw_store);
+    init_scope(engine, &mut n, draw_store, update_params_store);
     n
 }
 
@@ -1710,7 +1760,7 @@ pub fn instantiate_node(
 /// comment): the two auto-bound builtins (`node_name`, `icon`) first, then
 /// any explicit `attrs.template_params` layered on top so they can override
 /// either builtin (or add params of their own the template refers to).
-fn template_params(instance_name: &str, attrs: &Attrs) -> HashMap<String, String> {
+pub(crate) fn template_params(instance_name: &str, attrs: &Attrs) -> HashMap<String, String> {
     let mut params = HashMap::new();
     // Default fallback values for standard theme parameters so templates render cleanly
     params.insert("accent_color".to_string(), "#38bdf8".to_string());
@@ -1744,10 +1794,49 @@ fn template_params(instance_name: &str, attrs: &Attrs) -> HashMap<String, String
     params
 }
 
+/// Applies a runtime `update_node_params(#{...})` call (see `rhai_engine`'s
+/// `update_params_store`): merges `updates` into `node.template_overrides`,
+/// then re-renders `node.overlay` from the node type's own `attrs.template`
+/// shapes (the same ones `instantiate_node` seeded it from) using the merged
+/// param map, so a later call only needs to name what changed - unrelated
+/// shapes/params are untouched, not painted over. Returns `Err` (a message
+/// meant for the caller to log as a warning, not a hard failure) when there's
+/// nothing to substitute against: no `attrs.template` at all, or an empty
+/// `updates` map.
+pub(crate) fn apply_template_param_updates(
+    node: &mut Node,
+    updates: HashMap<String, String>,
+) -> Result<(), String> {
+    let Some(template) = &node.node_data.attrs.template else {
+        return Err(format!(
+            "update_node_params called on '{}', which has no template_ref/template to update",
+            node.name
+        ));
+    };
+    if updates.is_empty() {
+        return Err(format!(
+            "update_node_params called on '{}' with no params",
+            node.name
+        ));
+    }
+    node.template_overrides.extend(updates);
+    let mut params = template_params(&node.name, &node.node_data.attrs);
+    params.extend(node.template_overrides.clone());
+    node.overlay = template
+        .iter()
+        .map(|s| s.substituted(&params))
+        .filter_map(|s| s.to_draw_cmd())
+        .take(crate::parser::draw::MAX_SHAPES_PER_NODE)
+        .collect();
+    node.overlay_dirty = true;
+    Ok(())
+}
+
 pub fn init_scope(
     engine: &rhai::Engine,
     node: &mut Node,
     draw_store: &std::sync::Arc<std::sync::RwLock<Option<rhai::Array>>>,
+    update_params_store: &std::sync::Arc<std::sync::RwLock<Option<rhai::Map>>>,
 ) {
     let scope = &mut node.scope;
     scope.push_constant("node_name", node.name.clone());
@@ -1769,6 +1858,13 @@ pub fn init_scope(
     c_log!("scope: {:?}", scope);
     c_log!("state {:?}", node.state);
     scope.rewind(init_size);
+
+    if let Some(map) = update_params_store.write().unwrap().take() {
+        let updates = map.into_iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+        if let Err(msg) = apply_template_param_updates(node, updates) {
+            log_dsa_event!("WARN: {}", msg);
+        }
+    }
 }
 
 pub fn compile_ast(engine: &rhai::Engine, node: &mut NodeType) -> Result<bool, rhai::ParseError> {
@@ -1913,6 +2009,7 @@ graph_defn:
             "web/static/tutorial/ch1/05_state_and_logging.yml",
             "web/static/tutorial/ch1/06_multilevel_routing.yml",
             "web/static/tutorial/ch1/07_interactive_narration.yml",
+            "web/static/tutorial/ch1/08_runtime_topology.yml",
             "web/static/tutorial/ch2/01_hierarchical_layouts.yml",
             "web/static/tutorial/ch2/02_groups_and_tiers.yml",
             "web/static/tutorial/ch2/03_grid_and_circular.yml",
@@ -2077,6 +2174,138 @@ graph_defn:
         let w1 = &parsed.graph_defn.node_instances[0];
         assert_eq!(w1.overlay.len(), 2);
         assert!(w1.overlay_dirty);
+    }
+
+    /// `update_node_params(#{...})` should re-render the node's existing
+    /// `attrs.template` shapes with the new param merged in - not require
+    /// restating the whole shape list the way `draw()` does - and persist
+    /// that override in `template_overrides` for a later, unrelated update to
+    /// build on.
+    #[test]
+    fn test_update_node_params_merges_and_rerenders_template() {
+        let yaml = r##"
+graph_defn:
+  node_templates:
+    - id: card
+      shapes:
+        - shape: text
+          x: 0
+          y: 0
+          text: "{{status_text}}"
+          size: 10
+          color: "{{status_color}}"
+  node_types:
+    - id: worker
+      attrs:
+        template_ref: card
+      fn: |
+        fn on_init() {
+          update_node_params(#{ status_text: "BOOTING" });
+        }
+  graph:
+    - name: w1
+      node_type: worker
+      links: []
+"##
+        .to_string();
+
+        let parsed = parse_graph2(&yaml).expect("Should parse graph");
+        let w1 = &parsed.graph_defn.node_instances[0];
+        assert_eq!(w1.template_overrides.get("status_text").map(String::as_str), Some("BOOTING"));
+        assert_eq!(w1.overlay.len(), 1);
+        match &w1.overlay[0] {
+            crate::parser::draw::DrawCmd::Text { text, .. } => assert_eq!(text, "BOOTING"),
+            other => panic!("expected a Text draw cmd, got {:?}", other),
+        }
+    }
+
+    /// A node with no `template_ref`/`template` has nothing for
+    /// `update_node_params` to re-substitute - this should be a harmless
+    /// no-op (not a panic, not a fabricated overlay), with the failure
+    /// surfaced as a warning `apply_template_param_updates` returns rather
+    /// than silently swallowed.
+    #[test]
+    fn test_update_node_params_without_template_is_noop() {
+        let mut node = Node {
+            name: "plain".to_string(),
+            node_data: NodeType {
+                id: "plain".to_string(),
+                func: None,
+                ast: rhai::AST::empty(),
+                attrs: Attrs::default(),
+                params: None,
+            },
+            timer: Timer::new(Duration::from_secs(1), TimerMode::Repeating),
+            links: vec![],
+            ast: rhai::AST::empty(),
+            scope: Scope::new(),
+            state: Dynamic::from_map(BTreeMap::new()),
+            overlay: Vec::new(),
+            overlay_dirty: false,
+            template_overrides: HashMap::new(),
+        };
+        let mut updates = HashMap::new();
+        updates.insert("status_text".to_string(), "X".to_string());
+        let err = apply_template_param_updates(&mut node, updates)
+            .expect_err("node with no template should return a warning, not Ok");
+        assert!(err.contains("no template_ref/template"));
+        assert!(node.overlay.is_empty());
+    }
+
+    /// A `graph:` entry's own `fn:` should override its node type's script
+    /// for that one instance only - a sibling instance of the same type with
+    /// no override keeps running the type's default script untouched.
+    #[test]
+    fn test_graph_entry_fn_override() {
+        let yaml = r##"
+graph_defn:
+  node_types:
+    - id: worker
+      fn: |
+        fn on_init() {
+          state.tag = "default";
+        }
+  graph:
+    - name: default_worker
+      node_type: worker
+      links: []
+    - name: custom_worker
+      node_type: worker
+      links: []
+      fn: |
+        fn on_init() {
+          state.tag = "custom";
+        }
+"##
+        .to_string();
+
+        let parsed = parse_graph2(&yaml).expect("Should parse graph with per-instance fn override");
+        let default_worker = parsed
+            .graph_defn
+            .node_instances
+            .iter()
+            .find(|n| n.name == "default_worker")
+            .unwrap();
+        let custom_worker = parsed
+            .graph_defn
+            .node_instances
+            .iter()
+            .find(|n| n.name == "custom_worker")
+            .unwrap();
+        assert_eq!(
+            default_worker
+                .state
+                .read_lock::<rhai::Map>()
+                .and_then(|m| m.get("tag").map(|v| v.to_string())),
+            Some("default".to_string())
+        );
+        assert_eq!(
+            custom_worker
+                .state
+                .read_lock::<rhai::Map>()
+                .and_then(|m| m.get("tag").map(|v| v.to_string())),
+            Some("custom".to_string())
+        );
     }
 
     /// Regression test for the `globals`/`state` dual-binding bug: `on_init`

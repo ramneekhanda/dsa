@@ -103,3 +103,81 @@ graph_defn:
           gap: 2.0
           track_color: "#0f172a"
           fill_color: "#22c55e"
+    - id: node
+      shapes:
+        - shape: rect
+          x: 0.0
+          y: 0.0
+          w: 130.0
+          h: 44.0
+          fill: "#1e293b"
+          stroke: "#475569"
+          stroke_width: 1.5
+        - shape: rect
+          x: -61.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+        - shape: circle
+          x: -61.0
+          y: 13.0
+          r: 2.0
+          fill: "#64748b"
+        - shape: circle
+          x: -61.0
+          y: -13.0
+          r: 2.0
+          fill: "#64748b"
+        - shape: rect
+          x: 61.0
+          y: 0.0
+          w: 8.0
+          h: 44.0
+          fill: "#0f172a"
+        - shape: circle
+          x: 61.0
+          y: 13.0
+          r: 2.0
+          fill: "#64748b"
+        - shape: circle
+          x: 61.0
+          y: -13.0
+          r: 2.0
+          fill: "#64748b"
+        - shape: rect
+          x: 2.0
+          y: 18.0
+          w: 114.0
+          h: 4.0
+          fill: "{{accent_color}}"
+        - shape: icon
+          x: -40.0
+          y: 2.0
+          w: 16.0
+          h: 16.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 4.0
+          y: 6.0
+          text: "{{node_name}}"
+          size: 8.5
+          color: "#f8fafc"
+        - shape: text
+          x: 4.0
+          y: -5.0
+          text: "{{role_tag}}"
+          size: 6.5
+          color: "#94a3b8"
+        - shape: rect
+          x: 2.0
+          y: -18.0
+          w: 90.0
+          h: 10.0
+          fill: "{{status_bg}}"
+        - shape: text
+          x: 2.0
+          y: -18.0
+          text: "{{status_text}}"
+          size: 6.0
+          color: "{{status_color}}"

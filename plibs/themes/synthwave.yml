@@ -81,6 +81,60 @@ graph_defn:
           gap: 2.0
           track_color: "#160f29"
           fill_color: "#ff2a85"
+    - id: node
+      shapes:
+        - shape: polygon
+          points:
+            - [-52.0, 28.0]
+            - [52.0, 28.0]
+            - [64.0, 16.0]
+            - [64.0, -16.0]
+            - [52.0, -28.0]
+            - [-52.0, -28.0]
+            - [-64.0, -16.0]
+            - [-64.0, 16.0]
+          closed: true
+          fill: "#241442"
+          stroke: "{{accent_color}}"
+          stroke_width: 1.5
+        - shape: line
+          x1: -36.0
+          y1: 22.0
+          x2: 36.0
+          y2: 22.0
+          stroke: "{{accent_color}}"
+          stroke_width: 1.5
+        - shape: icon
+          x: -40.0
+          y: 0.0
+          w: 16.0
+          h: 16.0
+          icon: "{{icon}}"
+        - shape: text
+          x: 6.0
+          y: 6.0
+          text: "{{node_name}}"
+          size: 9.5
+          color: "#ffffff"
+        - shape: text
+          x: 6.0
+          y: -6.0
+          text: "{{role_tag}}"
+          size: 7.5
+          color: "{{accent_color}}"
+        - shape: roundedrect
+          x: 0.0
+          y: -20.0
+          w: 92.0
+          h: 11.0
+          radius: 2.0
+          fill: "{{status_bg}}"
+        - shape: text
+          x: 0.0
+          y: -20.0
+          text: "{{status_text}}"
+          size: 6.5
+          color: "{{status_color}}"
   node_types:
     - id: synth_node
       attrs:

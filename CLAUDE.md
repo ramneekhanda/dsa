@@ -305,8 +305,19 @@ where adding a single node via a YAML edit destroyed every other connector's in-
 `Messages` queue. `node_pulse::pulse_on_tick` uses `try_insert` (not `insert`) for the
 same reason: a node's last `NodeTicked` (pulse animation) and its own same-tick
 `despawn()` race to be the command that lands first when the schedule flushes.
-`MAX_NODES` (200) caps a runaway `spawn_node()` loop. See
-`web/static/examples/cell_division.yml` for a full spawn/link/unlink/despawn demo.
+`MAX_NODES` (200) caps a runaway `spawn_node()` loop. `spawn_node` also has a 4-arg
+overload (`spawn_node(name, node_type, links, fn_override)`) that compiles and runs
+`fn_override` for just that one instance instead of `node_type`'s own `fn` - the same
+mechanism a `graph:` entry's own `fn:` field uses statically (see `NodeConnection::func`
+and `apply_template_param_updates`'s neighboring code in `graphv2.rs`). A freshly spawned
+node's position comes from a full `compute_graph_layout()` recompute, but only that one
+node's entity actually gets (re)spawned - existing nodes' positions never get updated to
+match, so `node_system::resolve_spawn_position` nudges the new node away from every
+already-*rendered* position (not the recomputed layout's, which existing nodes may now
+disagree with) along a golden-angle spiral, rather than risking it landing on top of a
+node that isn't going to move to make room. See
+`web/static/tutorial/ch1/08_runtime_topology.yml` (Learn panel lesson 1.8) for a runnable
+spawn_node/link/despawn demo.
 
 ### Narration bubbles (`explain()` — `src/systems/explain_bubble.rs`, `src/systems/radial_blur.rs`, `src/resources/narration.rs`)
 

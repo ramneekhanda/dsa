@@ -68,6 +68,60 @@ graph_defn:
           gap: 2.0
           track_color: "#1e1f29"
           fill_color: "#bd93f9"
+    - id: node
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 120.0
+          h: 56.0
+          radius: 10.0
+          fill: "#282a36"
+          stroke: "#44475a"
+          stroke_width: 1.5
+        - shape: roundedrect
+          x: 0.0
+          y: 20.0
+          w: 120.0
+          h: 18.0
+          radius: 10.0
+          fill: "#44475a"
+        - shape: icon
+          x: -46.0
+          y: 20.0
+          w: 14.0
+          h: 14.0
+          icon: "{{icon}}"
+        - shape: text
+          x: -12.0
+          y: 20.0
+          text: "{{node_name}}"
+          size: 8.5
+          color: "#f8f8f2"
+        - shape: circle
+          x: 44.0
+          y: 20.0
+          r: 3.5
+          fill: "{{accent_color}}"
+        - shape: text
+          x: 0.0
+          y: 2.0
+          text: "{{role_tag}}"
+          size: 7.5
+          color: "#bd93f9"
+        - shape: roundedrect
+          x: 0.0
+          y: -18.0
+          w: 96.0
+          h: 12.0
+          radius: 6.0
+          fill: "{{status_bg}}"
+        - shape: text
+          x: 0.0
+          y: -18.0
+          text: "{{status_text}}"
+          size: 7.0
+          color: "{{status_color}}"
   node_types:
     - id: dracula_service
       attrs:

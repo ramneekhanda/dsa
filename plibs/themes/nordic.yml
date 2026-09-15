@@ -66,6 +66,60 @@ graph_defn:
           h: 4.0
           track_color: "#3b4252"
           fill_color: "#81a1c1"
+    - id: node
+      shapes:
+        - shape: roundedrect
+          x: 0.0
+          y: 0.0
+          w: 120.0
+          h: 56.0
+          radius: 8.0
+          fill: "#2e3440"
+          stroke: "#4c566a"
+          stroke_width: 1.5
+        - shape: roundedrect
+          x: 0.0
+          y: 20.0
+          w: 120.0
+          h: 16.0
+          radius: 8.0
+          fill: "#3b4252"
+        - shape: icon
+          x: -46.0
+          y: 20.0
+          w: 14.0
+          h: 14.0
+          icon: "{{icon}}"
+        - shape: text
+          x: -12.0
+          y: 20.0
+          text: "{{node_name}}"
+          size: 8.5
+          color: "#eceff4"
+        - shape: circle
+          x: 44.0
+          y: 20.0
+          r: 3.5
+          fill: "{{accent_color}}"
+        - shape: text
+          x: 0.0
+          y: 2.0
+          text: "{{role_tag}}"
+          size: 7.5
+          color: "#88c0d0"
+        - shape: roundedrect
+          x: 0.0
+          y: -18.0
+          w: 96.0
+          h: 12.0
+          radius: 6.0
+          fill: "{{status_bg}}"
+        - shape: text
+          x: 0.0
+          y: -18.0
+          text: "{{status_text}}"
+          size: 7.0
+          color: "{{status_color}}"
   node_types:
     - id: nord_service
       attrs:

@@ -691,6 +691,44 @@ imports:
     }
 
     #[test]
+    fn test_all_builtin_themes_have_shared_node_template() {
+        // Every theme preset must register a template literally named "node"
+        // (alongside its own specialized one, e.g. cyber_hud/cloud_card) that
+        // uses only params with global fallback defaults
+        // (`node_name`/`icon`/`role_tag`/`status_bg`/`status_color`/
+        // `status_text`/`accent_color` - see `template_params()` in
+        // graphv2.rs) - this is what lets a node type declare
+        // `template_ref: node` once and keep rendering no matter which theme
+        // gets swapped in, instead of failing to compile the way
+        // `template_ref: minimal_pill` does under a non-minimal theme.
+        let themes = [
+            "plibs:themes/cyberpunk",
+            "plibs:themes/cloud",
+            "plibs:themes/datacenter",
+            "plibs:themes/minimal",
+            "plibs:themes/synthwave",
+            "plibs:themes/nordic",
+            "plibs:themes/dracula",
+            "plibs:themes/matrix",
+            "plibs:themes/solarized_light",
+        ];
+        for theme_name in themes {
+            let yaml = format!(
+                "imports:\n  - from: \"{}\"\ngraph_defn:\n  graph:\n    - name: n1\n      node_type: t1\n      links: []\n  node_types:\n    - id: t1\n      attrs:\n        template_ref: node\n",
+                theme_name
+            );
+            let file = parse_graph2(&yaml).unwrap_or_else(|e| {
+                panic!("Theme '{}' failed to compile with template_ref: node: {}", theme_name, e)
+            });
+            assert!(
+                file.graph_defn.node_templates.iter().any(|t| t.id == "node"),
+                "Theme '{}' did not register a 'node' template",
+                theme_name
+            );
+        }
+    }
+
+    #[test]
     fn test_aws_all_icons_and_cloud_theme() {
         let yaml = r#"
 imports:

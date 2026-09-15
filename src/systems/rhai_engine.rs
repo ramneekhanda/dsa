@@ -39,9 +39,12 @@ pub fn execute_rhai_engine(
     // frame, after `node_map`'s `&mut Node` borrows into `graph_defn.node_instances`
     // are all dropped - the apply step pushes/removes elements from that Vec, which
     // would otherwise invalidate those live borrows.
-    let local_spawn_store = Arc::new(RwLock::new(Vec::<(String, String, Vec<String>)>::new()));
+    // The 4th element is an optional per-instance `fn` override - see
+    // `spawn_node`'s 4-arg overload and `NodeConnection::func`'s doc comment.
+    let local_spawn_store =
+        Arc::new(RwLock::new(Vec::<(String, String, Vec<String>, Option<String>)>::new()));
     let local_despawn_store = Arc::new(RwLock::new(Vec::<String>::new()));
-    let mut pending_spawns: Vec<(String, String, String, Vec<String>)> = Vec::new();
+    let mut pending_spawns: Vec<(String, String, String, Vec<String>, Option<String>)> = Vec::new();
     let mut pending_despawns: Vec<(String, String)> = Vec::new();
     // `link`/`unlink` are self-scoped: applied immediately to the calling node right
     // after its handler call returns (mutating a field of an already-borrowed `Node`
@@ -54,6 +57,10 @@ pub fn execute_rhai_engine(
     let local_explain_store = Arc::new(RwLock::new(Vec::<(String, String)>::new()));
     let mut pending_explain_frame: Vec<(String, String, String)> = Vec::new();
     let local_log_store = Arc::new(RwLock::new(Vec::<String>::new()));
+    // Set by a handler calling `update_node_params(#{...})`; drained after every
+    // handler invocation the same way `draw_store` is - see
+    // `parser::graphv2::apply_template_param_updates`.
+    let update_params_store = Arc::new(RwLock::new(None::<rhai::Map>));
 
     let engine = initialize_engine(
         &local_message_store,
@@ -63,6 +70,7 @@ pub fn execute_rhai_engine(
         &local_link_store,
         &local_explain_store,
         &local_log_store,
+        &update_params_store,
     );
     let gd = &mut graph_defn.graph_defn;
 
@@ -124,6 +132,12 @@ pub fn execute_rhai_engine(
             if let Some(shapes) = draw_store.write().unwrap().take() {
                 node.overlay = crate::parser::draw::parse_overlay(&shapes);
                 node.overlay_dirty = true;
+            }
+            if let Some(map) = update_params_store.write().unwrap().take() {
+                let updates = map.into_iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+                if let Err(msg) = crate::parser::graphv2::apply_template_param_updates(node, updates) {
+                    crate::log_dsa_event!("WARN: {}", msg);
+                }
             }
             drain_topology_ops(
                 node,
@@ -219,6 +233,12 @@ pub fn execute_rhai_engine(
                         node.overlay = crate::parser::draw::parse_overlay(&shapes);
                         node.overlay_dirty = true;
                     }
+                    if let Some(map) = update_params_store.write().unwrap().take() {
+                        let updates = map.into_iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+                        if let Err(msg) = crate::parser::graphv2::apply_template_param_updates(node, updates) {
+                            crate::log_dsa_event!("WARN: {}", msg);
+                        }
+                    }
                     drain_topology_ops(
                         node,
                         &local_spawn_store,
@@ -245,7 +265,7 @@ pub fn execute_rhai_engine(
     for name in apply_despawns(gd, pending_despawns) {
         node_removed_writer.send(NodeRemoved { name });
     }
-    for name in apply_spawns(gd, &engine, pending_spawns, &draw_store, &local_log_store) {
+    for name in apply_spawns(gd, &engine, pending_spawns, &draw_store, &local_log_store, &update_params_store) {
         node_added_writer.send(NodeAdded { name });
     }
     for (node_name, key, text) in pending_explain_frame {
@@ -267,11 +287,11 @@ pub fn execute_rhai_engine(
 /// `despawn` only get attributed to `node.name` here and queued for later.
 fn drain_topology_ops(
     node: &mut Node,
-    local_spawn_store: &Arc<RwLock<Vec<(String, String, Vec<String>)>>>,
+    local_spawn_store: &Arc<RwLock<Vec<(String, String, Vec<String>, Option<String>)>>>,
     local_despawn_store: &Arc<RwLock<Vec<String>>>,
     local_link_store: &Arc<RwLock<Vec<(bool, String)>>>,
     local_explain_store: &Arc<RwLock<Vec<(String, String)>>>,
-    pending_spawns: &mut Vec<(String, String, String, Vec<String>)>,
+    pending_spawns: &mut Vec<(String, String, String, Vec<String>, Option<String>)>,
     pending_despawns: &mut Vec<(String, String)>,
     pending_explain_frame: &mut Vec<(String, String, String)>,
 ) {
@@ -279,8 +299,8 @@ fn drain_topology_ops(
         .write()
         .unwrap()
         .drain(..)
-        .for_each(|(name, node_type, links)| {
-            pending_spawns.push((node.name.clone(), name, node_type, links));
+        .for_each(|(name, node_type, links, func_override)| {
+            pending_spawns.push((node.name.clone(), name, node_type, links, func_override));
         });
     local_despawn_store
         .write()
@@ -363,12 +383,13 @@ fn apply_despawns(gd: &mut GraphDefinition, pending: Vec<(String, String)>) -> V
 fn apply_spawns(
     gd: &mut GraphDefinition,
     engine: &Engine,
-    pending: Vec<(String, String, String, Vec<String>)>,
+    pending: Vec<(String, String, String, Vec<String>, Option<String>)>,
     draw_store: &Arc<RwLock<Option<rhai::Array>>>,
     local_log_store: &Arc<RwLock<Vec<String>>>,
+    update_params_store: &Arc<RwLock<Option<rhai::Map>>>,
 ) -> Vec<String> {
     let mut spawned = Vec::new();
-    for (requester, name, node_type_id, links) in pending {
+    for (requester, name, node_type_id, links, func_override) in pending {
         if gd.node_instances.len() >= MAX_NODES {
             c_log!(
                 "{} tried to spawn {} but the node cap ({}) is reached",
@@ -402,7 +423,35 @@ fn apply_spawns(
             .filter(|peer| gd.node_instances.iter().any(|n| &n.name == peer))
             .collect();
 
-        let node = instantiate_node(engine, &node_type, name.clone(), valid_links.clone(), draw_store);
+        // A 4-arg `spawn_node(name, type, links, fn)` call overrides just this
+        // instance's script, the same way a static `graph:` entry's own `fn:`
+        // does in `parser::graphv2::parse_graph2_with_sources` - the type's
+        // icon/template/params are untouched.
+        let effective_type = if let Some(script) = &func_override {
+            let mut overridden = node_type.clone();
+            overridden.func = Some(script.clone());
+            if let Err(e) = crate::parser::graphv2::compile_ast(engine, &mut overridden) {
+                c_log!(
+                    "{} tried to spawn {} with an invalid fn override: {:?}",
+                    requester,
+                    name,
+                    e
+                );
+                continue;
+            }
+            overridden
+        } else {
+            node_type
+        };
+
+        let node = instantiate_node(
+            engine,
+            &effective_type,
+            name.clone(),
+            valid_links.clone(),
+            draw_store,
+            update_params_store,
+        );
         for msg in local_log_store.write().unwrap().drain(..) {
             crate::wasm::browser::emit_log_event(&node.name, &msg);
         }
@@ -410,6 +459,7 @@ fn apply_spawns(
         gd.graph.push(NodeConnection {
             name: name.clone(),
             node_type: node_type_id,
+            func: func_override,
             links: valid_links,
             group: None,
             rank: None,
@@ -472,11 +522,12 @@ fn send_messages(
 fn initialize_engine(
     message_store: &Arc<RwLock<Vec<(String, Dynamic)>>>,
     draw_store: &Arc<RwLock<Option<rhai::Array>>>,
-    spawn_store: &Arc<RwLock<Vec<(String, String, Vec<String>)>>>,
+    spawn_store: &Arc<RwLock<Vec<(String, String, Vec<String>, Option<String>)>>>,
     despawn_store: &Arc<RwLock<Vec<String>>>,
     link_store: &Arc<RwLock<Vec<(bool, String)>>>,
     explain_store: &Arc<RwLock<Vec<(String, String)>>>,
     log_store: &Arc<RwLock<Vec<String>>>,
+    update_params_store: &Arc<RwLock<Option<rhai::Map>>>,
 ) -> Engine {
     let mut engine = Engine::new();
     // Match the compile-time limit raised in `parser::graphv2::parse_graph2`.
@@ -485,6 +536,7 @@ fn initialize_engine(
     let ds = draw_store.clone();
     let ds_one = draw_store.clone();
     let sp = spawn_store.clone();
+    let sp_override = spawn_store.clone();
     let dsp = despawn_store.clone();
     let lk_add = link_store.clone();
     let lk_rm = link_store.clone();
@@ -544,7 +596,24 @@ fn initialize_engine(
                     .into_iter()
                     .filter_map(|v| v.into_string().ok())
                     .collect();
-                sp.write().unwrap().push((name, node_type, links));
+                sp.write().unwrap().push((name, node_type, links, None));
+            },
+        )
+        // 4-arg overload: `fn_override` replaces just this new instance's
+        // script - the type's icon/template/params are untouched. Same
+        // mechanism a static `graph:` entry's own `fn:` uses (see
+        // `NodeConnection::func`).
+        .register_fn(
+            "spawn_node",
+            move |name: String, node_type: String, links: rhai::Array, fn_override: String| {
+                let links: Vec<String> = links
+                    .into_iter()
+                    .filter_map(|v| v.into_string().ok())
+                    .collect();
+                sp_override
+                    .write()
+                    .unwrap()
+                    .push((name, node_type, links, Some(fn_override)));
             },
         )
         // Remove any node by name, including the calling node itself.
@@ -559,6 +628,17 @@ fn initialize_engine(
         .register_fn("unlink", move |peer: String| {
             lk_rm.write().unwrap().push((false, peer));
         });
+        let up = update_params_store.clone();
+        engine
+            // Update just the calling node's `{{param}}` -> value bindings and
+            // re-render its overlay from its own `attrs.template` shapes -
+            // unlike `draw()`, this doesn't require restating the whole shape
+            // list, only what changed. No-op (with a log warning - see
+            // `apply_template_param_updates`) on a node with no
+            // `template_ref`/`template` at all, or an empty `#{...}`.
+            .register_fn("update_node_params", move |p: rhai::Map| {
+                *up.write().unwrap() = Some(p);
+            });
         let ex1 = explain_store.clone();
         let ex2 = explain_store.clone();
         let ex3 = explain_store.clone();

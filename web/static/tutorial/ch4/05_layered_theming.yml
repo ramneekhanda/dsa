@@ -14,9 +14,9 @@ graph_defn:
     - id: source
       attrs:
         ticks: 4
-        template_ref: cloud_card
+        template_ref: node
         template_params:
-          role: "Producer"
+          role_tag: "Producer"
           status_text: "ACTIVE"
           status_bg: "#dcfce7"
           status_color: "#16a34a"
@@ -24,9 +24,9 @@ graph_defn:
     - id: destination
       attrs:
         ticks: 3600
-        template_ref: cloud_card
+        template_ref: node
         template_params:
-          role: "Consumer"
+          role_tag: "Consumer"
           status_text: "READY"
           status_bg: "#e0e7ff"
           status_color: "#4f46e5"

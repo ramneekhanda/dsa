@@ -62,6 +62,12 @@ export const tutorialChapters: TutorialChapter[] = [
         markdown: "07_interactive_narration.md",
         yaml: "07_interactive_narration.yml",
       },
+      {
+        id: "1.8",
+        title: "1.8 Runtime Topology Changes",
+        markdown: "08_runtime_topology.md",
+        yaml: "08_runtime_topology.yml",
+      },
     ],
   },
   {
