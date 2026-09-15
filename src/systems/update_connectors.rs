@@ -90,6 +90,47 @@ fn bow_amount(dist: f32) -> f32 {
     (dist * BOW_FRACTION).clamp(BOW_MIN, BOW_MAX)
 }
 
+/// How far back from each `Step` corner the rounding starts - a visibly
+/// rounded fillet, not just the thin, stroke-width-scaled rounding
+/// `LineJoin::Round` gives a sharp corner on its own. Clamped per-corner to
+/// half the shorter of its two adjacent segments so a short leg (nodes close
+/// together, or a corner near the midpoint elbow on a mostly-vertical link)
+/// can't make the fillet overshoot past the corner or past the other end of
+/// the path.
+const STEP_CORNER_RADIUS: f32 = 22.0;
+
+/// Draws `points` (already `move_to`'d to `points[0]`) as a polyline whose
+/// interior corners are rounded fillets instead of sharp joins: pull back
+/// `radius` along the incoming segment, quadratic-bezier through the
+/// original corner point (as the control point) to `radius` along the
+/// outgoing segment. Used by `Step`'s one-or-two-corner route; a 2-point
+/// `points` (no interior corner) just draws the one straight segment.
+fn line_through_rounded_corners(path_builder: &mut PathBuilder, points: &[Vec2], radius: f32) {
+    if points.len() < 3 {
+        if let Some(&last) = points.last() {
+            path_builder.line_to(last);
+        }
+        return;
+    }
+    let mut cursor = points[0];
+    for i in 1..points.len() - 1 {
+        let corner = points[i];
+        let next = points[i + 1];
+        let in_len = (corner - cursor).length();
+        let out_len = (next - corner).length();
+        let in_dir = if in_len > 0.0 { (corner - cursor) / in_len } else { Vec2::ZERO };
+        let out_dir = if out_len > 0.0 { (next - corner) / out_len } else { Vec2::ZERO };
+        let r = radius.min(in_len * 0.5).min(out_len * 0.5);
+
+        let before = corner - in_dir * r;
+        let after = corner + out_dir * r;
+        path_builder.line_to(before);
+        path_builder.quadratic_bezier_to(corner, after);
+        cursor = after;
+    }
+    path_builder.line_to(*points.last().unwrap());
+}
+
 /// Builds the connector path between node centers `a` and `b`, shaped
 /// according to `graph_attrs.connector_style` (see `ConnectorStyle`'s doc
 /// comment) - shared by both the initial spawn (`generate_line`) and the
@@ -104,13 +145,13 @@ fn bow_amount(dist: f32) -> f32 {
 /// arranged. This way the arc direction and shape stay visually consistent
 /// no matter how a graph is laid out or dragged.
 ///
-/// `Straight` and `Step` are built from plain line segments rather than a
-/// bezier. `Step` routes horizontal out from `a`, vertical to align, then
-/// horizontal in to `b` (elbowed at the horizontal midpoint) - unless the
-/// two nodes are already level, in which case it's just the one straight
-/// segment. Both right-angle corners get rounded for free by the
-/// connector's existing `LineJoin::Round` stroke (see `connector_stroke`),
-/// no arc math needed.
+/// `Straight` is a single line segment. `Step` routes horizontal out from
+/// `a`, vertical to align, then horizontal in to `b` (elbowed at the
+/// horizontal midpoint) - unless the two nodes are already level, in which
+/// case it's just the one straight segment. Each corner is rounded into a
+/// visible fillet by `line_through_rounded_corners` (a small quadratic
+/// bezier through the corner point, not just the thin, stroke-width-scaled
+/// rounding `LineJoin::Round` alone would give a sharp corner).
 fn build_connector_path(a: Vec2, b: Vec2, style: ConnectorStyle) -> Path {
     let delta = b - a;
     let dist = delta.length();
@@ -138,16 +179,22 @@ fn build_connector_path(a: Vec2, b: Vec2, style: ConnectorStyle) -> Path {
         ConnectorStyle::Step => {
             // Horizontal out from `start`, vertical to align, horizontal in
             // to `end` - three segments, elbowed at the horizontal
-            // midpoint. Skip the (degenerate, zero-length) vertical leg
+            // midpoint, with each corner rounded into a visible fillet
+            // (see `line_through_rounded_corners`) rather than a sharp
+            // right angle. Skip the (degenerate, zero-length) vertical leg
             // when the two nodes are already level, rather than leaving a
             // redundant collinear vertex in the path.
             if (end.y - start.y).abs() < 0.5 {
                 path_builder.line_to(end);
             } else {
                 let mid_x = (start.x + end.x) / 2.0;
-                path_builder.line_to(Vec2::new(mid_x, start.y));
-                path_builder.line_to(Vec2::new(mid_x, end.y));
-                path_builder.line_to(end);
+                let points = [
+                    start,
+                    Vec2::new(mid_x, start.y),
+                    Vec2::new(mid_x, end.y),
+                    end,
+                ];
+                line_through_rounded_corners(&mut path_builder, &points, STEP_CORNER_RADIUS);
             }
         }
         ConnectorStyle::Curved => {
